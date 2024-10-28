@@ -5,10 +5,11 @@ services:
   nginx:
     container_name: nginx                             # Nombre del contenedor
     build:
-      context: ./nginx                                # Ubicacion del Dockerfile del microservicio
+      context: ./nginx                                # Ubicacion del Dockerfile de nginx
       dockerfile: Dockerfile
     volumes:
       - ./frontend:/usr/share/nginx/html              # Monta la carpeta frontend en Nginx (los cambios son instantaneos)
+      - ./certs:/certs                                  # Montar el volumen en la ubicación deseada dentro de Prometheus
     ports:
       - "80:80"                                       # Puerto para HTTP
       - "443:443"                                     # Puerto para HTTPS
@@ -16,7 +17,6 @@ services:
       - pong-net                                      # Red que conecta todos los contenedores
     depends_on:
       - service1                                      # Dependencia de service1
-      - db                                            # Dependencia de la base de datos
 
   # PostgreSQL
   db:
@@ -30,6 +30,28 @@ services:
     networks:
       - pong-net                                      # Red que conecta todos los contenedores
 
+  # Prometheus
+  prometheus:
+      container_name: prometheus                      # Nombre del contenedor
+      build:
+        context: ./prometheus                         # Ubicacion del Dockerfile de prometheus
+        dockerfile: Dockerfile
+      ports:
+        - "9090:9090"                                 # Puerto de prometheus
+      networks:
+        - pong-net                                    # Red que conecta todos los contenedores
+
+  # Grafana
+  grafana:
+    container_name: grafana                           # Nombre del contenedor
+    image: grafana/grafana
+    ports:
+      - "3000:3000"                                   # Puerto de grafana
+    environment:
+    - GF_SERVER_ROOT_URL=https://localhost/grafana/
+    networks:
+      - pong-net                                      # Red que conecta todos los contenedores
+        
   # MicroServices
   service1:
     container_name: service1                          # Nombre del contenedor
@@ -45,6 +67,8 @@ services:
     networks:
       - pong-net                                      # Red que conecta todos los contenedores
     depends_on:
+      - prometheus                                    # Dependencia de prometheus
+      - grafana                                       # Dependencia de grafana
       - db                                            # Dependencia de la base de datos
 
 volumes:

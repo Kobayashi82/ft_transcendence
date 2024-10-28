@@ -20,4 +20,3 @@ CMD ["nginx", "-g", "daemon off;"]
 # Expone el puerto 80 (HTTP) y el puerto 443 (HTTPS)
 EXPOSE 80 443
 
-# docker exec -it ft_transcendence-nginx-1 cat /etc/nginx/nginx.conf
