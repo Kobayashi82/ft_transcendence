@@ -1,5 +1,4 @@
-# ft_transcendence
-
+# K-Pong
 Para crear un nuevo Micro-Servicio hacer estos pasos:
 
 1º - Crear la carpeta dentro de "backend" con el nombre del microservicio.
