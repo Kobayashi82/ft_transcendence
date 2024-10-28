@@ -1,0 +1,12 @@
+ERROR 2024-10-28 16:43:59,777 exception Invalid HTTP_HOST header: 'service1:8000'. You may need to add 'service1' to ALLOWED_HOSTS.
+WARNING 2024-10-28 16:43:59,818 log Bad Request: /metrics
+ERROR 2024-10-28 16:44:12,474 exception Invalid HTTP_HOST header: 'service1:8000'. You may need to add 'service1' to ALLOWED_HOSTS.
+WARNING 2024-10-28 16:44:12,489 log Bad Request: /metrics
+ERROR 2024-10-28 16:44:27,475 exception Invalid HTTP_HOST header: 'service1:8000'. You may need to add 'service1' to ALLOWED_HOSTS.
+WARNING 2024-10-28 16:44:27,496 log Bad Request: /metrics
+ERROR 2024-10-28 16:44:40,177 exception Invalid HTTP_HOST header: 'service1:8000'. You may need to add 'service1' to ALLOWED_HOSTS.
+WARNING 2024-10-28 16:44:40,192 log Bad Request: /metrics
+ERROR 2024-10-28 16:44:55,176 exception Invalid HTTP_HOST header: 'service1:8000'. You may need to add 'service1' to ALLOWED_HOSTS.
+WARNING 2024-10-28 16:44:55,195 log Bad Request: /metrics
+ERROR 2024-10-28 16:45:07,877 exception Invalid HTTP_HOST header: 'service1:8000'. You may need to add 'service1' to ALLOWED_HOSTS.
+WARNING 2024-10-28 16:45:07,899 log Bad Request: /metrics

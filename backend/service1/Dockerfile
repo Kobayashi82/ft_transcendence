@@ -4,6 +4,9 @@ FROM python:3.11
 # Establece el directorio de trabajo
 WORKDIR /app
 
+# Instala netcat
+RUN apt-get update && apt-get install -y netcat-openbsd && apt-get clean
+
 # Copia los archivos necesarios
 COPY ./requirements.txt ./
 

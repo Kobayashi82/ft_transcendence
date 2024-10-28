@@ -1,6 +1,6 @@
-Django>=3.2,<4.0       # Reemplaza con la versión que necesites
-gunicorn               # Para servir la aplicación
-daphne                 # Solo si planeas usar WebSockets
-channels               # Necesario si usas Daphne y quieres manejar WebSockets
-psycopg2-binary        # Conector para PostgreSQL (si usas PostgreSQL)
-
+Django>=3.2,<4.0		# Framework para desarrollo web en Django		(necesario)
+python-logstash
+gunicorn				# Servidor WSGI para manejar peticiones HTTP	(necesario)
+daphne					# Servidor ASGI para manejar WebSockets			(si planeas usar WebSockets)
+channels				# Framework para soportar WebSockets en Django	(si planeas usar WebSockets)
+psycopg2				# Conector para PostgreSQL						(si planeas usar PostgreSQL)

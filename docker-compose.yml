@@ -1,6 +1,8 @@
 
 services:
 
+# ----------------- WEB SERVER ----------------- #
+
   # Nginx
   nginx:
     container_name: nginx                             # Nombre del contenedor
@@ -9,26 +11,30 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./frontend:/usr/share/nginx/html              # Monta la carpeta frontend en Nginx (los cambios son instantaneos)
-      - ./certs:/certs                                  # Montar el volumen en la ubicación deseada dentro de Prometheus
+      - nginx-logs:/var/log/nginx
     ports:
-      - "80:80"                                       # Puerto para HTTP
-      - "443:443"                                     # Puerto para HTTPS
+      - "80:80"                                       # Puerto de Nginx para HTTP
+      - "443:443"                                     # Puerto de Nginx para HTTPS
     networks:
       - pong-net                                      # Red que conecta todos los contenedores
     depends_on:
       - service1                                      # Dependencia de service1
 
+# ------------------ DATABASE ------------------ #
+
   # PostgreSQL
-  db:
+  postgre:
     container_name: postgre                           # Nombre del contenedor
     image: postgres:13
     env_file: .env                                    # Archivo con las variables de entorno
+    volumes:
+      - db_data:/var/lib/postgresql/data              # Volumen donde se guardan los archivos de la base de datos
     ports:
       - "5432:5432"                                   # Puerto de PostgreSQL
-    volumes:
-      - pgdata:/var/lib/postgresql/data               # Volumen donde se guardan los archivos de la base de datos (para que no se borren al desmontar los contenedores)
     networks:
       - pong-net                                      # Red que conecta todos los contenedores
+
+# ----------------- MONITORING ----------------- #
 
   # Prometheus
   prometheus:
@@ -37,7 +43,7 @@ services:
         context: ./prometheus                         # Ubicacion del Dockerfile de prometheus
         dockerfile: Dockerfile
       ports:
-        - "9090:9090"                                 # Puerto de prometheus
+        - "9090:9090"                                 # Puerto de Prometheus
       networks:
         - pong-net                                    # Red que conecta todos los contenedores
 
@@ -45,14 +51,64 @@ services:
   grafana:
     container_name: grafana                           # Nombre del contenedor
     image: grafana/grafana
-    ports:
-      - "3000:3000"                                   # Puerto de grafana
     environment:
-    - GF_SERVER_ROOT_URL=https://localhost/grafana/
+      - GF_SERVER_ROOT_URL=https://localhost/grafana/
+    ports:
+      - "3000:3000"                                   # Puerto de Grafana
     networks:
       - pong-net                                      # Red que conecta todos los contenedores
-        
-  # MicroServices
+
+# -------------------- LOGS -------------------- #
+
+  # log-reader:
+  #   container_name: log-reader                        # Nombre del contenedor
+  #   image: alpine
+  #   volumes:
+  #     - nginx-logs:/var/log/nginx
+  #   entrypoint: /bin/sh -c "tail -F /var/log/nginx/access.log /var/log/nginx/error.log | nc logstash 5044"
+  #   networks:
+  #     - pong-net                                      # Red que conecta todos los contenedores
+
+  # ElasticSearch
+  elasticsearch:
+    container_name: elasticsearch                     # Nombre del contenedor
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.4
+    environment:
+      - discovery.type=single-node
+    volumes:
+      - log_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"                                   # Puerto de ElasticSearch
+    networks:
+      - pong-net                                      # Red que conecta todos los contenedores
+
+  # LogStash
+  logstash:
+    container_name: logstash                          # Nombre del contenedor
+    build:
+      context: ./logstash                             # Ubicacion del Dockerfile de prometheus
+      dockerfile: Dockerfile
+    ports:
+      - "5044:5044"                                   # Puerto de LogStash
+    networks:
+      - pong-net                                      # Red que conecta todos los contenedores
+
+  # Kibana
+  kibana:
+    container_name: kibana                            # Nombre del contenedor
+    image: docker.elastic.co/kibana/kibana:7.17.4
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_BASEPATH=/kibana                       # Agregar base path para Kibana
+      # - SERVER_REWRITEBASEPATH=true                   # Reescribir URLs para ajustarse al base path
+    ports:
+      - "5601:5601"                                   # Puerto de Kibana
+    networks:
+      - pong-net                                      # Red que conecta todos los contenedores
+
+# --------------- MICRO-SERVICES --------------- #
+
+  # Service1
   service1:
     container_name: service1                          # Nombre del contenedor
     env_file: .env                                    # Archivo con las variables de entorno
@@ -60,7 +116,7 @@ services:
       context: ./backend/service1                     # Ubicacion del Dockerfile del microservicio
       dockerfile: Dockerfile
     volumes:
-      - ./backend/service1:/app                       # Monta la carpeta del microservicio en modo compartido (los cambios son instantaneos)
+      - ./backend/service1:/app                       # Monta la carpeta del microservicio (los cambios son instantaneos)
     ports:
       - "8001:8000"                                   # Puerto de "gunicorn" para las API Request
       - "9001:9000"                                   # Puerto de "daphne" para los WebSockets
@@ -69,10 +125,16 @@ services:
     depends_on:
       - prometheus                                    # Dependencia de prometheus
       - grafana                                       # Dependencia de grafana
-      - db                                            # Dependencia de la base de datos
+      - postgre                                       # Dependencia de la base de datos
+
+# ------------------ VOLUMES ------------------- #
 
 volumes:
-  pgdata:                                             # Volumen donde se guardan los archivos de la base de datos (para que no se borren al desmontar los contenedores)
+  db_data:                                            # Volumen donde se guardan los archivos de la base de datos
+  log_data:                                           # Volumen donde se guardan los logs
+  nginx-logs:
+
+# ------------------ NETWORK ------------------- #
 
 networks:
   pong-net:                                           # Red que conecta todos los contenedores

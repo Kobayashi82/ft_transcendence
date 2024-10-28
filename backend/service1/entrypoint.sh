@@ -1,10 +1,15 @@
 #!/bin/bash
 
-# Inicia Gunicorn en el puerto 8000 para manejar peticiones HTTP REST
-gunicorn --reload service1.wsgi:application --bind 0.0.0.0:8000 &		# Eliminar --reload antes de entrar en produccion
+# Verifica si ya existe un proyecto y si no, lo crea					(IMPORTANTE: solo es necesario para crear el proyecto la primera vez)
+if [ ! -f "manage.py" ]; then
+    django-admin startproject service1 .
+fi
 
-# Inicia Daphne en el puerto 9000 para manejar WebSockets
-daphne -b 0.0.0.0 -p 9000 service1.asgi:application
+# Inicia "daphne" en el puerto 9000										(IMPORTANTE: eliminar si no se usa "daphne")
+daphne -b 0.0.0.0 -p 9000 service1.asgi:application | nc logstash 5044 &
 
-# Espera a que cualquiera de los dos falle para terminar el contenedor
+# Inicia "gunicorn" en el puerto 8000									(IMPORTANTE: eliminar --reload antes de entrar en produccion)
+gunicorn --reload service1.wsgi:application --bind 0.0.0.0:8000 --access-logfile '-' --error-logfile '-' | nc logstash 5044
+
+# Espera a que "gunicorn" o "daphne" falle para terminar el contenedor	(IMPORTANTE: solo es necesario si se usa "daphne")
 wait -n

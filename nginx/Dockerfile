@@ -2,7 +2,7 @@
 FROM nginx:latest
 
 # Instala OpenSSL
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y openssl wget && rm -rf /var/lib/apt/lists/*
 
 # Crea un certificado SSL autosignado
 RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -19,4 +19,3 @@ CMD ["nginx", "-g", "daemon off;"]
 
 # Expone el puerto 80 (HTTP) y el puerto 443 (HTTPS)
 EXPOSE 80 443
-

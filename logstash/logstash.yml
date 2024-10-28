@@ -1,0 +1,10 @@
+# Ruta de los pipelines
+pipeline.id: main
+path.config: "/usr/share/logstash/pipeline/logstash.conf"
+
+# Configuración de Elasticsearch para monitoreo
+xpack.monitoring.enabled: true
+xpack.monitoring.elasticsearch.hosts: ["http://elasticsearch:9200"]
+
+# Configuración de compatibilidad ECS
+pipeline.ecs_compatibility: disabled
