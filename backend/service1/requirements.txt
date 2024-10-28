@@ -1,0 +1,6 @@
+Django>=3.2,<4.0       # Reemplaza con la versión que necesites
+gunicorn               # Para servir la aplicación
+daphne                 # Solo si planeas usar WebSockets
+channels               # Necesario si usas Daphne y quieres manejar WebSockets
+psycopg2-binary        # Conector para PostgreSQL (si usas PostgreSQL)
+

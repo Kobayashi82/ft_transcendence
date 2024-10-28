@@ -1,0 +1,11 @@
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
+source ~/.bashrc		(o ~/.zshrc)
+nvm install --lts
+nvm use --lts
+npm install -g truffle
+
+truffle compile
+truffle migrate --reset
+truffle console
+
+Ropsten o Rinkeby... sepolia
