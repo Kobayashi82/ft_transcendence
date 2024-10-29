@@ -113,11 +113,24 @@ services:
       - grafana                                       # Dependencia de Grafana
       - postgre                                       # Dependencia de PostgreSQL
 
+  # Finisher
+  # finisher:
+  #   container_name: finisher                          # Nombre del contenedor
+  #   build:
+  #     context: ./backend/finisher                     # Ubicacion del Dockerfile de Finisher
+  #     dockerfile: Dockerfile
+  #   env_file: ../.env                                 # Archivo con las variables de entorno
+  #   networks:
+  #     - pong-net                                      # Red que conecta todos los contenedores
+  #   depends_on:
+  #     - elasticsearch
+  #     - kibana
+
 # ------------------ VOLUMES ------------------- #
 
 volumes:
   db_data:                                            # Volumen donde se guarda la base de datos
-  log_data:                                           # Volumen donde se guardan los logs
+  # log_data:                                           # Volumen donde se guardan los logs
 
 # ------------------ NETWORK ------------------- #
 

@@ -1,2 +1,3 @@
 *.pyc
+/srcs/backend/logging/data
 /srcs/backend/logging/data/**
