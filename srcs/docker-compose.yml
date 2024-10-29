@@ -64,7 +64,6 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=true
       - action.destructive_requires_name=false
-      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD}
     volumes:
       - ./backend/logging/data:/usr/share/elasticsearch/data 
     networks:
