@@ -71,7 +71,7 @@ services:
 
   # LogStash
   logstash:
-    container_name: logstash                          # Nombre del contenedor
+    container_name: logstash:7.17.4                   # Nombre del contenedor
     build:
       context: ./backend/logging                      # Ubicacion del Dockerfile de Logstash
       dockerfile: Dockerfile
