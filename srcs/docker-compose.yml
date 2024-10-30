@@ -48,6 +48,7 @@ services:
     build:
       context: ./backend/metrics/grafana              # Ubicacion del Dockerfile de Prometheus
       dockerfile: Dockerfile
+    env_file: ../.env                                 # Archivo con las variables de entorno
     environment:
       - GF_SERVER_ROOT_URL=https://localhost/grafana/ # Agregar base path para Grafana
     networks:
@@ -63,7 +64,7 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=true
-      - action.destructive_requires_name=false
+      - logger.level=fatal
     volumes:
       - ./backend/logging/data:/usr/share/elasticsearch/data 
     networks:
@@ -71,7 +72,7 @@ services:
 
   # LogStash
   logstash:
-    container_name: logstash:7.17.4                   # Nombre del contenedor
+    container_name: logstash                          # Nombre del contenedor
     build:
       context: ./backend/logging                      # Ubicacion del Dockerfile de Logstash
       dockerfile: Dockerfile
@@ -89,7 +90,6 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200 # URL de ElasticSerach
       - SERVER_BASEPATH=/kibana                       # Agregar base path para Kibana
-      # - SERVER_REWRITEBASEPATH=true                 # Reescribir URLs para ajustarse al base path
     networks:
       - pong-net                                      # Red que conecta todos los contenedores
     depends_on:
@@ -113,24 +113,10 @@ services:
       - grafana                                       # Dependencia de Grafana
       - postgre                                       # Dependencia de PostgreSQL
 
-  # Finisher
-  # finisher:
-  #   container_name: finisher                          # Nombre del contenedor
-  #   build:
-  #     context: ./backend/finisher                     # Ubicacion del Dockerfile de Finisher
-  #     dockerfile: Dockerfile
-  #   env_file: ../.env                                 # Archivo con las variables de entorno
-  #   networks:
-  #     - pong-net                                      # Red que conecta todos los contenedores
-  #   depends_on:
-  #     - elasticsearch
-  #     - kibana
-
 # ------------------ VOLUMES ------------------- #
 
 volumes:
   db_data:                                            # Volumen donde se guarda la base de datos
-  # log_data:                                           # Volumen donde se guardan los logs
 
 # ------------------ NETWORK ------------------- #
 

@@ -1,8 +1,17 @@
 # Usa la imagen oficial de Nginx
 FROM nginx:latest
 
-# Instala OpenSSL
+# Instala OpenSSL y wget
 RUN apt-get update && apt-get install -y openssl wget && rm -rf /var/lib/apt/lists/*
+
+# Descarga y extrae el nginx-prometheus-exporter
+RUN wget https://github.com/nginxinc/nginx-prometheus-exporter/releases/download/v1.3.0/nginx-prometheus-exporter_1.3.0_linux_amd64.tar.gz \
+    -O /tmp/nginx-prometheus-exporter.tar.gz && \
+    tar -zxvf /tmp/nginx-prometheus-exporter.tar.gz -C /tmp && \
+    mv /tmp/nginx-prometheus-exporter /usr/local/bin/nginx-prometheus-exporter && \
+    rm /tmp/nginx-prometheus-exporter.tar.gz
+
+RUN chmod +x /usr/local/bin/nginx-prometheus-exporter
 
 # Crea un certificado SSL autosignado
 RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -12,10 +21,10 @@ RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 
 # Copia el archivo de configuración personalizado
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY microservices /etc/nginx/microservices
+COPY configs /etc/nginx/configs
 
-# Establece el comando por defecto para iniciar Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Expone el puerto 80 (HTTP), 443 (HTTPS) y 9113 (para el exportador)
+EXPOSE 80 443 9113
 
-# Expone el puerto 80 (HTTP) y el puerto 443 (HTTPS)
-EXPOSE 80 443
+# Ejecuta Nginx y el exportador en segundo plano
+CMD ["sh", "-c", "nginx -g 'daemon off;' & /usr/local/bin/nginx-prometheus-exporter -nginx.scrape-uri http://localhost/metrics"]
