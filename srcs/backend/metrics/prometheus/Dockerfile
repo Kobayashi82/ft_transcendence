@@ -7,7 +7,7 @@ COPY rules/*.yaml /etc/prometheus/
 
 
 # Establece el punto de entrada con la configuración de la URL externa
-ENTRYPOINT ["/bin/prometheus", "--config.file=/etc/prometheus/prometheus.yml", "--web.listen-address=:9090", "--web.external-url=https://localhost/prometheus/"]
+ENTRYPOINT ["/bin/prometheus", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus", "--storage.tsdb.retention.time=30d", "--web.listen-address=:9090", "--web.external-url=https://localhost/prometheus/"]
 
 # Expone el puerto 9090
 EXPOSE 9090

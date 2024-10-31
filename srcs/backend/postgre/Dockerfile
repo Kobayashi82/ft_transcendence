@@ -18,4 +18,4 @@ RUN chmod +x /usr/local/bin/postgres-exporter
 EXPOSE 5432 9187
 
 # Ejecuta PostgreSQL y el exporter
-CMD ["sh", "-c", "/usr/local/bin/postgres-exporter & docker-entrypoint.sh postgres"]
+CMD ["sh", "-c", "/usr/local/bin/postgres-exporter & docker-entrypoint.sh postgres > /var/log/postgresql/postgresql.log 2>&1"]

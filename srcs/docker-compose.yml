@@ -24,13 +24,13 @@ services:
   # PostgreSQL
   postgre:
     container_name: postgre                           # Nombre del contenedor
-    # image: postgres:13
     build:
       context: ./backend/postgre                      # Ubicacion del Dockerfile de PostgreSQL
       dockerfile: Dockerfile
     env_file: ../.env                                 # Archivo con las variables de entorno
     volumes:
       - db_data:/var/lib/postgresql/data              # Volumen donde se guarda la base de datos
+      - db_logs:/var/log/postgresql
     networks:
       - pong-net                                      # Red que conecta todos los contenedores
 
@@ -38,12 +38,14 @@ services:
 
   # Prometheus
   prometheus:
-    container_name: prometheus                      # Nombre del contenedor
+    container_name: prometheus                        # Nombre del contenedor
     build:
-      context: ./backend/metrics/prometheus         # Ubicacion del Dockerfile de Prometheus
+      context: ./backend/metrics/prometheus           # Ubicacion del Dockerfile de Prometheus
       dockerfile: Dockerfile
+    volumes:
+      - prometheus_data:/prometheus
     networks:
-      - pong-net                                    # Red que conecta todos los contenedores
+      - pong-net                                      # Red que conecta todos los contenedores
 
   # Grafana
   grafana:
@@ -57,12 +59,22 @@ services:
     networks:
       - pong-net                                      # Red que conecta todos los contenedores
 
+  # AlertManager
+  alertmanager:
+    container_name: alertmanager                      # Nombre del contenedor
+    build:
+      context: ./backend/metrics/alertmanager         # Ubicacion del Dockerfile de AlertManager
+      dockerfile: Dockerfile
+    ports:
+      - "9093:9093"                                       # Puerto de Nginx para HTTP
+    networks:
+      - pong-net                                      # Red que conecta todos los contenedores
+
 # ------------------- LOGGING ------------------ #
 
   # ElasticSearch
   elasticsearch:
     container_name: elasticsearch                     # Nombre del contenedor
-    # image: docker.elastic.co/elasticsearch/elasticsearch:7.17.4
     build:
       context: ./backend/logging/elasticsearch        # Ubicacion del Dockerfile de ElasticSearch
       dockerfile: Dockerfile
@@ -80,9 +92,11 @@ services:
   logstash:
     container_name: logstash                          # Nombre del contenedor
     build:
-      context: ./backend/logging                      # Ubicacion del Dockerfile de Logstash
+      context: ./backend/logging/logstash             # Ubicacion del Dockerfile de Logstash
       dockerfile: Dockerfile
     env_file: ../.env                                 # Archivo con las variables de entorno
+    volumes:
+      - db_logs:/var/log/postgresql
     networks:
       - pong-net                                      # Red que conecta todos los contenedores
     depends_on:
@@ -123,6 +137,8 @@ services:
 
 volumes:
   db_data:                                            # Volumen donde se guarda la base de datos
+  db_logs:
+  prometheus_data:
 
 # ------------------ NETWORK ------------------- #
 
