@@ -24,7 +24,10 @@ services:
   # PostgreSQL
   postgre:
     container_name: postgre                           # Nombre del contenedor
-    image: postgres:13
+    # image: postgres:13
+    build:
+      context: ./backend/postgre                      # Ubicacion del Dockerfile de PostgreSQL
+      dockerfile: Dockerfile
     env_file: ../.env                                 # Archivo con las variables de entorno
     volumes:
       - db_data:/var/lib/postgresql/data              # Volumen donde se guarda la base de datos
@@ -61,7 +64,7 @@ services:
     container_name: elasticsearch                     # Nombre del contenedor
     # image: docker.elastic.co/elasticsearch/elasticsearch:7.17.4
     build:
-      context: ./backend/logging/elasticsearch        # Ubicacion del Dockerfile de Logstash
+      context: ./backend/logging/elasticsearch        # Ubicacion del Dockerfile de ElasticSearch
       dockerfile: Dockerfile
     env_file: ../.env                                 # Archivo con las variables de entorno
     environment:

@@ -18,4 +18,4 @@ RUN chmod +x /usr/local/bin/elasticsearch-exporter
 EXPOSE 5044 9114
 
 # Ejecuta Elasticsearch y el exportador
-CMD ["sh", "-c", "/usr/local/bin/elasticsearch-exporter --es.uri=http://localhost:9200 & /usr/local/bin/docker-entrypoint.sh"]
+CMD ["sh", "-c", "/usr/local/bin/elasticsearch-exporter --es.uri=http://localhost:9200 & /usr/local/bin/docker-entrypoint.sh eswrapper"]
