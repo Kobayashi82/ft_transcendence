@@ -7,7 +7,7 @@ RUN mkdir -p /etc/grafana/provisioning/datasources /etc/grafana/provisioning/das
 # Copia los archivos
 COPY prometheus.yml /etc/grafana/provisioning/datasources/
 COPY dashboards/dashboard.yml /etc/grafana/provisioning/dashboards/
-COPY dashboards/nginx.json /etc/grafana/provisioning/dashboards/
+COPY dashboards/*.json /etc/grafana/provisioning/dashboards/
 
 # Expone el puerto 3000
 EXPOSE 3000
