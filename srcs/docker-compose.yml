@@ -8,7 +8,6 @@ services:
     container_name: nginx                             # Nombre del contenedor
     build:
       context: ./backend/nginx                        # Ubicacion del Dockerfile de Nginx
-      dockerfile: Dockerfile
     volumes:
       - ./frontend:/usr/share/nginx/html              # Monta la carpeta del frontend (los cambios son instantaneos)
     ports:
@@ -26,7 +25,6 @@ services:
     container_name: postgre                           # Nombre del contenedor
     build:
       context: ./backend/postgre                      # Ubicacion del Dockerfile de PostgreSQL
-      dockerfile: Dockerfile
     env_file: ../.env                                 # Archivo con las variables de entorno
     volumes:
       - db_data:/var/lib/postgresql/data              # Volumen donde se guarda la base de datos
@@ -41,7 +39,6 @@ services:
     container_name: prometheus                        # Nombre del contenedor
     build:
       context: ./backend/metrics/prometheus           # Ubicacion del Dockerfile de Prometheus
-      dockerfile: Dockerfile
     volumes:
       - prometheus_data:/prometheus
     networks:
@@ -52,7 +49,6 @@ services:
     container_name: grafana                           # Nombre del contenedor
     build:
       context: ./backend/metrics/grafana              # Ubicacion del Dockerfile de Prometheus
-      dockerfile: Dockerfile
     env_file: ../.env                                 # Archivo con las variables de entorno
     environment:
       - GF_SERVER_ROOT_URL=https://localhost/grafana/ # Agregar base path para Grafana
@@ -64,7 +60,6 @@ services:
     container_name: alertmanager                      # Nombre del contenedor
     build:
       context: ./backend/metrics/alertmanager         # Ubicacion del Dockerfile de AlertManager
-      dockerfile: Dockerfile
     ports:
       - "9093:9093"                                       # Puerto de Nginx para HTTP
     networks:
@@ -77,7 +72,6 @@ services:
     container_name: elasticsearch                     # Nombre del contenedor
     build:
       context: ./backend/logging/elasticsearch        # Ubicacion del Dockerfile de ElasticSearch
-      dockerfile: Dockerfile
     env_file: ../.env                                 # Archivo con las variables de entorno
     environment:
       - discovery.type=single-node
@@ -93,7 +87,6 @@ services:
     container_name: logstash                          # Nombre del contenedor
     build:
       context: ./backend/logging/logstash             # Ubicacion del Dockerfile de Logstash
-      dockerfile: Dockerfile
     env_file: ../.env                                 # Archivo con las variables de entorno
     volumes:
       - db_logs:/var/log/postgresql
@@ -122,7 +115,6 @@ services:
     container_name: service1                          # Nombre del contenedor
     build:
       context: ./backend/microservices/service1       # Ubicacion del Dockerfile del microservicio
-      dockerfile: Dockerfile
     env_file: ../.env                                 # Archivo con las variables de entorno
     volumes:
       - ./backend/microservices/service1:/app         # Monta la carpeta del microservicio (los cambios son instantaneos)
@@ -144,3 +136,4 @@ volumes:
 
 networks:
   pong-net:                                           # Red que conecta todos los contenedores
+    name: pong-net

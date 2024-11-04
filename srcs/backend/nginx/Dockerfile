@@ -17,7 +17,7 @@ RUN chmod +x /usr/local/bin/nginx-prometheus-exporter
 RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -keyout /etc/ssl/private/server.key \
     -out /etc/ssl/certs/server.crt \
-    -subj "/C=ES/ST=Malaga/L=Malaga/O=42 Escuela/OU=Formacion/CN=localhost"
+    -subj "/C=ES/ST=Andalucia/L=Malaga/O=42 Malaga/OU=Formacion/CN=localhost"
 
 # Copia el archivo de configuración personalizado
 COPY nginx.conf /etc/nginx/nginx.conf
@@ -27,4 +27,6 @@ COPY configs /etc/nginx/configs
 EXPOSE 80 443 9113
 
 # Ejecuta Nginx y el exportador en segundo plano
-CMD ["sh", "-c", "nginx -g 'daemon off;' & /usr/local/bin/nginx-prometheus-exporter -nginx.scrape-uri http://localhost/metrics"]
+# CMD ["sh", "-c", "nginx -g 'daemon off;' & /usr/local/bin/nginx-prometheus-exporter -nginx.scrape-uri http://localhost/metrics"]
+ENTRYPOINT ["sh", "-c", "/usr/local/bin/nginx-prometheus-exporter -nginx.scrape-uri http://localhost/metrics & nginx -g 'daemon off;'"]
+
