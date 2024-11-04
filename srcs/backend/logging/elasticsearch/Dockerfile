@@ -11,8 +11,12 @@ RUN wget https://github.com/prometheus-community/elasticsearch_exporter/releases
     mv /tmp/elasticsearch_exporter-1.8.0.linux-amd64/elasticsearch_exporter /usr/local/bin/elasticsearch-exporter && \
     rm -rf /tmp/elasticsearch-exporter.tar.gz /tmp/elasticsearch_exporter-1.8.0.linux-amd64
 
-
 RUN chmod +x /usr/local/bin/elasticsearch-exporter
+
+# Variables de entorno para el exporter
+ARG ELASTICSEARCH_USERNAME ELASTICSEARCH_PASSWORD
+ENV ES_USERNAME="${ELASTICSEARCH_USERNAME}"
+ENV ES_PASSWORD="${ELASTICSEARCH_PASSWORD}"
 
 # Ejecuta Elasticsearch y el exportador
 CMD ["sh", "-c", "/usr/local/bin/elasticsearch-exporter --es.uri=http://localhost:9200 & /usr/local/bin/docker-entrypoint.sh eswrapper"]

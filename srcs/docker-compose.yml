@@ -28,6 +28,10 @@ services:
     container_name: postgre                           # Container name
     build:
       context: ./backend/postgre                      # Location of the Dockerfile
+      args:
+        POSTGRES_DB: ${POSTGRES_DB}
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} 
     env_file: ../.env                                 # File with environment variables
     volumes:
       - db_data:/var/lib/postgresql/data              # Database data volume
@@ -81,6 +85,9 @@ services:
     container_name: elasticsearch                     # Container name
     build:
       context: ./backend/logging/elasticsearch        # Location of the Dockerfile
+      args:
+        ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME}
+        ELASTICSEARCH_PASSWROD: ${ELASTICSEARCH_PASSWROD}
     env_file: ../.env                                 # File with environment variables
     environment:
       - discovery.type=single-node                    # Set to single-node mode (multi-node clustering is unnecessary for this project)

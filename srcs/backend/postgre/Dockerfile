@@ -14,6 +14,10 @@ RUN wget https://github.com/prometheus-community/postgres_exporter/releases/down
 # Da permisos de ejecución al exporter
 RUN chmod +x /usr/local/bin/postgres-exporter
 
+# Variable de entorno para el exporter
+ARG POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD
+ENV DATA_SOURCE_NAME="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}?sslmode=disable"
+
 # Ejecuta PostgreSQL y el exporter
 CMD ["sh", "-c", "/usr/local/bin/postgres-exporter & docker-entrypoint.sh postgres > /var/log/postgresql/postgresql.log 2>&1"]
 

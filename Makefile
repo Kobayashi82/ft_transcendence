@@ -1,5 +1,5 @@
 
-NAME = K-Pong
+NAME = ft_transcendence
 
 GREEN	= \033[0;32m
 NC		= \033[0m
