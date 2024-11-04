@@ -20,13 +20,11 @@ RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -subj "/C=ES/ST=Andalucia/L=Malaga/O=42 Malaga/OU=Formacion/CN=localhost"
 
 # Copia el archivo de configuración personalizado
-COPY nginx.conf /etc/nginx/nginx.conf
-COPY configs /etc/nginx/configs
-
-# Expone el puerto 80 (HTTP), 443 (HTTPS) y 9113 (para el exportador)
-EXPOSE 80 443 9113
+COPY conf/nginx.conf /etc/nginx/nginx.conf
+COPY conf/configs /etc/nginx/configs
 
 # Ejecuta Nginx y el exportador en segundo plano
-# CMD ["sh", "-c", "nginx -g 'daemon off;' & /usr/local/bin/nginx-prometheus-exporter -nginx.scrape-uri http://localhost/metrics"]
 ENTRYPOINT ["sh", "-c", "/usr/local/bin/nginx-prometheus-exporter -nginx.scrape-uri http://localhost/metrics & nginx -g 'daemon off;'"]
 
+# HTTP, HTTPS & Exportador
+EXPOSE 80 443 9113

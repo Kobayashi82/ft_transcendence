@@ -14,8 +14,8 @@ RUN wget https://github.com/prometheus-community/elasticsearch_exporter/releases
 
 RUN chmod +x /usr/local/bin/elasticsearch-exporter
 
-# Expone el puerto 9200 (ElasticSearch) y 9114 (para el exporter)
-EXPOSE 9200 9114
-
 # Ejecuta Elasticsearch y el exportador
 CMD ["sh", "-c", "/usr/local/bin/elasticsearch-exporter --es.uri=http://localhost:9200 & /usr/local/bin/docker-entrypoint.sh eswrapper"]
+
+# ElasticSearch & Exporter
+EXPOSE 9200 9114

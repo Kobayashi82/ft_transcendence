@@ -1,139 +1,151 @@
 
 services:
 
+
 # ----------------- WEB SERVER ----------------- #
+
 
   # Nginx
   nginx:
-    container_name: nginx                             # Nombre del contenedor
+    container_name: nginx                             # Container name
     build:
-      context: ./backend/nginx                        # Ubicacion del Dockerfile de Nginx
+      context: ./backend/nginx                        # Location of the Dockerfile
     volumes:
-      - ./frontend:/usr/share/nginx/html              # Monta la carpeta del frontend (los cambios son instantaneos)
+      - ./frontend:/usr/share/nginx/html              # Bind mount (instant changes)
     ports:
-      - "80:80"                                       # Puerto de Nginx para HTTP
-      - "443:443"                                     # Puerto de Nginx para HTTPS
+      - "80:80"                                       # Port for HTTP
+      - "443:443"                                     # Port for HTTPS
     networks:
-      - pong-net                                      # Red que conecta todos los contenedores
-    depends_on:
-      - service1                                      # Dependencia de service1
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
+
 
 # ------------------ DATABASE ------------------ #
 
+
   # PostgreSQL
   postgre:
-    container_name: postgre                           # Nombre del contenedor
+    container_name: postgre                           # Container name
     build:
-      context: ./backend/postgre                      # Ubicacion del Dockerfile de PostgreSQL
-    env_file: ../.env                                 # Archivo con las variables de entorno
+      context: ./backend/postgre                      # Location of the Dockerfile
+    env_file: ../.env                                 # File with environment variables
     volumes:
-      - db_data:/var/lib/postgresql/data              # Volumen donde se guarda la base de datos
-      - db_logs:/var/log/postgresql
+      - db_data:/var/lib/postgresql/data              # Database data volume
+      - db_logs:/var/log/postgresql                   # Database logs volume
     networks:
-      - pong-net                                      # Red que conecta todos los contenedores
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
+
 
 # ------------------- METRICS ------------------ #
 
+
   # Prometheus
   prometheus:
-    container_name: prometheus                        # Nombre del contenedor
+    container_name: prometheus                        # Container name
     build:
-      context: ./backend/metrics/prometheus           # Ubicacion del Dockerfile de Prometheus
+      context: ./backend/metrics/prometheus           # Location of the Dockerfile
     volumes:
-      - prometheus_data:/prometheus
+      - prometheus_data:/prometheus                   # Prometheus data volume
     networks:
-      - pong-net                                      # Red que conecta todos los contenedores
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
 
   # Grafana
   grafana:
-    container_name: grafana                           # Nombre del contenedor
+    container_name: grafana                           # Container name
     build:
-      context: ./backend/metrics/grafana              # Ubicacion del Dockerfile de Prometheus
-    env_file: ../.env                                 # Archivo con las variables de entorno
+      context: ./backend/metrics/grafana              # Location of the Dockerfile
+    env_file: ../.env                                 # File with environment variables
     environment:
-      - GF_SERVER_ROOT_URL=https://localhost/grafana/ # Agregar base path para Grafana
+      - GF_SERVER_ROOT_URL=https://localhost/grafana/ # Base path for Grafana
     networks:
-      - pong-net                                      # Red que conecta todos los contenedores
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
 
   # AlertManager
   alertmanager:
-    container_name: alertmanager                      # Nombre del contenedor
+    container_name: alertmanager                      # Container name
     build:
-      context: ./backend/metrics/alertmanager         # Ubicacion del Dockerfile de AlertManager
-    ports:
-      - "9093:9093"                                       # Puerto de Nginx para HTTP
+      context: ./backend/metrics/alertmanager         # Location of the Dockerfile
     networks:
-      - pong-net                                      # Red que conecta todos los contenedores
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
+
 
 # ------------------- LOGGING ------------------ #
 
+
   # ElasticSearch
   elasticsearch:
-    container_name: elasticsearch                     # Nombre del contenedor
+    container_name: elasticsearch                     # Container name
     build:
-      context: ./backend/logging/elasticsearch        # Ubicacion del Dockerfile de ElasticSearch
-    env_file: ../.env                                 # Archivo con las variables de entorno
+      context: ./backend/logging/elasticsearch        # Location of the Dockerfile
+    env_file: ../.env                                 # File with environment variables
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=true
-      - logger.level=fatal
+      - discovery.type=single-node                    # Set to single-node mode (multi-node clustering is unnecessary for this project)
+      - xpack.security.enabled=true                   # Enable security features (e.g., authentication)
+      - logger.level=ERROR                            # Set logging level to show only errors (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
     volumes:
-      - ./backend/logging/data:/usr/share/elasticsearch/data 
+      - ./backend/logging/data:/usr/share/elasticsearch/data # Bind mount (temporary)
     networks:
-      - pong-net                                      # Red que conecta todos los contenedores
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
 
   # LogStash
   logstash:
-    container_name: logstash                          # Nombre del contenedor
+    container_name: logstash                          # Container name
     build:
-      context: ./backend/logging/logstash             # Ubicacion del Dockerfile de Logstash
-    env_file: ../.env                                 # Archivo con las variables de entorno
+      context: ./backend/logging/logstash             # Location of the Dockerfile
+    env_file: ../.env                                 # File with environment variables
     volumes:
-      - db_logs:/var/log/postgresql
+      - db_logs:/var/log/postgresql                   # Database logs volume
     networks:
-      - pong-net                                      # Red que conecta todos los contenedores
-    depends_on:
-      - elasticsearch                                 # Dependencia de Prometheus
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
 
   # Kibana
   kibana:
-    container_name: kibana                            # Nombre del contenedor
+    container_name: kibana                            # Container name
     image: docker.elastic.co/kibana/kibana:7.17.4
-    env_file: ../.env                                 # Archivo con las variables de entorno
+    env_file: ../.env                                 # File with environment variables
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200 # URL de ElasticSerach
-      - SERVER_BASEPATH=/kibana                       # Agregar base path para Kibana
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200 # Elasticsearch URL
+      - SERVER_BASEPATH=/kibana/                      # Base path for Kibana
     networks:
-      - pong-net                                      # Red que conecta todos los contenedores
-    depends_on:
-      - elasticsearch
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
+
 
 # --------------- MICRO-SERVICES --------------- #
 
+
   # Service1
   service1:
-    container_name: service1                          # Nombre del contenedor
+    container_name: service1                          # Container name
     build:
-      context: ./backend/microservices/service1       # Ubicacion del Dockerfile del microservicio
-    env_file: ../.env                                 # Archivo con las variables de entorno
+      context: ./backend/microservices/service1       # Location of the Dockerfile
+    env_file: ../.env                                 # File with environment variables
     volumes:
-      - ./backend/microservices/service1:/app         # Monta la carpeta del microservicio (los cambios son instantaneos)
+      - ./backend/microservices/service1:/app         # Bind mount (instant changes)
     networks:
-      - pong-net                                      # Red que conecta todos los contenedores
+      - pong-net                                      # Network connecting all containers
     depends_on:
-      - prometheus                                    # Dependencia de Prometheus
-      - grafana                                       # Dependencia de Grafana
-      - postgre                                       # Dependencia de PostgreSQL
+      - postgre                                       # PostgreSQL Dependency
+    restart: always                                   # Restart container in case of failure
+
 
 # ------------------ VOLUMES ------------------- #
 
+
 volumes:
-  db_data:                                            # Volumen donde se guarda la base de datos
-  db_logs:
-  prometheus_data:
+  db_data:                                            # Database data volume
+  db_logs:                                            # Database logs volume
+  prometheus_data:                                    # Prometheus data volume
+
 
 # ------------------ NETWORK ------------------- #
 
 networks:
-  pong-net:                                           # Red que conecta todos los contenedores
-    name: pong-net
+  pong-net:
+    name: pong-net                                    # Network connecting all containers
