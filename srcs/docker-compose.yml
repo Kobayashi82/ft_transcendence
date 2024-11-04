@@ -11,7 +11,7 @@ services:
     build:
       context: ./backend/nginx                        # Location of the Dockerfile
     volumes:
-      - ./frontend:/usr/share/nginx/html              # Bind mount (instant changes)
+      - frontend_data:/usr/share/nginx/html           # Bind mount (instant changes)
     ports:
       - "80:80"                                       # Port for HTTP
       - "443:443"                                     # Port for HTTPS
@@ -29,10 +29,8 @@ services:
     build:
       context: ./backend/postgre                      # Location of the Dockerfile
       args:
-        POSTGRES_DB: ${POSTGRES_DB}
-        POSTGRES_USER: ${POSTGRES_USER}
-        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} 
-    env_file: ../.env                                 # File with environment variables
+        PASSWORD: ${ADMIN_PASS}
+    env_file: .env                                    # File with environment variables
     volumes:
       - db_data:/var/lib/postgresql/data              # Database data volume
       - db_logs:/var/log/postgresql                   # Database logs volume
@@ -60,9 +58,14 @@ services:
     container_name: grafana                           # Container name
     build:
       context: ./backend/metrics/grafana              # Location of the Dockerfile
-    env_file: ../.env                                 # File with environment variables
+      # args:
+      #   USERNAME: ${ADMIN_USER}
+      #   PASSWORD: ${ADMIN_PASS}
+    env_file: .env                                    # File with environment variables
     environment:
       - GF_SERVER_ROOT_URL=https://localhost/grafana/ # Base path for Grafana
+      - GF_SECURITY_ADMIN_USER=grafana
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASS}
     networks:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
@@ -72,6 +75,8 @@ services:
     container_name: alertmanager                      # Container name
     build:
       context: ./backend/metrics/alertmanager         # Location of the Dockerfile
+    volumes:
+      - alertmanager_data:/alertmanager
     networks:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
@@ -85,16 +90,19 @@ services:
     container_name: elasticsearch                     # Container name
     build:
       context: ./backend/logging/elasticsearch        # Location of the Dockerfile
-      args:
-        ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME}
-        ELASTICSEARCH_PASSWROD: ${ELASTICSEARCH_PASSWROD}
-    env_file: ../.env                                 # File with environment variables
+      # args:
+      #   USERNAME: ${ADMIN_USER}
+      #   PASSWORD: ${ADMIN_PASS}
+    env_file: .env                                    # File with environment variables
     environment:
       - discovery.type=single-node                    # Set to single-node mode (multi-node clustering is unnecessary for this project)
       - xpack.security.enabled=true                   # Enable security features (e.g., authentication)
       - logger.level=ERROR                            # Set logging level to show only errors (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
+      - ES_USERNAME=elastic
+      - ES_PASSWORD=${ADMIN_PASS}
+      - ELASTIC_PASSWORD=${ADMIN_PASS}
     volumes:
-      - ./backend/logging/data:/usr/share/elasticsearch/data # Bind mount (temporary)
+      - elastic_data:/usr/share/elasticsearch/data    # Bind mount (temporary)
     networks:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
@@ -104,7 +112,10 @@ services:
     container_name: logstash                          # Container name
     build:
       context: ./backend/logging/logstash             # Location of the Dockerfile
-    env_file: ../.env                                 # File with environment variables
+    env_file: .env                                    # File with environment variables
+    environment:
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ADMIN_PASS}
     volumes:
       - db_logs:/var/log/postgresql                   # Database logs volume
     networks:
@@ -115,10 +126,12 @@ services:
   kibana:
     container_name: kibana                            # Container name
     image: docker.elastic.co/kibana/kibana:7.17.4
-    env_file: ../.env                                 # File with environment variables
+    env_file: .env                                    # File with environment variables
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200 # Elasticsearch URL
-      - SERVER_BASEPATH=/kibana/                      # Base path for Kibana
+      - SERVER_BASEPATH=/kibana                       # Base path for Kibana
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ADMIN_PASS}
     networks:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
@@ -132,9 +145,9 @@ services:
     container_name: service1                          # Container name
     build:
       context: ./backend/microservices/service1       # Location of the Dockerfile
-    env_file: ../.env                                 # File with environment variables
+    env_file: .env                                    # File with environment variables
     volumes:
-      - ./backend/microservices/service1:/app         # Bind mount (instant changes)
+      - service1_data:/app                            # Bind mount (instant changes)
     networks:
       - pong-net                                      # Network connecting all containers
     depends_on:
@@ -149,6 +162,25 @@ volumes:
   db_data:                                            # Database data volume
   db_logs:                                            # Database logs volume
   prometheus_data:                                    # Prometheus data volume
+  alertmanager_data:                                  # AlertManager data volume
+  service1_data:
+    driver: local                                     # Use the local driver for this volume
+    driver_opts:
+      type: none                                      # Use a bind mount instead of creating a separate filesystem
+      device: ./backend/microservices/service1        # Path in the host filesystem for the bind mount
+      o: bind                                         # Activate the bind mount
+  elastic_data:
+    driver: local                                     # Use the local driver for this volume
+    driver_opts:
+      type: none                                      # Use a bind mount instead of creating a separate filesystem
+      device: ./backend/logging/data                  # Path in the host filesystem for the bind mount
+      o: bind                                         # Activate the bind mount
+  frontend_data:
+    driver: local                                     # Use the local driver for this volume
+    driver_opts:
+      type: none                                      # Use a bind mount instead of creating a separate filesystem
+      device: ./frontend                              # Path in the host filesystem for the bind mount
+      o: bind                                         # Activate the bind mount
 
 
 # ------------------ NETWORK ------------------- #

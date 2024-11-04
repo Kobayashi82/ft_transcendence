@@ -22,5 +22,5 @@ RUN chmod +x /entrypoint.sh
 # Define el entrypoint para que ejecute ambos servidores
 ENTRYPOINT ["/entrypoint.sh"]
 
-# Expone el puerto 8000 (Gunicorn) y el puerto 9000 (Daphne)
+# Gunicorn & Daphne
 EXPOSE 8000 9000
