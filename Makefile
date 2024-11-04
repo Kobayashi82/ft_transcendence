@@ -28,21 +28,21 @@ restart:
 build:
 	@docker compose -f $(DC) down || exit 1
 	@docker compose -f $(DC) build || exit 1
-	@printf "\n ✔ Containers\t\t$(GR)Built$(NC)\n\n"
+	@printf "\n ✔ Containers\t\t\t$(GR)Built$(NC)\n\n"
 
 # Rebuilds containers
 rebuild:
 	@docker compose -f $(DC) down || exit 1
 	@docker compose -f $(DC) build --no-cache || exit 1
-	@printf "\n ✔ Containers\t\t$(GR)Rebuilt$(NC)\n\n"
+	@printf "\n ✔ Containers\t\t\t$(GR)Rebuilt$(NC)\n\n"
 
 # Removes images
 clean:
 	@docker compose -f $(DC) down || exit 1
 	@printf "\nplease wait...\n"
 	@$(MAKE) -s _remove
-	@printf "$(CU)$(CL) ✔ Images\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Network\t\t$(GR)Removed$(NC)\n\n"
+	@printf "$(CU)$(CL) ✔ Images\t\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Network\t\t\t$(GR)Removed$(NC)\n\n"
 
 # Removes volumes
 vclean:
@@ -50,7 +50,7 @@ vclean:
 	@printf "\nplease wait...\n"
 	@docker volume rm srcs_db-data > /dev/null 2>&1 || true
 	@docker volume rm srcs_db_logs > /dev/null 2>&1 || true
-	@printf "$(CU)$(CL) ✔ Volumes\t\t$(GR)Removed$(NC)\n\n"
+	@printf "$(CU)$(CL) ✔ Volumes\t\t\t$(GR)Removed$(NC)\n\n"
 
 # Removes images, volumes and network
 fclean:
@@ -60,9 +60,9 @@ fclean:
 	@docker volume rm srcs_db-data > /dev/null 2>&1 || true
 	@docker volume rm srcs_db_logs > /dev/null 2>&1 || true
 	@docker network rm pong-net > /dev/null 2>&1 || true
-	@printf "$(CU)$(CL) ✔ Images\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Volumes\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Network\t\t$(GR)Removed$(NC)\n\n"
+	@printf "$(CU)$(CL) ✔ Images\t\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Volumes\t\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Network\t\t\t$(GR)Removed$(NC)\n\n"
 
 # Removes images, volumes, network and cache
 fcclean:
@@ -73,10 +73,10 @@ fcclean:
 	@docker volume rm srcs_db_logs > /dev/null 2>&1 || true
 	@docker network rm pong-net > /dev/null 2>&1 || true
 	@docker builder prune -f > /dev/null 2>&1 || true
-	@printf "$(CU)$(CL) ✔ Images\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Volumes\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Network\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Cache\t\t$(GR)Removed$(NC)\n\n"
+	@printf "$(CU)$(CL) ✔ Images\t\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Volumes\t\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Network\t\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Cache\t\t\t$(GR)Removed$(NC)\n\n"
 
 # Remove images (private rule)
 _remove:

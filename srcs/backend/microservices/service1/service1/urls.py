@@ -16,9 +16,9 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from service1 import views
+from core import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('api/service1/admin/', admin.site.urls),
 	path('api/service1/', views.home, name='home'),
 ]

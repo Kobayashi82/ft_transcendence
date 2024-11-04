@@ -27,13 +27,22 @@ services:
   postgre:
     container_name: postgre                           # Container name
     build:
-      context: ./backend/postgre                      # Location of the Dockerfile
+      context: ./backend/database/postgre             # Location of the Dockerfile
       args:
         PASSWORD: ${ADMIN_PASS}
     env_file: .env                                    # File with environment variables
     volumes:
       - db_data:/var/lib/postgresql/data              # Database data volume
       - db_logs:/var/log/postgresql                   # Database logs volume
+    networks:
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
+
+  # Adminer
+  adminer:
+    container_name: adminer                           # Container name
+    build:
+      context: ./backend/database/adminer             # Location of the Dockerfile
     networks:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
@@ -58,14 +67,13 @@ services:
     container_name: grafana                           # Container name
     build:
       context: ./backend/metrics/grafana              # Location of the Dockerfile
-      # args:
-      #   USERNAME: ${ADMIN_USER}
-      #   PASSWORD: ${ADMIN_PASS}
     env_file: .env                                    # File with environment variables
     environment:
       - GF_SERVER_ROOT_URL=https://localhost/grafana/ # Base path for Grafana
       - GF_SECURITY_ADMIN_USER=grafana
       - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASS}
+    volumes:
+      - grafana_data:/var/lib/grafana
     networks:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
@@ -81,6 +89,34 @@ services:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
 
+  # portainer (9000)
+  portainer:
+    container_name: portainer                         # Container name
+    env_file: .env                                    # File with environment variables
+    build:
+      context: ./backend/metrics/portainer            # Location of the Dockerfile
+      args:
+        PORTAINER_PASSWORD: ${ADMIN_PASS}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock     # Allows the container to access the Docker daemon
+      - portainer_data:/data
+    networks:
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
+
+  # cAdviser (8080)
+  cadvisor:
+    container_name: cadvisor                          # Container name
+    image: gcr.io/cadvisor/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro                                  # Acceso al sistema de archivos raíz
+      - /sys:/sys:ro                                  # Acceso al sistema de archivos sys
+      - /var/run:/var/run:ro                          # Acceso a la información de contenedores
+      - /var/lib/docker/:/var/lib/docker:ro           # Acceso a los datos de Docker
+    networks:
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
+
 
 # ------------------- LOGGING ------------------ #
 
@@ -90,9 +126,6 @@ services:
     container_name: elasticsearch                     # Container name
     build:
       context: ./backend/logging/elasticsearch        # Location of the Dockerfile
-      # args:
-      #   USERNAME: ${ADMIN_USER}
-      #   PASSWORD: ${ADMIN_PASS}
     env_file: .env                                    # File with environment variables
     environment:
       - discovery.type=single-node                    # Set to single-node mode (multi-node clustering is unnecessary for this project)
@@ -139,6 +172,13 @@ services:
 
 # --------------- MICRO-SERVICES --------------- #
 
+  redis:
+    container_name: redis                             # Container name
+    image: redis:latest
+      # - "6379:6379"
+    networks:
+      - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
 
   # Service1
   service1:
@@ -162,7 +202,9 @@ volumes:
   db_data:                                            # Database data volume
   db_logs:                                            # Database logs volume
   prometheus_data:                                    # Prometheus data volume
+  grafana_data:                                       # Grafana data volume
   alertmanager_data:                                  # AlertManager data volume
+  portainer_data:                                     # Portainer data volume
   service1_data:
     driver: local                                     # Use the local driver for this volume
     driver_opts:
