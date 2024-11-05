@@ -20,3 +20,15 @@ class User(models.Model):
     def __str__(self):
         return self.username
 
+class UserTest(models.Model):
+    username = models.CharField(max_length=50, unique=True)
+    email = models.EmailField()
+    first_name = models.CharField(max_length=50, null=True, blank=True)
+    last_name = models.CharField(max_length=50, null=True, blank=True)
+    password = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        db_table = "users_test"
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} - Profile"
