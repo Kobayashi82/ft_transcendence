@@ -1,0 +1,91 @@
+<div class="container-fluid p-0">
+    <!-- Banner -->
+    <div id="banner" class="mb-4 w-100">
+        <img src="admin.jpg" alt="Banner">
+    </div>
+
+    <!-- Main Row -->
+    <div class="d-flex flex-grow-1" id="main-container">
+        <!-- Left Panel -->
+        <div id="left-panel">
+            <div class="card bg-dark text-white h-100">
+                <div class="card-header">
+                    <div id="profile-image-container">
+                        <img id="profile-image" src="admin.jpg" alt="Perfil" onclick="toggleProfileMenu()">
+                        <h5 class="m-0">Juan Pérez</h5>
+                    </div>
+                    <ul id="profile-menu">
+                        <li><i class="fas fa-user"></i> Perfil</li>
+                        <li><i class="fas fa-cog"></i> Ajustes</li>
+                        <li><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</li>
+                        <li><i class="fas fa-question-circle"></i> Ayuda</li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Datos del Usuario</h5>
+                    <ul class="list-group list-group-flush bg-dark">
+                        <li class="list-group-item bg-dark text-white"><strong>Nombre:</strong> Juan Pérez</li>
+                        <li class="list-group-item bg-dark text-white"><strong>Edad:</strong> 29 años</li>
+                        <li class="list-group-item bg-dark text-white"><strong>Torneos ganados:</strong> 5</li>
+                        <li class="list-group-item bg-dark text-white"><strong>Ranking:</strong> #23</li>
+                        <li class="list-group-item bg-dark text-white"><strong>Partidas jugadas:</strong> 150</li>
+                        <li class="list-group-item bg-dark text-white"><strong>Puntos totales:</strong> 2350</li>
+                    </ul>
+                    <h5 class="card-title mt-4">Amigos</h5>
+                    <ul class="list-group list-group-flush bg-dark" style="max-height: 200px; overflow-y: auto;">
+                        <li class="list-group-item bg-dark text-white">Ana García - Online</li>
+                        <li class="list-group-item bg-dark text-white">Carlos López - Offline</li>
+                        <li class="list-group-item bg-dark text-white">María Fernández - Online</li>
+                        <li class="list-group-item bg-dark text-white">Pedro Sánchez - En partida</li>
+                        <li class="list-group-item bg-dark text-white">Carlos López - Offline</li>
+                        <li class="list-group-item bg-dark text-white">María Fernández - Online</li>
+                        <li class="list-group-item bg-dark text-white">Pedro Sánchez - En partida</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Content -->
+        <div id="central-content">
+            <h3>Contenido Principal</h3>
+            <p>Este es el contenido central. Aquí se puede mostrar alguna imagen, video, o animación llamativa.</p>
+            <button id="view-stats-button1" class="btn btn-secondary mt-4">Ver Estadísticas del Juego</button>
+            <button id="login-button1" class="btn btn-secondary mt-4">Login</button>
+        </div>
+
+        <!-- Right Panel -->
+        <div id="right-panel">
+            <div class="card bg-dark text-white h-100">
+                <div class="card-header">
+                    <h4 class="m-0">Estadísticas del Juego</h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Estadísticas Generales</h5>
+                    <ul class="list-group list-group-flush bg-dark">
+                        <li class="list-group-item bg-dark text-white"><strong>Partidas Jugadas:</strong> 320</li>
+                        <li class="list-group-item bg-dark text-white"><strong>Torneos Totales:</strong> 12</li>
+                        <li class="list-group-item bg-dark text-white"><strong>Jugadores Totales:</strong> 105</li>
+                    </ul>
+                    <h5 class="card-title mt-4">Partidas Activas</h5>
+                    <ul class="list-group list-group-flush bg-dark" style="max-height: 200px; overflow-y: auto;">
+                        <li class="list-group-item bg-dark text-white">Partida 1 (Espectador)</li>
+                        <li class="list-group-item bg-dark text-white">Partida 2 (Espectador)</li>
+                        <li class="list-group-item bg-dark text-white">Partida 3 (Espectador)</li>
+                        <li class="list-group-item bg-dark text-white">Partida 1 (Espectador)</li>
+                        <li class="list-group-item bg-dark text-white">Partida 2 (Espectador)</li>
+                        <li class="list-group-item bg-dark text-white">Partida 3 (Espectador)</li>
+                    </ul>
+                    <input type="text" class="form-control mt-3 bg-dark text-white" placeholder="Buscar Jugador">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="bottom-panel" class="p-3 bg-dark text-white">
+    <div class="d-flex justify-content-around">
+        <div id="view-stats-button" class="action-button">Stats</div>
+        <div id="login-button" class="action-button">Login</div>
+        <div class="action-button">Buscar Partida</div>
+        <div class="action-button">Crear Torneo</div>
+    </div>
+</div>
