@@ -176,6 +176,8 @@ services:
   redis:
     container_name: redis                             # Container name
     image: redis:latest
+    volumes:
+      - redis_data:/data
     networks:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
@@ -208,6 +210,7 @@ volumes:
   alertmanager_data:                                  # AlertManager data volume
   portainer_data:                                     # Portainer data volume
   elastic_data:                                       # ElasticSearch data volume
+  redis_data:                                         # Redis data volume
     driver: local                                     # Use the local driver for this volume
     driver_opts:
       type: none                                      # Use a bind mount instead of creating a separate filesystem
