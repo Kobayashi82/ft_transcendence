@@ -5,7 +5,7 @@ services:
 # ----------------- WEB SERVER ----------------- #
 
 
-  # Nginx
+  # Nginx (80, 443 & 9113)
   nginx:
     container_name: nginx                             # Container name
     build:
@@ -23,7 +23,7 @@ services:
 # ------------------ DATABASE ------------------ #
 
 
-  # PostgreSQL
+  # PostgreSQL (5432 & 9187)
   postgre:
     container_name: postgre                           # Container name
     build:
@@ -38,7 +38,7 @@ services:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
 
-  # Adminer
+  # Adminer (8000)
   adminer:
     container_name: adminer                           # Container name
     build:
@@ -51,7 +51,7 @@ services:
 # ------------------- METRICS ------------------ #
 
 
-  # Prometheus
+  # Prometheus (9090)
   prometheus:
     container_name: prometheus                        # Container name
     build:
@@ -62,7 +62,7 @@ services:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
 
-  # Grafana
+  # Grafana (3000)
   grafana:
     container_name: grafana                           # Container name
     build:
@@ -78,7 +78,7 @@ services:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
 
-  # AlertManager
+  # AlertManager (9093)
   alertmanager:
     container_name: alertmanager                      # Container name
     build:
@@ -121,7 +121,7 @@ services:
 # ------------------- LOGGING ------------------ #
 
 
-  # ElasticSearch
+  # ElasticSearch (9200 & 9114)
   elasticsearch:
     container_name: elasticsearch                     # Container name
     build:
@@ -140,7 +140,7 @@ services:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
 
-  # LogStash
+  # LogStash (5044)
   logstash:
     container_name: logstash                          # Container name
     build:
@@ -155,7 +155,7 @@ services:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
 
-  # Kibana
+  # Kibana (5601)
   kibana:
     container_name: kibana                            # Container name
     image: docker.elastic.co/kibana/kibana:7.17.4
@@ -172,27 +172,29 @@ services:
 
 # --------------- MICRO-SERVICES --------------- #
 
+  # Redis (6379)
   redis:
     container_name: redis                             # Container name
     image: redis:latest
-      # - "6379:6379"
     networks:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
 
-  # Service1
-  service1:
-    container_name: service1                          # Container name
+  # accounts (8000 & 9000)
+  accounts:
+    container_name: accounts                          # Container name
     build:
-      context: ./backend/microservices/service1       # Location of the Dockerfile
+      context: ./backend/microservices/accounts       # Location of the Dockerfile
     env_file: .env                                    # File with environment variables
+    environment:
+      - SERVICE_NAME=accounts                         # Elasticsearch URL
     volumes:
-      - service1_data:/app                            # Bind mount (instant changes)
+      - accounts_data:/app                            # Bind mount (instant changes)
     networks:
       - pong-net                                      # Network connecting all containers
+    restart: always                                   # Restart container in case of failure
     depends_on:
       - postgre                                       # PostgreSQL Dependency
-    restart: always                                   # Restart container in case of failure
 
 
 # ------------------ VOLUMES ------------------- #
@@ -205,12 +207,6 @@ volumes:
   grafana_data:                                       # Grafana data volume
   alertmanager_data:                                  # AlertManager data volume
   portainer_data:                                     # Portainer data volume
-  service1_data:
-    driver: local                                     # Use the local driver for this volume
-    driver_opts:
-      type: none                                      # Use a bind mount instead of creating a separate filesystem
-      device: ./backend/microservices/service1        # Path in the host filesystem for the bind mount
-      o: bind                                         # Activate the bind mount
   elastic_data:
     driver: local                                     # Use the local driver for this volume
     driver_opts:
@@ -222,6 +218,12 @@ volumes:
     driver_opts:
       type: none                                      # Use a bind mount instead of creating a separate filesystem
       device: ./frontend                              # Path in the host filesystem for the bind mount
+      o: bind                                         # Activate the bind mount
+  accounts_data:
+    driver: local                                     # Use the local driver for this volume
+    driver_opts:
+      type: none                                      # Use a bind mount instead of creating a separate filesystem
+      device: ./backend/microservices/accounts        # Path in the host filesystem for the bind mount
       o: bind                                         # Activate the bind mount
 
 

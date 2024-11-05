@@ -1,26 +1,28 @@
-# Dockerfile para el microservicio
 FROM python:3.11
 
-# Establece el directorio de trabajo
+
 WORKDIR /app
 
-# Instala netcat
-RUN apt-get update && apt-get install -y netcat-openbsd && apt-get clean
+# Install netcat
+# RUN apt-get update && apt-get install -y netcat-openbsd
+
+# Clean up
+# RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copia los archivos necesarios
 COPY ./requirements.txt ./
 
-# Instala las dependencias
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia el resto del código del microservicio
 COPY . .
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Define el entrypoint para que ejecute ambos servidores
+# Execute the entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
+
 
 # Gunicorn & Daphne
 EXPOSE 8000 9000

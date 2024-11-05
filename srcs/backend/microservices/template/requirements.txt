@@ -1,6 +1,0 @@
-Django>=3.2,<4.0		# Framework para desarrollo web en Django		(necesario)
-netcat 					# Herramienta para redireccionar datos			(necesario)
-gunicorn				# Servidor WSGI para manejar peticiones HTTP	(necesario)
-daphne					# Servidor ASGI para manejar WebSockets			(si planeas usar WebSockets)
-channels				# Framework para soportar WebSockets en Django	(si planeas usar WebSockets)
-psycopg2				# Conector para PostgreSQL						(si planeas usar PostgreSQL)

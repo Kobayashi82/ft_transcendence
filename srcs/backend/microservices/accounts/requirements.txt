@@ -1,0 +1,8 @@
+Django>=3.2,<4.0		# Framework para desarrollo web en Django		(necesario)
+python-logstash
+django-redis
+gunicorn				# Servidor WSGI para manejar peticiones HTTP	(necesario)
+djangorestframework		# Framework para construir APIs REST			(necesario - añadir a INSTALLED_APPS en settings.py)
+psycopg2				# Conector para PostgreSQL						(si planeas usar PostgreSQL)
+daphne					# Servidor ASGI para manejar WebSockets			(si planeas usar WebSockets)
+channels				# Framework para soportar WebSockets en Django	(si planeas usar WebSockets - añadir a INSTALLED_APPS en settings.py)

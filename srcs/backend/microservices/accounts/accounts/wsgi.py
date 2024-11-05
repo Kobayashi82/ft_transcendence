@@ -1,5 +1,5 @@
 """
-WSGI config for service1 project.
+WSGI config for accounts project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'service1.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'accounts.settings')
 
 application = get_wsgi_application()
