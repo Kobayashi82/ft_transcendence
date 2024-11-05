@@ -1,9 +1,10 @@
 from django.shortcuts import render
-
-import logging
 from django.core.cache import cache
 from django.http import JsonResponse
-from .models import TestModel
+from django.db import IntegrityError
+from django.core.exceptions import ValidationError
+from .models import User
+import logging
 
 logger = logging.getLogger('default')
 
@@ -17,21 +18,21 @@ logger = logging.getLogger('default')
     # cache_value = cache.get('test_key')
 
 def home(request):
-	# Crear un registro en la base de datos
-	test_obj = TestModel.objects.create(name="Test Entry")
+	# # Crear un registro en la base de datos
+	# test_obj = TestModel.objects.create(name="Test Entry")
 
-	# Almacenar el valor en Redis usando una clave específica
-	cache_key = f"testmodel:{test_obj.id}"
-	cache.set(cache_key, test_obj.name, timeout=15)  # Guardar en Redis por 15 minutos
+	# # Almacenar el valor en Redis usando una clave específica
+	# cache_key = f"testmodel:{test_obj.id}"
+	# cache.set(cache_key, test_obj.name, timeout=15)  # Guardar en Redis por 15 minutos
 
-	# Recuperar el valor de Redis primero
-	cached_value = cache.get(cache_key)
+	# # Recuperar el valor de Redis primero
+	# cached_value = cache.get(cache_key)
 
-	if cached_value:
-		logger.info(f"Redis cache entry: {cached_value}")
-	else:
-		# Si el valor no está en Redis, recuperarlo de la base de datos
-		db_value = TestModel.objects.get(id=test_obj.id)
-		logger.info(f"Database entry: {db_value.name}")
+	# if cached_value:
+	# 	logger.info(f"Redis cache entry: {cached_value}")
+	# else:
+	# 	# Si el valor no está en Redis, recuperarlo de la base de datos
+	# 	db_value = TestModel.objects.get(id=test_obj.id)
+	# 	logger.info(f"Database entry: {db_value.name}")
 
 	return JsonResponse({'message': 'Hello from Django!'})

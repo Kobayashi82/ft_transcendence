@@ -3,6 +3,7 @@
 # Check if a project already exists, and if not, create it				(IMPORTANT: only necessary to create the project the first time)
 if [ ! -f "manage.py" ]; then python create.py; fi
 
+# python manage.py startapp [app_name]
 python manage.py makemigrations
 python manage.py migrate
 

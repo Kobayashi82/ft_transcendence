@@ -37,11 +37,58 @@
 		}
 
 		.small-text {
-            font-size: 0.9em;
-            color: #e0e0e0;
-        }
+			font-size: 0.9em;
+			color: #e0e0e0;
+		}
 
+		.button {
+			margin-top: 20px;
+			padding: 10px 20px;
+			font-size: 1em;
+			color: #fff;
+			background-color: #007bff;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+		}
+
+		.button:hover {
+			background-color: #0056b3;
+		}
+
+		.message {
+			margin-top: 20px;
+			font-size: 1em;
+			color: #f0f0f0;
+		}
 	</style>
+	<script>
+		function fetchProfile() {
+			fetch('https://127.0.0.1/api/accounts/profile/view/', {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				}
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(data => {
+				const messageDiv = document.getElementById('message');
+				messageDiv.innerHTML = `Username: ${data.username}<br>Email: ${data.email}<br>First Name: ${data.first_name}<br>Last Name: ${data.last_name}`;
+				messageDiv.style.display = 'block'; // Muestra el mensaje
+			})
+			.catch(error => {
+				console.error('Error fetching the profile:', error);
+				const messageDiv = document.getElementById('message');
+				messageDiv.innerHTML = 'Error fetching profile data.';
+				messageDiv.style.display = 'block'; // Muestra el mensaje de error
+			});
+		}
+	</script>
 </head>
 
 <body>
@@ -49,9 +96,11 @@
 		<h1>Bienvenido a Webserv 1.0</h1>
 		<p>Este es el servidor secundario</p>
 		<p class="small-text">Esta página es un HTML estático</p>
+		<button class="button" onclick="fetchProfile()">Obtener Perfil</button> <!-- Botón para hacer la solicitud -->
+		<div id="message" class="message" style="display: none;"></div> <!-- Mensaje que mostrará la respuesta -->
 	</div>
 </body>
 
 </html>
 
-<!-- Esta es la página 'index.html' de la raíz del servidor secundario -->
+

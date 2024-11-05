@@ -207,7 +207,7 @@ volumes:
   grafana_data:                                       # Grafana data volume
   alertmanager_data:                                  # AlertManager data volume
   portainer_data:                                     # Portainer data volume
-  elastic_data:
+  elastic_data:                                       # ElasticSearch data volume
     driver: local                                     # Use the local driver for this volume
     driver_opts:
       type: none                                      # Use a bind mount instead of creating a separate filesystem
