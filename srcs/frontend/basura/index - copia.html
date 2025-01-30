@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Webserv 1.0</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Tahoma, Verdana, Arial, sans-serif;
+            background: linear-gradient(135deg, #8b7346, #703b47);
+            color: #fff;
+        }
+
+        .container {
+            text-align: center;
+            background-color: rgba(26, 193, 223, 0.1);
+            padding: 2em;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 0.5em;
+        }
+
+        p {
+            font-size: 1.2em;
+            line-height: 1.6em;
+        }
+
+        .small-text {
+            font-size: 0.9em;
+            color: #e0e0e0;
+        }
+
+        .button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1em;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 1em;
+            color: #f0f0f0;
+        }
+    </style>
+    <script>
+        const username = 'testuser';  // Usuario de ejemplo
+
+        function fetchProfile() {
+            fetch(`/api/accounts/profile/view/?username=${username}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const messageDiv = document.getElementById('message');
+                messageDiv.innerHTML = `Username: ${data.username}<br>Email: ${data.email}<br>First Name: ${data.first_name}<br>Last Name: ${data.last_name}`;
+                messageDiv.style.display = 'block'; // Muestra el mensaje
+            })
+            .catch(error => {
+                console.error('Error fetching the profile:', error);
+                const messageDiv = document.getElementById('message');
+                messageDiv.innerHTML = 'Error fetching profile data.';
+                messageDiv.style.display = 'block'; // Muestra el mensaje de error
+            });
+        }
+
+        function createProfile() {
+            const email = prompt("Enter email:");
+            const firstName = prompt("Enter first name:");
+            const lastName = prompt("Enter last name:");
+            const password = prompt("Enter password:");
+
+            fetch('/api/accounts/profile/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, email, first_name: firstName, last_name: lastName, password })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const messageDiv = document.getElementById('message');
+                messageDiv.innerHTML = data.message;
+                messageDiv.style.display = 'block'; // Muestra el mensaje
+            })
+            .catch(error => {
+                console.error('Error creating the profile:', error);
+                const messageDiv = document.getElementById('message');
+                messageDiv.innerHTML = 'Error creating profile.';
+                messageDiv.style.display = 'block'; // Muestra el mensaje de error
+            });
+        }
+
+        function editProfile() {
+            const email = prompt("Enter new email:");
+            const firstName = prompt("Enter new first name:");
+            const lastName = prompt("Enter new last name:");
+
+            fetch(`/api/accounts/profile/edit/?username=${username}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, first_name: firstName, last_name: lastName })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const messageDiv = document.getElementById('message');
+                messageDiv.innerHTML = data.message;
+                messageDiv.style.display = 'block'; // Muestra el mensaje
+            })
+            .catch(error => {
+                console.error('Error editing the profile:', error);
+                const messageDiv = document.getElementById('message');
+                messageDiv.innerHTML = 'Error editing profile.';
+                messageDiv.style.display = 'block'; // Muestra el mensaje de error
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Bienvenido a Webserv 1.0</h1>
+        <p>Este es el servidor secundario</p>
+        <p class="small-text">Esta página es un HTML estático</p>
+        <button class="button" onclick="fetchProfile()">Obtener Perfil</button> <!-- Botón para hacer la solicitud -->
+        <button class="button" onclick="createProfile()">Crear Perfil</button> <!-- Botón para crear el perfil -->
+        <button class="button" onclick="editProfile()">Editar Perfil</button> <!-- Botón para editar el perfil -->
+        <div id="message" class="message" style="display: none;"></div> <!-- Mensaje que mostrará la respuesta -->
+    </div>
+</body>
+
+</html>
