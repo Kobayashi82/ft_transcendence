@@ -13,8 +13,8 @@ services:
     volumes:
       - frontend_data:/usr/share/nginx/html           # Bind mount (instant changes)
     ports:
-      - "80:80"                                       # Port for HTTP
-      - "443:443"                                     # Port for HTTPS
+      - "8082:80"                                       # Port for HTTP
+      - "8443:443"                                     # Port for HTTPS
     networks:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
@@ -98,13 +98,14 @@ services:
       args:
         PORTAINER_PASSWORD: ${ADMIN_PASS}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock     # Allows the container to access the Docker daemon
+      # - /var/run/docker.sock:/var/run/docker.sock     # Allows the container to access the Docker daemon
+      - /run/user/104347/docker.sock:/var/run/docker.sock  # change number 104347 to user id
       - portainer_data:/data
     networks:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
 
-  # cAdviser (8080)
+  # cAdvisor (8080)
   cadvisor:
     container_name: cadvisor                          # Container name
     image: gcr.io/cadvisor/cadvisor:latest
@@ -113,6 +114,9 @@ services:
       - /sys:/sys:ro                                  # Acceso al sistema de archivos sys
       - /var/run:/var/run:ro                          # Acceso a la información de contenedores
       - /var/lib/docker/:/var/lib/docker:ro           # Acceso a los datos de Docker
+      - /run/user/104347/docker.sock:/var/run/docker.sock
+    ports:
+      - "8090:8080"
     networks:
       - pong-net                                      # Network connecting all containers
     restart: always                                   # Restart container in case of failure
