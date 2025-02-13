@@ -18,4 +18,4 @@ RUN echo "$PORTAINER_PASSWORD" > /private.key
 # Execute Portainer
 ENTRYPOINT ["portainer", "--data", "/data", "--admin-password-file", "/private.key"]
 
-EXPOSE 9000
+EXPOSE 8080
