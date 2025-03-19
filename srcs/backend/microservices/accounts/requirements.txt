@@ -1,8 +1,0 @@
-Django>=3.2,<4.0		# Web development framework for Django			(necessary)
-gunicorn				# WSGI server for handling HTTP requests		(necessary)
-python-logstash			# Library to send logs to Logstash				(necessary - import 'logstash' and add 'LOGGING' section in settings.py)
-django-redis			# Integration of Redis as cache in Django		(necessary - add 'CACHES' section in settings.py)
-djangorestframework		# Framework for building REST APIs				(necessary - add 'rest_framework' to INSTALLED_APPS in settings.py)
-psycopg2				# Connector for PostgreSQL						(if you plan to use PostgreSQL - add 'DATABASES' section in settings.py)
-daphne					# ASGI server for handling WebSockets			(if you plan to use WebSockets)
-channels				# Framework to support WebSockets in Django		(if you plan to use WebSockets - add 'channels' to INSTALLED_APPS in settings.py)

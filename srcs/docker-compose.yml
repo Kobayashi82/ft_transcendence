@@ -7,17 +7,17 @@ services:
 
   # Nginx (80, 443 & 9113)
   nginx:
-    container_name: nginx								# Container name
+    container_name: nginx                               # Container name
     build:
-      context: ./backend/nginx							# Location of the Dockerfile
+      context: ./frontend/nginx                         # Location of the Dockerfile
     volumes:
-      - frontend_data:/usr/share/nginx/html				# Bind mount (instant changes)
+      - frontend_data:/usr/share/nginx/html             # Bind mount (instant changes)
     ports:
-      - "8082:80"										# Port for HTTP
-      - "8443:443"										# Port for HTTPS
+      - "80:80"                                         # Port for HTTP
+      - "443:443"                                       # Port for HTTPS
     networks:
-      - pong-net										# Network connecting all containers
-    restart: always										# Restart container in case of failure
+      - pong-net                                        # Network connecting all containers
+    restart: always                                     # Restart container in case of failure
 
 
 # ------------------- METRICS ------------------ #
@@ -25,41 +25,41 @@ services:
 
   # Prometheus (9090)
   prometheus:
-    container_name: prometheus							# Container name
+    container_name: prometheus                          # Container name
     build:
-      context: ./backend/metrics/prometheus				# Location of the Dockerfile
+      context: ./backend/metrics/prometheus             # Location of the Dockerfile
     volumes:
-      - prometheus_data:/prometheus						# Prometheus data volume
+      - prometheus_data:/prometheus                     # Prometheus data volume
     networks:
-      - pong-net										# Network connecting all containers
-    restart: always										# Restart container in case of failure
+      - pong-net                                        # Network connecting all containers
+    restart: always                                     # Restart container in case of failure
 
   # Grafana (3000)
   grafana:
-    container_name: grafana								# Container name
+    container_name: grafana                             # Container name
     build:
-      context: ./backend/metrics/grafana				# Location of the Dockerfile
-    env_file: .env										# File with environment variables
+      context: ./backend/metrics/grafana                # Location of the Dockerfile
+    env_file: .env                                      # File with environment variables
     environment:
-      - GF_SERVER_ROOT_URL=https://localhost/grafana/	# Base path for Grafana
-      - GF_SECURITY_ADMIN_USER=grafana					# Prometheus data volume
-      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASS}		# Prometheus data volume
+      - GF_SERVER_ROOT_URL=https://localhost/grafana/   # Base path for Grafana
+      - GF_SECURITY_ADMIN_USER=grafana                  # Admin name
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASS}        # Admin pass
     volumes:
-      - grafana_data:/var/lib/grafana					# Grafana data volume
+      - grafana_data:/var/lib/grafana                   # Grafana data volume
     networks:
-      - pong-net										# Network connecting all containers
-    restart: always										# Restart container in case of failure
+      - pong-net                                        # Network connecting all containers
+    restart: always                                     # Restart container in case of failure
 
   # AlertManager (9093)
   alertmanager:
-    container_name: alertmanager						# Container name
+    container_name: alertmanager                        # Container name
     build:
-      context: ./backend/metrics/alertmanager			# Location of the Dockerfile
+      context: ./backend/metrics/alertmanager           # Location of the Dockerfile
     volumes:
-      - alertmanager_data:/alertmanager					# AlertManager data volume
+      - alertmanager_data:/alertmanager                 # AlertManager data volume
     networks:
-      - pong-net										# Network connecting all containers
-    restart: always										# Restart container in case of failure
+      - pong-net                                        # Network connecting all containers
+    restart: always                                     # Restart container in case of failure
 
 
 # ------------------- LOGGING ------------------ #
@@ -67,49 +67,49 @@ services:
 
   # ElasticSearch (9200 & 9114)
   elasticsearch:
-    container_name: elasticsearch						# Container name
+    container_name: elasticsearch                       # Container name
     build:
-      context: ./backend/logging/elasticsearch			# Location of the Dockerfile
-    env_file: .env										# File with environment variables
+      context: ./backend/logging/elasticsearch          # Location of the Dockerfile
+    env_file: .env                                      # File with environment variables
     environment:
-      - discovery.type=single-node						# Set to single-node mode (multi-node clustering is unnecessary for this project)
-      - xpack.security.enabled=true						# Enable security features (e.g., authentication)
-      - logger.level=ERROR								# Set logging level to show only errors (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
-      - ES_USERNAME=elastic
-      - ES_PASSWORD=${ADMIN_PASS}
-      - ELASTIC_PASSWORD=${ADMIN_PASS}
+      - discovery.type=single-node                      # Set to single-node mode (multi-node clustering is unnecessary for this project)
+      - xpack.security.enabled=true                     # Enable security features (e.g., authentication)
+      - logger.level=ERROR                              # Set logging level to show only errors (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
+      - ES_USERNAME=elastic                             # User name
+      - ES_PASSWORD=${ADMIN_PASS}                       # User pass
+      - ELASTIC_PASSWORD=${ADMIN_PASS}                  # Admin pass
     volumes:
-      - elastic_data:/usr/share/elasticsearch/data		# Bind mount (temporary)
+      - elastic_data:/usr/share/elasticsearch/data      # Bind mount (temporary)
     networks:
-      - pong-net										# Network connecting all containers
-    restart: always										# Restart container in case of failure
+      - pong-net                                        # Network connecting all containers
+    restart: always                                     # Restart container in case of failure
 
   # LogStash (5044)
   logstash:
-    container_name: logstash							# Container name
+    container_name: logstash                            # Container name
     build:
-      context: ./backend/logging/logstash				# Location of the Dockerfile
-    env_file: .env										# File with environment variables
+      context: ./backend/logging/logstash               # Location of the Dockerfile
+    env_file: .env                                      # File with environment variables
     environment:
-      - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=${ADMIN_PASS}
+      - ELASTICSEARCH_USERNAME=elastic                  # Admin name
+      - ELASTICSEARCH_PASSWORD=${ADMIN_PASS}            # Admin pass
     networks:
-      - pong-net										# Network connecting all containers
-    restart: always										# Restart container in case of failure
+      - pong-net                                        # Network connecting all containers
+    restart: always                                     # Restart container in case of failure
 
   # Kibana (5601)
   kibana:
-    container_name: kibana								# Container name
+    container_name: kibana                              # Container name
     image: docker.elastic.co/kibana/kibana:7.17.4
-    env_file: .env										# File with environment variables
+    env_file: .env                                      # File with environment variables
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200	# Elasticsearch URL
-      - SERVER_BASEPATH=/kibana							# Base path for Kibana
-      - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=${ADMIN_PASS}
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200   # Elasticsearch URL
+      - SERVER_BASEPATH=/kibana                         # Base path for Kibana
+      - ELASTICSEARCH_USERNAME=elastic                  # Admin name
+      - ELASTICSEARCH_PASSWORD=${ADMIN_PASS}            # Admin pass
     networks:
-      - pong-net										# Network connecting all containers
-    restart: always										# Restart container in case of failure
+      - pong-net                                        # Network connecting all containers
+    restart: always                                     # Restart container in case of failure
 
 
 # --------------- MICRO-SERVICES --------------- #
@@ -117,64 +117,64 @@ services:
 
   # Redis (6379)
   redis:
-    container_name: redis								# Container name
+    container_name: redis                               # Container name
     image: redis:latest
     volumes:
-      - redis_data:/data								# Redis data volume
+      - redis_data:/data                                # Redis data volume
     networks:
-      - pong-net										# Network connecting all containers
-    restart: always										# Restart container in case of failure
+      - pong-net                                        # Network connecting all containers
+    restart: always                                     # Restart container in case of failure
 
   # accounts (8000 & 9000)
 #   accounts:
-#     container_name: accounts							# Container name
+#     container_name: accounts                          # Container name
 #     build:
-#       context: ./backend/microservices/accounts		# Location of the Dockerfile
-#     env_file: .env									# File with environment variables
-#     environment:
-#       - SERVICE_NAME=accounts							# Elasticsearch URL
+#       context: ./backend/microservices/accounts       # Location of the Dockerfile
+#     env_file: .env                                    # File with environment variables
+#     environment:  
+#       - SERVICE_NAME=accounts                         # Elasticsearch URL
 #     volumes:
-#       - accounts_data:/app							# Bind mount (instant changes)
+#       - accounts_data:/app                            # Bind mount (instant changes)
 #     networks:
-#       - pong-net										# Network connecting all containers
-#     restart: always									# Restart container in case of failure
+#       - pong-net                                      # Network connecting all containers
+#     restart: always                                   # Restart container in case of failure
 #     depends_on:
-#       - postgre										# PostgreSQL Dependency
+#       - postgre                                       # PostgreSQL Dependency
 
 
 # ------------------ VOLUMES ------------------- #
 
 
 volumes:
-  db_data:												# Database data volume
-  db_logs:												# Database logs volume
-  prometheus_data:										# Prometheus data volume
-  grafana_data:											# Grafana data volume
-  alertmanager_data:									# AlertManager data volume
-  portainer_data:										# Portainer data volume
-  elastic_data:											# ElasticSearch data volume
-  redis_data:											# Redis data volume
-    driver: local										# Use the local driver for this volume
+  db_data:                                              # Database data volume
+  db_logs:                                              # Database logs volume
+  prometheus_data:                                      # Prometheus data volume
+  grafana_data:                                         # Grafana data volume
+  alertmanager_data:                                    # AlertManager data volume
+  portainer_data:                                       # Portainer data volume
+  elastic_data:                                         # ElasticSearch data volume
+  redis_data:                                           # Redis data volume
+    driver: local                                       # Use the local driver for this volume
     driver_opts:
-      type: none										# Use a bind mount instead of creating a separate filesystem
-      device: ./backend/logging/data					# Path in the host filesystem for the bind mount
-      o: bind											# Activate the bind mount
+      type: none                                        # Use a bind mount instead of creating a separate filesystem
+      device: ./backend/logging/data                    # Path in the host filesystem for the bind mount
+      o: bind                                           # Activate the bind mount
   frontend_data:
-    driver: local										# Use the local driver for this volume
+    driver: local                                       # Use the local driver for this volume
     driver_opts:
-      type: none										# Use a bind mount instead of creating a separate filesystem
-      device: ./frontend								# Path in the host filesystem for the bind mount
-      o: bind											# Activate the bind mount
+      type: none                                        # Use a bind mount instead of creating a separate filesystem
+      device: ./frontend                                # Path in the host filesystem for the bind mount
+      o: bind                                           # Activate the bind mount
 #   accounts_data:
-#     driver: local										# Use the local driver for this volume
+#     driver: local                                     # Use the local driver for this volume
 #     driver_opts:
-#       type: none										# Use a bind mount instead of creating a separate filesystem
-#       device: ./backend/microservices/accounts		# Path in the host filesystem for the bind mount
-#       o: bind											# Activate the bind mount
+#       type: none                                      # Use a bind mount instead of creating a separate filesystem
+#       device: ./backend/microservices/accounts        # Path in the host filesystem for the bind mount
+#       o: bind                                         # Activate the bind mount
 
 
 # ------------------ NETWORK ------------------- #
 
 networks:
   pong-net:
-    name: pong-net										# Network connecting all containers
+    name: pong-net                                      # Network connecting all containers
