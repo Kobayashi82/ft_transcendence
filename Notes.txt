@@ -1,3 +1,115 @@
+• Backend: Ruby → PHP
+• Backend Framework: Django → Node.js
+• Frontend: JavaScript → TypeScript
+• Frontend Framework: Bootstrap → Tailwind CSS
+• Advanced Graphics: ThreeJS → Babylon.JS
+• Database: PostgreSQL → SQLite
+• Blockchain: Ethereum → Avalanche
+
+• A partir del 1 de mayo de 2025
+
+MINIMUM
+-------
+Frontend:
+	• TypeScript (Single-Page)
+Backend:
+	• PHP
+Game:
+	• Two players local
+	• Tournament (registration & matchmaking)
+Security:
+	• Password hashed
+	• Protection from SQL injections/XSS
+	• HTTPS
+	• Form validation
+
+
+
+
+
+
+
+
+Para cumplir con el 100% del proyecto (7 módulos principales) bajo los cambios tecnológicos
+actualizados (PHP, Node.js, TypeScript, Tailwind CSS, Babylon.JS, SQLite, Avalanche),
+los módulos más rápidos y sencillos son los siguientes:
+
+1. Web: Usar un Framework como Backend (Node.js)
+
+	Usar Express.js (Node.js) para el backend, aprovechando su simplicidad y compatibilidad con PHP (si se requiere).
+	Node.js permite desarrollo rápido con npm/yarn.
+	Alinea con el requisito actualizado de framework.
+
+2. User Management: Gestión estándar de usuarios
+
+	Implementar autenticación básica con Passport.js (Node.js) o Laravel Sanctum (PHP).
+	Cubre registro, login, perfiles, y gestión de amigos.
+	Requiere SQLite (base de datos mínima).
+
+3. Cybersecurity: Implementar 2FA y JWT
+
+	Usar paquetes como speakeasy (2FA) y jsonwebtoken (JWT) en Node.js.
+	Integración directa con el backend existente.
+	Cumple con seguridad avanzada sin infraestructura compleja.
+
+4. Server-Side Pong: Reemplazar Pong básico con lógica en servidor + API
+
+	Migrar la lógica del juego a Node.js/Express.js y exponer endpoints REST/WebSocket.
+	Evita trampas del lado del cliente.
+	Usa TypeScript en el frontend para consumir la API.
+
+5. Gameplay/UX: Chat en vivo
+
+	Usar Socket.io (Node.js) para mensajería en tiempo real.
+	Implementa mensajes directos, bloqueos e invitaciones.
+	Minimalista y compatible con TypeScript.
+
+6. DevOps: Infraestructura para gestión de logs
+
+	Configurar Winston (Node.js) o Monolog (PHP) para logging básico.
+	Almacena logs en archivos locales o servicios simples como Papertrail.
+	Sin necesidad de ELK Stack complejo.
+
+7. Accessibility: Soporte multidispositivo (Minor ×2 → 1 Major)
+
+	Convertir 2 módulos menores (Soporte multidispositivo + Compatibilidad con navegadores) en 1 Major.
+	Usar Tailwind CSS para diseño responsivo.
+	Asegurar compatibilidad con Chrome/Firefox mediante testing básico.
+
+
+Módulos a evitar
+----------------
+
+Blockchain (Avalanche): Requiere smart contracts, nodos, y configuración avanzada.
+Microservicios: Complejidad innecesaria para un MVP.
+IA Opponent: Lógica de simulación de teclado y anticipación es costosa.
+3D con Babylon.JS: Demasiado tiempo para un juego simple como Pong.
+
+Estrategia de implementación
+----------------------------
+
+Backend con Node.js (Express.js) + PHP para integración mínima si es necesario.
+Autenticación básica con JWT y 2FA.
+Chat en tiempo real con Socket.io.
+Pong en servidor para seguridad y API.
+Logs simples y diseño responsivo con Tailwind.
+
+Con esto, alcanzas los 7 módulos principales sin salirte del stack actualizado y minimizando esfuerzos técnicos.
+
+Prompt
+------
+
+
+
+
+
+
+
+
+
+
+
+
 Usuarios
 ---------
 - id (PK)                  -> Identificador único de usuario.
@@ -59,3 +171,137 @@ accounts/                   # Proyecto principal
 │   ├── urls.py             # Rutas principales del proyecto
 │   └── wsgi.py
 └── manage.py
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Aquí tienes 6 prompts modulares para construir el proyecto por etapas, optimizados para herramientas como v0.dev o Blot.new:
+
+1. Backend Base (Node.js + Docker)
+Copy
+"Crea un backend básico con:  
+- Node.js/Express  
+- SQLite para almacenamiento  
+- Dockerfile con etapa de construcción  
+- Ruta GET /status que devuelva { "online": true }  
+- Middleware de CORS configurado  
+- Variables de entorno cargadas desde .env  
+- Logging básico en archivo server.log  
+Justificar: Express como framework minimalista (no incluir Nest.js/Koa)"  
+2. Sistema de Autenticación
+Copy
+"Implementar:  
+1. Registro:  
+   - Formulario con email/contraseña  
+   - Validación server-side (regex email + 8 caracteres)  
+   - Hash con bcrypt  
+2. Login:  
+   - Generación de JWT (jsonwebtoken)  
+   - Cookie HTTP-only segura  
+3. Middleware de autenticación:  
+   - Verificar JWT en headers  
+   - Bloquear acceso a /profile sin token  
+Usar: TypeScript + Express + SQLite  
+Evitar: Passport.js (implementar manualmente)"  
+3. Juego Pong Server-Side
+Copy
+"Crear:  
+- API REST para Pong:  
+   POST /games (nueva partida)  
+   PUT /games/:id/move (mover paleta)  
+   WS /games/:id (updates en tiempo real)  
+- Lógica básica en Node.js:  
+   - Colisiones simples  
+   - Sistema de puntuación  
+   - Estado persistente en SQLite  
+Requisitos:  
+- TypeScript interfaces para GameState  
+- Validación de inputs (posiciones entre 0-100)  
+- Tests con Jest (2 ejemplos mínimo)"  
+4. Chat en Tiempo Real
+Copy
+"Desarrollar:  
+- Sistema de chat con:  
+   - Salas públicas  
+   - Mensajes privados  
+   - Bloqueo de usuarios  
+- Frontend:  
+   - Componente React con Tailwind  
+   - Lista de usuarios online  
+   - Notificaciones toast  
+- Backend:  
+   - Namespaces de Socket.io  
+   - Middleware anti-flood  
+   - Almacenamiento en SQLite (historial)  
+Excluir: Librerías prehechas como ChatKit"  
+5. Configuración ELK para Logs
+Copy
+"Crear docker-compose.yml con:  
+1. Servicio Node.js (backend)  
+   - Volumen para logs:/var/log/app  
+2. ELK Stack:  
+   - Logstash: Input desde archivo .log  
+   - Elasticsearch: Índice 'pong-logs'  
+   - Kibana: Dashboard básico  
+3. Configurar Winston en Node.js para:  
+   - Formato JSON  
+   - Escritura en /var/log/app/game.log  
+Requisitos:  
+- Red aislada 'monitoring'  
+- .env para credenciales ELK"  
+6. Frontend Responsive (TypeScript)
+Copy
+"Implementar:  
+- SPA con:  
+   - /login (formulario)  
+   - /dashboard (lista de partidas)  
+   - /game (canvas Pong)  
+- Características:  
+   - Diseño mobile-first con Tailwind  
+   - WebSocket para updates del juego  
+   - Lazy loading de rutas  
+- Tecnologías:  
+   - Vite + React  
+   - Axios para API calls  
+   - Zustand para estado global  
+Restricción: No usar Next.js/Remix"  
+Estrategia de Integración
+Ejecuta los prompts en este orden: 1 → 2 → 3 → 4 → 6 → 5
+
+Para cada componente:
+
+Crea una rama git independiente
+
+Genera el código con la IA
+
+Haz merge a main tras revisión
+
+Archivos clave para unificación:
+
+plaintext
+Copy
+├── .env (unificar variables)
+├── docker-compose.yml (combinar servicios)
+├── tsconfig.json (configuración compartida)
+└── src/shared/ (interfaces comunes)
+Este enfoque te permite desarrollar en sprints de 2-3 días por módulo, cumpliendo el 100% del proyecto sin sobrecarga técnica.
