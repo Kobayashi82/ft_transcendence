@@ -10,14 +10,27 @@ services:
     container_name: nginx                               # Container name
     build:
       context: ./frontend/nginx                         # Location of the Dockerfile
-    volumes:
-      - frontend_data:/usr/share/nginx/html             # Bind mount (instant changes)
     ports:
       - "80:80"                                         # Port for HTTP
       - "443:443"                                       # Port for HTTPS
     networks:
       - pong-net                                        # Network connecting all containers
     restart: always                                     # Restart container in case of failure
+
+  # Web (3000)
+  web:
+    container_name: web
+    build: 
+      context: ./frontend/web
+      dockerfile: Dockerfile.dev                        # Usaremos un Dockerfile específico para desarrollo
+    volumes:
+      - ./frontend/web:/app                        # Montar código fuente
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://backend:3000/api            # Variable para tu API
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - pong-net
 
 
 # ------------------- METRICS ------------------ #
@@ -125,29 +138,43 @@ services:
       - pong-net                                        # Network connecting all containers
     restart: always                                     # Restart container in case of failure
 
-  # accounts (8000 & 9000)
-#   accounts:
-#     container_name: accounts                          # Container name
-#     build:
-#       context: ./backend/microservices/accounts       # Location of the Dockerfile
-#     env_file: .env                                    # File with environment variables
-#     environment:  
-#       - SERVICE_NAME=accounts                         # Elasticsearch URL
-#     volumes:
-#       - accounts_data:/app                            # Bind mount (instant changes)
-#     networks:
-#       - pong-net                                      # Network connecting all containers
-#     restart: always                                   # Restart container in case of failure
-#     depends_on:
-#       - postgre                                       # PostgreSQL Dependency
+  # API Gateway + Fastify (3000)
+  gateway:
+    container_name: gateway                             # Container name
+    build:
+      context: ./backend/gateway
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend/gateway/src:/app/src  # Hot-reload
+      - /app/node_modules
+    ports:
+      - "3000:3000" 
+    networks:
+      - pong-net
+    environment:
+      - AUTH_SERVICE_URL=http://template:3001
+
+  # Microservices
+  # template:
+  #   container_name: template                            # Container name
+  #   build:
+  #     context: ./backend/microservices/template
+  #     dockerfile: Dockerfile.dev
+  #   volumes:
+  #     - template_data:/data
+  #     - ./backend/microservices/template/src:/app/src  # Hot-reload
+  #   environment:
+  #     - REDIS_URL=redis://redis:6379
+  #     - DB_PATH=/data/template.db
+  #   networks:
+  #     - pong-net
 
 
 # ------------------ VOLUMES ------------------- #
 
 
 volumes:
-  db_data:                                              # Database data volume
-  db_logs:                                              # Database logs volume
+  # template_data:
   prometheus_data:                                      # Prometheus data volume
   grafana_data:                                         # Grafana data volume
   alertmanager_data:                                    # AlertManager data volume
@@ -159,18 +186,6 @@ volumes:
       type: none                                        # Use a bind mount instead of creating a separate filesystem
       device: ./backend/logging/data                    # Path in the host filesystem for the bind mount
       o: bind                                           # Activate the bind mount
-  frontend_data:
-    driver: local                                       # Use the local driver for this volume
-    driver_opts:
-      type: none                                        # Use a bind mount instead of creating a separate filesystem
-      device: ./frontend                                # Path in the host filesystem for the bind mount
-      o: bind                                           # Activate the bind mount
-#   accounts_data:
-#     driver: local                                     # Use the local driver for this volume
-#     driver_opts:
-#       type: none                                      # Use a bind mount instead of creating a separate filesystem
-#       device: ./backend/microservices/accounts        # Path in the host filesystem for the bind mount
-#       o: bind                                         # Activate the bind mount
 
 
 # ------------------ NETWORK ------------------- #

@@ -27,14 +27,14 @@ restart:
 # Builds containers
 build:
 	@docker compose -f $(DC) down || exit 1
-	@docker compose -f $(DC) build || exit 1
-	@printf "\n ✔ Containers\t\t\t$(GR)Built$(NC)\n\n"
+	@COMPOSE_BAKE=true docker compose -f $(DC) build || exit 1
+	@printf "\n ✔ Containers\t$(GR)Built$(NC)\n\n"
 
 # Rebuilds containers
 rebuild:
 	@docker compose -f $(DC) down || exit 1
 	@docker compose -f $(DC) build --no-cache || exit 1
-	@printf "\n ✔ Containers\t\t\t$(GR)Rebuilt$(NC)\n\n"
+	@printf "\n ✔ Containers\t\t$(GR)Rebuilt$(NC)\n\n"
 
 # Removes images
 clean:
