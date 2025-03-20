@@ -1,51 +1,35 @@
 'use strict'
 
-/**
- * Rutas específicas del gateway y endpoints personalizados
- * 
- * @param {FastifyInstance} fastify - Instancia de Fastify
- * @param {Object} options - Opciones
- */
+// Specific gateway routes and custom endpoints
 async function apiRoutes(fastify, options) {
-  // Ruta de información sobre servicios
-  fastify.get('/services', async (request, reply) => {
-    // Lista de servicios disponibles (sin exponer detalles internos)
-    const serviceInfo = Object.entries(fastify.config.services).map(([name, config]) => ({
-      name,
-      prefix: config.prefix,
-      available: true // Aquí podrías hacer health checks reales
-    }))
-    
-    return { services: serviceInfo }
-  })
 
-  // Esta ruta requiere autenticación como ejemplo
+  // This route requires authentication as an example
   fastify.get('/profile', { preHandler: fastify.authenticate }, async (request, reply) => {
-    // El middleware authenticate ya verificó el token y agregó request.user
+    // The authenticate middleware has already verified the token and added request.user
     
-    // Esta ruta podría obtener datos del servicio de usuario, por ejemplo
+    // This route could fetch data from a user service, for example
     return { 
       profile: request.user,
-      message: 'Esta es información del perfil protegida' 
+      message: 'This is protected profile information' 
     }
   })
 
-  // Ejemplo de endpoint con caché
+  // Example endpoint with cache
   fastify.get('/cached-example', async (request, reply) => {
     const cacheKey = 'cached-example'
     
-    // Intentar obtener desde caché
+    // Try to get data from cache
     const cachedData = await fastify.cache.get(cacheKey)
     if (cachedData) {
-      fastify.log.info('Sirviendo datos desde caché')
+      console.log('Serving data from cache')
       return cachedData
     }
     
-    // Si no está en caché, generar datos nuevos
+    // If not in cache, generate new data
     const data = {
-      message: 'Estos datos serán cacheados',
+      message: 'This data will be cached',
       timestamp: new Date().toISOString(),
-      expires: 'en 60 segundos'
+      expires: 'in 60 seconds'
     }
     
     // Guardar en caché por 60 segundos

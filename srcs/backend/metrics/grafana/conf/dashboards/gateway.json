@@ -1,0 +1,944 @@
+{
+	"annotations": {
+	  "list": [
+		{
+		  "builtIn": 1,
+		  "datasource": "-- Grafana --",
+		  "enable": true,
+		  "hide": true,
+		  "iconColor": "rgba(0, 211, 255, 1)",
+		  "name": "Annotations & Alerts",
+		  "type": "dashboard"
+		}
+	  ]
+	},
+	"editable": true,
+	"gnetId": null,
+	"graphTooltip": 0,
+	"id": null,
+	"links": [],
+	"panels": [
+	  {
+		"collapsed": false,
+		"datasource": null,
+		"gridPos": {
+		  "h": 1,
+		  "w": 24,
+		  "x": 0,
+		  "y": 0
+		},
+		"id": 1,
+		"panels": [],
+		"title": "Resumen",
+		"type": "row"
+	  },
+	  {
+		"aliasColors": {},
+		"bars": false,
+		"dashLength": 10,
+		"dashes": false,
+		"datasource": "Prometheus",
+		"description": "Tasa de solicitudes HTTP por segundo",
+		"fieldConfig": {
+		  "defaults": {
+			"links": []
+		  },
+		  "overrides": []
+		},
+		"fill": 1,
+		"fillGradient": 0,
+		"gridPos": {
+		  "h": 8,
+		  "w": 12,
+		  "x": 0,
+		  "y": 1
+		},
+		"hiddenSeries": false,
+		"id": 2,
+		"legend": {
+		  "avg": false,
+		  "current": false,
+		  "max": false,
+		  "min": false,
+		  "show": true,
+		  "total": false,
+		  "values": false
+		},
+		"lines": true,
+		"linewidth": 1,
+		"nullPointMode": "null",
+		"options": {
+		  "alertThreshold": true
+		},
+		"percentage": false,
+		"pluginVersion": "7.5.7",
+		"pointradius": 2,
+		"points": false,
+		"renderer": "flot",
+		"seriesOverrides": [],
+		"spaceLength": 10,
+		"stack": false,
+		"steppedLine": false,
+		"targets": [
+		  {
+			"expr": "sum(rate(${service}_http_requests_total[1m])) by (method)",
+			"interval": "",
+			"legendFormat": "{{method}}",
+			"refId": "A"
+		  }
+		],
+		"thresholds": [],
+		"timeRegions": [],
+		"title": "Solicitudes por segundo",
+		"tooltip": {
+		  "shared": true,
+		  "sort": 0,
+		  "value_type": "individual"
+		},
+		"type": "graph",
+		"xaxis": {
+		  "buckets": null,
+		  "mode": "time",
+		  "name": null,
+		  "show": true,
+		  "values": []
+		},
+		"yaxes": [
+		  {
+			"format": "reqps",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  },
+		  {
+			"format": "short",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  }
+		],
+		"yaxis": {
+		  "align": false,
+		  "alignLevel": null
+		}
+	  },
+	  {
+		"datasource": "Prometheus",
+		"description": "Códigos de estado HTTP",
+		"fieldConfig": {
+		  "defaults": {
+			"color": {
+			  "mode": "thresholds"
+			},
+			"mappings": [],
+			"thresholds": {
+			  "mode": "absolute",
+			  "steps": [
+				{
+				  "color": "green",
+				  "value": null
+				},
+				{
+				  "color": "red",
+				  "value": 80
+				}
+			  ]
+			}
+		  },
+		  "overrides": []
+		},
+		"gridPos": {
+		  "h": 8,
+		  "w": 12,
+		  "x": 12,
+		  "y": 1
+		},
+		"id": 3,
+		"options": {
+		  "displayMode": "gradient",
+		  "orientation": "auto",
+		  "reduceOptions": {
+			"calcs": [
+			  "sum"
+			],
+			"fields": "",
+			"values": false
+		  },
+		  "showUnfilled": true,
+		  "text": {}
+		},
+		"pluginVersion": "7.5.7",
+		"targets": [
+		  {
+			"expr": "sum(${service}_http_requests_total) by (status_code)",
+			"interval": "",
+			"legendFormat": "{{status_code}}",
+			"refId": "A"
+		  }
+		],
+		"title": "Códigos de estado HTTP",
+		"type": "bargauge"
+	  },
+	  {
+		"datasource": "Prometheus",
+		"description": "Tiempo de respuesta percentil 95 para solicitudes HTTP",
+		"fieldConfig": {
+		  "defaults": {
+			"color": {
+			  "mode": "thresholds"
+			},
+			"mappings": [],
+			"thresholds": {
+			  "mode": "absolute",
+			  "steps": [
+				{
+				  "color": "green",
+				  "value": null
+				},
+				{
+				  "color": "yellow",
+				  "value": 0.5
+				},
+				{
+				  "color": "red",
+				  "value": 1
+				}
+			  ]
+			},
+			"unit": "s"
+		  },
+		  "overrides": []
+		},
+		"gridPos": {
+		  "h": 8,
+		  "w": 12,
+		  "x": 0,
+		  "y": 9
+		},
+		"id": 4,
+		"options": {
+		  "reduceOptions": {
+			"calcs": [
+			  "lastNotNull"
+			],
+			"fields": "",
+			"values": false
+		  },
+		  "showThresholdLabels": false,
+		  "showThresholdMarkers": true,
+		  "text": {}
+		},
+		"pluginVersion": "7.5.7",
+		"targets": [
+		  {
+			"expr": "histogram_quantile(0.95, sum(rate(${service}_http_request_duration_seconds_bucket[5m])) by (le))",
+			"interval": "",
+			"legendFormat": "P95",
+			"refId": "A"
+		  }
+		],
+		"title": "Tiempo de respuesta HTTP P95",
+		"type": "gauge"
+	  },
+	  {
+		"datasource": "Prometheus",
+		"description": "Uso de memoria en MB",
+		"fieldConfig": {
+		  "defaults": {
+			"color": {
+			  "mode": "palette-classic"
+			},
+			"custom": {
+			  "axisLabel": "",
+			  "axisPlacement": "auto",
+			  "barAlignment": 0,
+			  "drawStyle": "line",
+			  "fillOpacity": 10,
+			  "gradientMode": "none",
+			  "hideFrom": {
+				"legend": false,
+				"tooltip": false,
+				"viz": false
+			  },
+			  "lineInterpolation": "linear",
+			  "lineWidth": 1,
+			  "pointSize": 5,
+			  "scaleDistribution": {
+				"type": "linear"
+			  },
+			  "showPoints": "never",
+			  "spanNulls": true,
+			  "stacking": {
+				"group": "A",
+				"mode": "none"
+			  },
+			  "thresholdsStyle": {
+				"mode": "off"
+			  }
+			},
+			"mappings": [],
+			"thresholds": {
+			  "mode": "absolute",
+			  "steps": [
+				{
+				  "color": "green",
+				  "value": null
+				},
+				{
+				  "color": "red",
+				  "value": 80
+				}
+			  ]
+			},
+			"unit": "bytes"
+		  },
+		  "overrides": []
+		},
+		"gridPos": {
+		  "h": 8,
+		  "w": 12,
+		  "x": 12,
+		  "y": 9
+		},
+		"id": 5,
+		"options": {
+		  "legend": {
+			"calcs": [],
+			"displayMode": "list",
+			"placement": "bottom"
+		  },
+		  "tooltip": {
+			"mode": "single"
+		  }
+		},
+		"pluginVersion": "7.5.7",
+		"targets": [
+		  {
+			"expr": "process_resident_memory_bytes{job=\"${service}\"}",
+			"interval": "",
+			"legendFormat": "Memory",
+			"refId": "A"
+		  }
+		],
+		"title": "Uso de memoria",
+		"type": "timeseries"
+	  },
+	  {
+		"collapsed": false,
+		"datasource": null,
+		"gridPos": {
+		  "h": 1,
+		  "w": 24,
+		  "x": 0,
+		  "y": 17
+		},
+		"id": 6,
+		"panels": [],
+		"title": "Métricas HTTP Detalladas",
+		"type": "row"
+	  },
+	  {
+		"aliasColors": {},
+		"bars": false,
+		"dashLength": 10,
+		"dashes": false,
+		"datasource": "Prometheus",
+		"description": "Latencia de solicitudes HTTP por ruta (P95)",
+		"fieldConfig": {
+		  "defaults": {
+			"links": []
+		  },
+		  "overrides": []
+		},
+		"fill": 1,
+		"fillGradient": 0,
+		"gridPos": {
+		  "h": 8,
+		  "w": 12,
+		  "x": 0,
+		  "y": 18
+		},
+		"hiddenSeries": false,
+		"id": 7,
+		"legend": {
+		  "avg": false,
+		  "current": false,
+		  "max": false,
+		  "min": false,
+		  "show": true,
+		  "total": false,
+		  "values": false
+		},
+		"lines": true,
+		"linewidth": 1,
+		"nullPointMode": "null",
+		"options": {
+		  "alertThreshold": true
+		},
+		"percentage": false,
+		"pluginVersion": "7.5.7",
+		"pointradius": 2,
+		"points": false,
+		"renderer": "flot",
+		"seriesOverrides": [],
+		"spaceLength": 10,
+		"stack": false,
+		"steppedLine": false,
+		"targets": [
+		  {
+			"expr": "histogram_quantile(0.95, sum(rate(${service}_http_request_duration_seconds_bucket[5m])) by (route, le))",
+			"interval": "",
+			"legendFormat": "{{route}}",
+			"refId": "A"
+		  }
+		],
+		"thresholds": [],
+		"timeRegions": [],
+		"title": "Latencia HTTP P95 por ruta",
+		"tooltip": {
+		  "shared": true,
+		  "sort": 0,
+		  "value_type": "individual"
+		},
+		"type": "graph",
+		"xaxis": {
+		  "buckets": null,
+		  "mode": "time",
+		  "name": null,
+		  "show": true,
+		  "values": []
+		},
+		"yaxes": [
+		  {
+			"format": "s",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  },
+		  {
+			"format": "short",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  }
+		],
+		"yaxis": {
+		  "align": false,
+		  "alignLevel": null
+		}
+	  },
+	  {
+		"aliasColors": {},
+		"bars": false,
+		"dashLength": 10,
+		"dashes": false,
+		"datasource": "Prometheus",
+		"description": "Solicitudes por segundo por ruta",
+		"fieldConfig": {
+		  "defaults": {
+			"links": []
+		  },
+		  "overrides": []
+		},
+		"fill": 1,
+		"fillGradient": 0,
+		"gridPos": {
+		  "h": 8,
+		  "w": 12,
+		  "x": 12,
+		  "y": 18
+		},
+		"hiddenSeries": false,
+		"id": 8,
+		"legend": {
+		  "avg": false,
+		  "current": false,
+		  "max": false,
+		  "min": false,
+		  "show": true,
+		  "total": false,
+		  "values": false
+		},
+		"lines": true,
+		"linewidth": 1,
+		"nullPointMode": "null",
+		"options": {
+		  "alertThreshold": true
+		},
+		"percentage": false,
+		"pluginVersion": "7.5.7",
+		"pointradius": 2,
+		"points": false,
+		"renderer": "flot",
+		"seriesOverrides": [],
+		"spaceLength": 10,
+		"stack": false,
+		"steppedLine": false,
+		"targets": [
+		  {
+			"expr": "sum(rate(${service}_http_requests_total[1m])) by (route)",
+			"interval": "",
+			"legendFormat": "{{route}}",
+			"refId": "A"
+		  }
+		],
+		"thresholds": [],
+		"timeRegions": [],
+		"title": "Solicitudes por segundo por ruta",
+		"tooltip": {
+		  "shared": true,
+		  "sort": 0,
+		  "value_type": "individual"
+		},
+		"type": "graph",
+		"xaxis": {
+		  "buckets": null,
+		  "mode": "time",
+		  "name": null,
+		  "show": true,
+		  "values": []
+		},
+		"yaxes": [
+		  {
+			"format": "reqps",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  },
+		  {
+			"format": "short",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  }
+		],
+		"yaxis": {
+		  "align": false,
+		  "alignLevel": null
+		}
+	  },
+	  {
+		"collapsed": false,
+		"datasource": null,
+		"gridPos": {
+		  "h": 1,
+		  "w": 24,
+		  "x": 0,
+		  "y": 26
+		},
+		"id": 9,
+		"panels": [],
+		"title": "Métricas de Proxy",
+		"type": "row"
+	  },
+	  {
+		"aliasColors": {},
+		"bars": false,
+		"dashLength": 10,
+		"dashes": false,
+		"datasource": "Prometheus",
+		"description": "Solicitudes por segundo enrutadas a cada servicio",
+		"fieldConfig": {
+		  "defaults": {
+			"links": []
+		  },
+		  "overrides": []
+		},
+		"fill": 1,
+		"fillGradient": 0,
+		"gridPos": {
+		  "h": 8,
+		  "w": 12,
+		  "x": 0,
+		  "y": 27
+		},
+		"hiddenSeries": false,
+		"id": 10,
+		"legend": {
+		  "avg": false,
+		  "current": false,
+		  "max": false,
+		  "min": false,
+		  "show": true,
+		  "total": false,
+		  "values": false
+		},
+		"lines": true,
+		"linewidth": 1,
+		"nullPointMode": "null",
+		"options": {
+		  "alertThreshold": true
+		},
+		"percentage": false,
+		"pluginVersion": "7.5.7",
+		"pointradius": 2,
+		"points": false,
+		"renderer": "flot",
+		"seriesOverrides": [],
+		"spaceLength": 10,
+		"stack": false,
+		"steppedLine": false,
+		"targets": [
+		  {
+			"expr": "sum(rate(${service}_proxy_requests_total[1m])) by (service)",
+			"interval": "",
+			"legendFormat": "{{service}}",
+			"refId": "A"
+		  }
+		],
+		"thresholds": [],
+		"timeRegions": [],
+		"title": "Solicitudes proxy por servicio",
+		"tooltip": {
+		  "shared": true,
+		  "sort": 0,
+		  "value_type": "individual"
+		},
+		"type": "graph",
+		"xaxis": {
+		  "buckets": null,
+		  "mode": "time",
+		  "name": null,
+		  "show": true,
+		  "values": []
+		},
+		"yaxes": [
+		  {
+			"format": "reqps",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  },
+		  {
+			"format": "short",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  }
+		],
+		"yaxis": {
+		  "align": false,
+		  "alignLevel": null
+		}
+	  },
+	  {
+		"aliasColors": {},
+		"bars": false,
+		"dashLength": 10,
+		"dashes": false,
+		"datasource": "Prometheus",
+		"description": "Latencia de solicitudes proxy por servicio (P95)",
+		"fieldConfig": {
+		  "defaults": {
+			"links": []
+		  },
+		  "overrides": []
+		},
+		"fill": 1,
+		"fillGradient": 0,
+		"gridPos": {
+		  "h": 8,
+		  "w": 12,
+		  "x": 12,
+		  "y": 27
+		},
+		"hiddenSeries": false,
+		"id": 11,
+		"legend": {
+		  "avg": false,
+		  "current": false,
+		  "max": false,
+		  "min": false,
+		  "show": true,
+		  "total": false,
+		  "values": false
+		},
+		"lines": true,
+		"linewidth": 1,
+		"nullPointMode": "null",
+		"options": {
+		  "alertThreshold": true
+		},
+		"percentage": false,
+		"pluginVersion": "7.5.7",
+		"pointradius": 2,
+		"points": false,
+		"renderer": "flot",
+		"seriesOverrides": [],
+		"spaceLength": 10,
+		"stack": false,
+		"steppedLine": false,
+		"targets": [
+		  {
+			"expr": "histogram_quantile(0.95, sum(rate(${service}_proxy_latency_seconds_bucket[5m])) by (service, le))",
+			"interval": "",
+			"legendFormat": "{{service}}",
+			"refId": "A"
+		  }
+		],
+		"thresholds": [],
+		"timeRegions": [],
+		"title": "Latencia proxy P95 por servicio",
+		"tooltip": {
+		  "shared": true,
+		  "sort": 0,
+		  "value_type": "individual"
+		},
+		"type": "graph",
+		"xaxis": {
+		  "buckets": null,
+		  "mode": "time",
+		  "name": null,
+		  "show": true,
+		  "values": []
+		},
+		"yaxes": [
+		  {
+			"format": "s",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  },
+		  {
+			"format": "short",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  }
+		],
+		"yaxis": {
+		  "align": false,
+		  "alignLevel": null
+		}
+	  },
+	  {
+		"datasource": "Prometheus",
+		"description": "Errores de proxy por servicio",
+		"fieldConfig": {
+		  "defaults": {
+			"color": {
+			  "mode": "palette-classic"
+			},
+			"custom": {
+			  "hideFrom": {
+				"legend": false,
+				"tooltip": false,
+				"viz": false
+			  }
+			},
+			"mappings": []
+		  },
+		  "overrides": []
+		},
+		"gridPos": {
+		  "h": 8,
+		  "w": 12,
+		  "x": 0,
+		  "y": 35
+		},
+		"id": 12,
+		"options": {
+		  "displayLabels": [],
+		  "legend": {
+			"displayMode": "list",
+			"placement": "right",
+			"values": []
+		  },
+		  "pieType": "pie",
+		  "reduceOptions": {
+			"calcs": [
+			  "sum"
+			],
+			"fields": "",
+			"values": false
+		  },
+		  "tooltip": {
+			"mode": "single"
+		  }
+		},
+		"pluginVersion": "7.5.7",
+		"targets": [
+		  {
+			"expr": "sum(${service}_proxy_errors_total) by (service)",
+			"interval": "",
+			"legendFormat": "{{service}}",
+			"refId": "A"
+		  }
+		],
+		"title": "Errores de proxy por servicio",
+		"type": "piechart"
+	  },
+	  {
+		"aliasColors": {},
+		"bars": false,
+		"dashLength": 10,
+		"dashes": false,
+		"datasource": "Prometheus",
+		"description": "Tasa de errores de proxy por servicio",
+		"fieldConfig": {
+		  "defaults": {
+			"links": []
+		  },
+		  "overrides": []
+		},
+		"fill": 1,
+		"fillGradient": 0,
+		"gridPos": {
+		  "h": 8,
+		  "w": 12,
+		  "x": 12,
+		  "y": 35
+		},
+		"hiddenSeries": false,
+		"id": 13,
+		"legend": {
+		  "avg": false,
+		  "current": false,
+		  "max": false,
+		  "min": false,
+		  "show": true,
+		  "total": false,
+		  "values": false
+		},
+		"lines": true,
+		"linewidth": 1,
+		"nullPointMode": "null",
+		"options": {
+		  "alertThreshold": true
+		},
+		"percentage": false,
+		"pluginVersion": "7.5.7",
+		"pointradius": 2,
+		"points": false,
+		"renderer": "flot",
+		"seriesOverrides": [],
+		"spaceLength": 10,
+		"stack": false,
+		"steppedLine": false,
+		"targets": [
+		  {
+			"expr": "sum(rate(${service}_proxy_errors_total[1m])) by (service, error_code)",
+			"interval": "",
+			"legendFormat": "{{service}} - {{error_code}}",
+			"refId": "A"
+		  }
+		],
+		"thresholds": [],
+		"timeRegions": [],
+		"title": "Tasa de errores de proxy",
+		"tooltip": {
+		  "shared": true,
+		  "sort": 0,
+		  "value_type": "individual"
+		},
+		"type": "graph",
+		"xaxis": {
+		  "buckets": null,
+		  "mode": "time",
+		  "name": null,
+		  "show": true,
+		  "values": []
+		},
+		"yaxes": [
+		  {
+			"format": "short",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  },
+		  {
+			"format": "short",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		  }
+		],
+		"yaxis": {
+		  "align": false,
+		  "alignLevel": null
+		}
+	  }
+	],
+	"refresh": "10s",
+	"schemaVersion": 27,
+	"style": "dark",
+	"tags": [
+	  "microservices",
+	  "gateway"
+	],
+	"templating": {
+	  "list": [
+		{
+		  "allValue": null,
+		  "current": {
+			"selected": false,
+			"text": "gateway",
+			"value": "gateway"
+		  },
+		  "description": null,
+		  "error": null,
+		  "hide": 0,
+		  "includeAll": false,
+		  "label": null,
+		  "multi": false,
+		  "name": "service",
+		  "options": [
+			{
+			  "selected": true,
+			  "text": "gateway",
+			  "value": "gateway"
+			}
+		  ],
+		  "query": "gateway",
+		  "skipUrlSync": false,
+		  "type": "textbox"
+		}
+	  ]
+	},
+	"time": {
+	  "from": "now-1h",
+	  "to": "now"
+	},
+	"timepicker": {
+	  "refresh_intervals": [
+		"5s",
+		"10s",
+		"30s",
+		"1m",
+		"5m",
+		"15m",
+		"30m",
+		"1h",
+		"2h",
+		"1d"
+	  ]
+	},
+	"timezone": "",
+	"title": "Microservicios - Dashboard",
+	"uid": "microservices-dashboard",
+	"version": 1
+  }

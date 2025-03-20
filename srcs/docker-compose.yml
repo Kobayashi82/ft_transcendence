@@ -25,7 +25,6 @@ services:
       dockerfile: Dockerfile.dev                        # Usaremos un Dockerfile específico para desarrollo
     volumes:
       - ./frontend/web:/app                             # Montar código fuente
-      - /app/node_modules
     environment:
       - VITE_API_URL=http://backend:3000/api            # Variable para tu API
       - CHOKIDAR_USEPOLLING=true
@@ -148,13 +147,8 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./backend/gateway:/app
-      - ./backend/gateway/data:/app/data
-    ports:
-      - "3000:3000" 
     networks:
       - pong-net
-    environment:
-      - AUTH_SERVICE_URL=http://template:3000
 
   # Microservices
 

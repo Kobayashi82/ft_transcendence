@@ -4,7 +4,6 @@
 	"description": "API Gateway",
 	"author": "vzurera-",
 	"main": "src/app.js",
-	"type": "commonjs",
 	"scripts": {
 	  "start": "node src/app.js",
 	  "dev": "nodemon"
@@ -21,8 +20,7 @@
 	  "fastify": "^4.24.3",
 	  "fastify-plugin": "^4.5.1",
 	  "http-errors": "^2.0.0",
-	  "pino": "^8.16.2",
-	  "pino-pretty": "^10.2.3",
+	  "jsonwebtoken": "^9.0.2",
 	  "prom-client": "^14.2.0",
 	  "winston": "^3.8.0",
 	  "winston-logstash-transport": "^2.0.0"

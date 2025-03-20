@@ -3,17 +3,9 @@
 const fp = require('fastify-plugin')
 const net = require('net')
 
-/**
- * Plugin for logging with Logstash
- * 
- * @param {FastifyInstance} fastify		Fastify instance
- * @param {Object} options				Plugin options
- */
+// Plugin for logging with Logstash
 async function logstashPlugin(fastify, options) {
   const config = fastify.config
-  
-  // Metric routes to filter
-  const metricsRoutes = [ '/metrics', '/health', '/ping', '/status' ]
 
   // Create TCP client
   let client = null
@@ -43,26 +35,24 @@ async function logstashPlugin(fastify, options) {
     })
     
     client.on('error', (err) => {
-      //console.error(`Logstash: connection error: ${err.message}`)
       connected = false
       
       if (!reconnectTimer) {
         reconnectTimer = setTimeout(() => {
           reconnectTimer = null
           connect()
-        }, 5000) // retry every 5 seconds
+        }, 5000)
       }
     })
     
     client.on('close', () => {
       connected = false
-      //console.log('Logstash connection closed')
       
       if (!reconnectTimer) {
         reconnectTimer = setTimeout(() => {
           reconnectTimer = null
           connect()
-        }, 5000) // retry every 5 seconds
+        }, 5000)
       }
     })
     
@@ -78,7 +68,6 @@ async function logstashPlugin(fastify, options) {
     try {
       const logData = {
         '@timestamp': new Date().toISOString(),
-        '@version': '1',
         service: `${fastify.config.serviceName}`,
         env: config.env || 'production',
         host: `${fastify.config.serviceName}`,
@@ -87,7 +76,7 @@ async function logstashPlugin(fastify, options) {
       
       if (data && typeof data === 'object') {
         Object.keys(data).forEach(key => {
-          if (!['@timestamp', '@version', 'message'].includes(key)) logData[key] = data[key]
+          if (!['@timestamp', 'message'].includes(key)) logData[key] = data[key]
         })
       }
       
@@ -97,18 +86,17 @@ async function logstashPlugin(fastify, options) {
       // Convert to JSON
       const logString = JSON.stringify(logData) + '\n'
       client.write(logString)
-	  console.log('%s log: %s', fastify.config.serviceName, logData.message)
     } catch (err) {
-      console.error(`Error al enviar log a Logstash: ${err.message}`)
     }
   }
   
   // Decorate log with Fastify
   fastify.decorate('logstash', {
-    info: (data, msg) => { sendLog('info', data, msg) },
-    error: (data, msg) => { sendLog('error', data, msg) },
-    warn: (data, msg) => { sendLog('warn', data, msg) },
-    debug: (data, msg) => { sendLog('debug', data, msg) }
+	isConnected: () => connected && client !== null,
+	info: (data, msg) =>	{ if (connected && client) sendLog('info', data, msg);  },
+	error: (data, msg) =>	{ if (connected && client) sendLog('error', data, msg); },
+	warn: (data, msg) =>	{ if (connected && client) sendLog('warn', data, msg);  },
+	debug: (data, msg) =>	{ if (connected && client) sendLog('debug', data, msg); }
   })
   
   // Close connection on exit

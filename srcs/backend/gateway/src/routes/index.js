@@ -1,27 +1,24 @@
 'use strict'
 
-/**
- * Punto de entrada para todas las rutas del gateway
- * 
- * @param {FastifyInstance} fastify - Instancia de Fastify
- * @param {Object} options - Opciones
- */
 async function routes(fastify, options) {
-  // Registrar rutas de API
+
   fastify.register(require('./api'))
-  
-  // Registrar ruta de comprobación de salud
   fastify.register(require('./health'))
   
-  // Ruta raíz
   fastify.get('/', async (request, reply) => {
 
-	    
-	if (fastify.logstash) {
-		fastify.logstash.info({
-		  message: "Prueba de log",
-		});
-	}
+	// Example of logs
+	console.log('Your message here')		// Log using console
+	fastify.logstash.info({					// Log using logstash
+	  message: "Your message here",
+	  userId: 123,
+	  action: "login"
+	});
+
+	// Example of redis
+	await fastify.cache.set('my-key', { mensaje: 'Hello world' }, 60); // TTL: 60 seconds (time the value will be in cache)
+	const result = await fastify.cache.get('my-key');
+	console.log(result.mensaje);
 
     return { 
       gateway: 'ft_transcendence API Gateway',
@@ -29,6 +26,7 @@ async function routes(fastify, options) {
       version: '1.0.0' 
     }
   })
+
 }
 
 module.exports = routes

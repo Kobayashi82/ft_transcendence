@@ -2,18 +2,28 @@
 
 const axios = require('axios')
 
-/**
- * Rutas para health check del gateway y servicios
- * 
- * @param {FastifyInstance} fastify - Instancia de Fastify
- * @param {Object} options - Opciones
- */
+// Routes for health check of the gateway and services
 async function healthRoutes(fastify, options) {
-  const { services } = fastify.config
+  const services = fastify.config.services
   
-  // Endpoint de health check para el gateway
+  // Service information route
+  fastify.get('/services', async (request, reply) => {
+	// Obtener status real de los servicios usando la función existente
+	const serviceStatus = await checkServices(services);
+	
+	// Crear lista de servicios con información de disponibilidad
+	const serviceInfo = Object.entries(services).map(([name, config]) => ({
+	  name,
+	  prefix: config.prefix,
+	  available: serviceStatus[name]?.status === 'healthy'
+	}));
+	
+	return serviceInfo;
+  });
+
+  // Health check endpoint for the gateway
   fastify.get('/health', async (request, reply) => {
-    // Verificar componentes del gateway
+    // Check gateway components
     const redisStatus = await checkRedis(fastify)
     const serviceStatus = await checkServices(services)
     
@@ -29,47 +39,37 @@ async function healthRoutes(fastify, options) {
       services: serviceStatus
     }
 
-    // Si algún componente crítico falló, devolver 503
+    // If any critical component fails, return 503
     const isHealthy = redisStatus.status === 'healthy'
     
-    if (!isHealthy) {
-      reply.status(503)
-    }
+    if (!isHealthy) { reply.status(503) }
     
     return gatewayStatus
   })
   
-  // Health check detallado solo para servicios
+  // Detailed health check for services only
   fastify.get('/health/services', async (request, reply) => {
     const serviceStatus = await checkServices(services)
     
-    // Si todos los servicios están caídos, devolver 503
-    const allServicesDown = Object.values(serviceStatus).every(
-      service => service.status !== 'healthy'
-    )
+    // If all services are down, return 503
+    const allServicesDown = Object.values(serviceStatus).every(service => service.status !== 'healthy')
     
-    if (allServicesDown && Object.keys(serviceStatus).length > 0) {
-      reply.status(503)
-    }
+    if (allServicesDown && Object.keys(serviceStatus).length > 0) { reply.status(503) }
     
     return { services: serviceStatus }
   })
   
-  // Health check detallado para Redis
+  // Detailed health check for Redis
   fastify.get('/health/redis', async (request, reply) => {
     const redisStatus = await checkRedis(fastify)
     
-    if (redisStatus.status !== 'healthy') {
-      reply.status(503)
-    }
+    if (redisStatus.status !== 'healthy') { reply.status(503) }
     
     return { redis: redisStatus }
   })
 }
 
-/**
- * Comprobar el estado de Redis
- */
+// Check the status of Redis
 async function checkRedis(fastify) {
   try {
     const startTime = Date.now()
@@ -81,7 +81,6 @@ async function checkRedis(fastify) {
       responseTime: `${responseTime}ms`
     }
   } catch (error) {
-    fastify.log.error(error, 'Error al verificar estado de Redis')
     return {
       status: 'unhealthy',
       error: error.message
@@ -89,9 +88,7 @@ async function checkRedis(fastify) {
   }
 }
 
-/**
- * Comprobar el estado de los servicios backend
- */
+// Check the status of the microservices
 async function checkServices(services) {
   const serviceStatus = {}
   
@@ -100,13 +97,13 @@ async function checkServices(services) {
       try {
         const { url } = config
         
-        // Intentar hacer petición al endpoint de health o raíz del servicio
+        // Try making a request to the health or root endpoint of the service
         const startTime = Date.now()
         const healthUrl = `${url}/health`
         
         const response = await axios.get(healthUrl, { 
           timeout: 3000,
-          validateStatus: () => true // No lanzar errores para status codes
+          validateStatus: () => true // Don't throw errors for non-2xx status codes
         })
         
         const responseTime = Date.now() - startTime

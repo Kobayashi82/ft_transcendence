@@ -4,20 +4,15 @@ const fp = require('fastify-plugin')
 const httpProxy = require('@fastify/http-proxy')
 const createError = require('http-errors')
 
-/**
- * Plugin para enrutar solicitudes a los microservicios correspondientes
- * 
- * @param {FastifyInstance} fastify - Instancia de Fastify
- * @param {Object} options - Opciones del plugin
- */
+// Plugin to route requests to the corresponding microservices
 async function proxyPlugin(fastify, options) {
   const { services } = fastify.config
   
-  // Registra un proxy para cada servicio
+  // Register a proxy for each service
   for (const [serviceName, serviceConfig] of Object.entries(services)) {
     const { url, prefix, proxyOptions = {}, timeout } = serviceConfig
     
-    fastify.log.info(`Registrando proxy para ${serviceName} en ${prefix} → ${url}`)
+    // console.log(`Registering proxy for ${serviceName} at ${prefix} →  ${url}`)
     
     fastify.register(httpProxy, {
       upstream: url,
@@ -25,15 +20,15 @@ async function proxyPlugin(fastify, options) {
       http2: false,
       replyOptions: {
         rewriteRequestHeaders: (req, headers) => {
-          // Añadir headers relevantes como X-Forwarded-*
+          // Add relevant headers like X-Forwarded-*
           headers['x-forwarded-proto'] = req.protocol
           headers['x-forwarded-host'] = req.headers.host
           
-          // Headers personalizados para identificar solicitudes del gateway
+          // Custom headers to identify requests from the gateway
           headers['x-gateway-timestamp'] = Date.now().toString()
           headers['x-gateway-service'] = serviceName
           
-          // Aplicar reescrituras personalizadas específicas del servicio
+          // Apply custom header rewrites specific to the service
           if (proxyOptions.rewriteRequestHeaders) {
             headers = proxyOptions.rewriteRequestHeaders(req, headers)
           }
@@ -41,23 +36,23 @@ async function proxyPlugin(fastify, options) {
           return headers
         }
       },
-      // Configurar timeout para la solicitud
+      // Set request timeout
       httpMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       timeout: timeout,
       ...proxyOptions
     })
   }
 
-  // Middleware para capturar errores de timeout y otros errores de proxy
+  // Middleware to capture timeout errors and other proxy errors
   fastify.setErrorHandler(function (error, request, reply) {
-    // Manejo específico para errores de proxy
+    // Specific handling for proxy errors
     if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
-      fastify.log.error({
+      console.error({
         err: error, 
         service: request.headers['x-gateway-service']
-      }, 'Error de comunicación con el microservicio')
+      }, 'Communication error with the microservice')
       
-      const httpError = createError(503, 'Servicio temporalmente no disponible')
+      const httpError = createError(503, 'Service temporarily unavailable')
       reply.status(503).send({
         statusCode: 503,
         error: 'Service Unavailable',
@@ -66,12 +61,10 @@ async function proxyPlugin(fastify, options) {
       return
     }
     
-    // Para otros errores, delegar al manejador de errores global
+    // For other errors, delegate to the global error handler
     reply.send(error)
   })
+
 }
 
-module.exports = fp(proxyPlugin, {
-  name: 'proxy',
-  dependencies: ['redis', 'logger', 'metrics']
-})
+module.exports = fp(proxyPlugin, { name: 'proxy', dependencies: ['redis', 'metrics'] })

@@ -1,50 +1,36 @@
 'use strict'
 
-// Definición de los microservicios disponibles
+// Definition of microservices
 const services = {
-  // Servicio principal basado en el template
-  main: {
-    url: process.env.MAIN_SERVICE_URL || 'http://template:3000',
-    prefix: '/api',
+  template: {
+    url: process.env.TEMPLATE_SERVICE_URL || 'http://template:3000',
+    prefix: '/template',
     routes: {
-      // Aquí puedes mapear rutas específicas si es necesario
+      // Here you can map specific routes if needed
     },
-    // Timeout en milisegundos
-    timeout: parseInt(process.env.MAIN_SERVICE_TIMEOUT || '5000'),
-    // Opciones para el proxy
+    // Timeout in milliseconds
+    timeout: parseInt(process.env.SERVICE_TIMEOUT || '5000'),
+    // Proxy options
     proxyOptions: {
       rewriteRequestHeaders: (req, headers) => {
-        // Aquí puedes modificar headers si es necesario
+        // Here you can modify headers if necessary
         return headers;
       }
     }
   },
   
-  // Puedes agregar más servicios a medida que los crees:
-  /*
   auth: {
     url: process.env.AUTH_SERVICE_URL || 'http://auth:3000',
     prefix: '/auth',
-    timeout: parseInt(process.env.AUTH_SERVICE_TIMEOUT || '5000'),
+    timeout: parseInt(process.env.SERVICE_TIMEOUT || '5000'),
   },
-  game: {
-    url: process.env.GAME_SERVICE_URL || 'http://game:3000',
-    prefix: '/game',
-    timeout: parseInt(process.env.GAME_SERVICE_TIMEOUT || '5000'),
-  },
-  */
 };
 
-// Mapa de rutas para redirigir a servicios específicos
-// Esto se usará en el plugin de proxy para determinar a qué servicio redirigir cada solicitud
+// Route map to redirect to specific services
+// This will be used in the proxy plugin to determine which service to route each request to
 const routeMap = {
-  '/api': 'main',
-  // Agrega más mapeos de ruta a medida que agregues servicios
-  // '/auth': 'auth',
-  // '/game': 'game',
+  '/template': 'template',
+  '/auth': 'auth',
 };
 
-module.exports = {
-  services,
-  routeMap
-}
+module.exports = { services, routeMap }

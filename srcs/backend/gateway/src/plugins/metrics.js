@@ -4,146 +4,96 @@ const fp = require('fastify-plugin')
 const promClient = require('prom-client')
 
 async function metricsPlugin(fastify, options) {
-  // Crear el registro para métricas de Prometheus
   const register = new promClient.Registry()
   
-  // Agregar métricas por defecto
-  promClient.collectDefaultMetrics({ 
-    register,
-    prefix: 'gateway_' 
-  })
+  // Default metrics
+  promClient.collectDefaultMetrics({ register, prefix: `${fastify.config.serviceName}_` })
   
-  // Crear contadores personalizados para el gateway
+  // Custom counters
   const httpRequestsTotal = new promClient.Counter({
-    name: 'gateway_http_requests_total',
-    help: 'Total de solicitudes HTTP en el gateway',
+    name: `${fastify.config.serviceName}_http_requests_total`,
+    help: `Total HTTP requests in the ${fastify.config.serviceName}`,
     labelNames: ['method', 'route', 'status_code'],
     registers: [register]
   })
   
   const httpRequestDuration = new promClient.Histogram({
-    name: 'gateway_http_request_duration_seconds',
-    help: 'Duración de las solicitudes HTTP en segundos en el gateway',
+    name: `${fastify.config.serviceName}_http_request_duration_seconds`,
+    help: `Duration of HTTP requests in seconds in the ${fastify.config.serviceName}`,
     labelNames: ['method', 'route', 'status_code'],
     buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10],
     registers: [register]
   })
   
-  // Métricas específicas del gateway para proxying
+  // Gateway-specific metrics for proxying
   const proxyRequestsTotal = new promClient.Counter({
-    name: 'gateway_proxy_requests_total',
-    help: 'Total de solicitudes proxeadas por servicio',
+    name: `${fastify.config.serviceName}_proxy_requests_total`,
+    help: 'Total proxied requests per service',
     labelNames: ['service', 'method', 'status_code'],
     registers: [register]
   })
   
   const proxyRequestDuration = new promClient.Histogram({
-    name: 'gateway_proxy_latency_seconds',
-    help: 'Latencia de solicitudes proxeadas por servicio',
+    name: `${fastify.config.serviceName}_proxy_latency_seconds`,
+    help: 'Latency of proxied requests per service',
     labelNames: ['service', 'method'],
     buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
     registers: [register]
   })
   
   const proxyErrors = new promClient.Counter({
-    name: 'gateway_proxy_errors_total',
-    help: 'Total de errores en solicitudes proxeadas por servicio',
+    name: `${fastify.config.serviceName}_proxy_errors_total`,
+    help: 'Total errors in proxied requests per service',
     labelNames: ['service', 'method', 'error_code'],
     registers: [register]
   })
   
-  // Decorar Fastify con el registro de Prometheus y utilidades
-  fastify.decorate('metrics', {
-    register,
-    httpRequestsTotal,
-    httpRequestDuration
-  })
-  
-  // Decorador para métricas específicas de proxy
+  fastify.decorate('metrics', { register, httpRequestsTotal, httpRequestDuration })
   fastify.decorate('proxyMetrics', {
-    recordRequest: (service, method, statusCode) => {
-      proxyRequestsTotal.inc({
-        service, 
-        method, 
-        status_code: statusCode
-      })
-    },
-    recordLatency: (service, method, seconds) => {
-      proxyRequestDuration.observe({
-        service,
-        method
-      }, seconds)
-    },
-    recordError: (service, method, errorCode) => {
-      proxyErrors.inc({
-        service,
-        method,
-        error_code: errorCode
-      })
-    }
+    recordRequest: (service, method, statusCode) => { proxyRequestsTotal.inc({ service, method, status_code: statusCode }) },
+    recordLatency: (service, method, seconds) => { proxyRequestDuration.observe({ service, method }, seconds) },
+    recordError: (service, method, errorCode) => { proxyErrors.inc({ service, method, error_code: errorCode }) }
   })
   
-  // Hook para registrar métricas en cada solicitud
+  // Hook to register metrics for each request
   fastify.addHook('onRequest', (request, reply, done) => {
-    request.metrics = {
-      startTime: process.hrtime()
-    }
+    request.metrics = { startTime: process.hrtime() }
     done()
   })
   
-  // Hook para registrar métricas de respuesta
+  // Hook to register response metrics
   fastify.addHook('onResponse', (request, reply, done) => {
-    // Usar routeOptions.url en lugar de routerPath (deprecated)
     const route = request.routeOptions?.url || request.raw.url
     const method = request.raw.method
     const statusCode = reply.statusCode.toString()
     
-    // Incrementar contador de solicitudes
-    fastify.metrics.httpRequestsTotal.inc({
-      method,
-      route,
-      status_code: statusCode
-    })
+    // Increment request counter
+    fastify.metrics.httpRequestsTotal.inc({ method, route, status_code: statusCode })
+    const responseTimeInSeconds = (reply.elapsedTime / 1000)
     
-    // Usar elapsedTime en lugar de getResponseTime() (deprecated)
-    const responseTimeInSeconds = reply.elapsedTime / 1000 // convertir de ms a segundos
+    fastify.metrics.httpRequestDuration.observe({ method, route, status_code: statusCode }, responseTimeInSeconds)
     
-    fastify.metrics.httpRequestDuration.observe(
-      {
-        method,
-        route,
-        status_code: statusCode
-      },
-      responseTimeInSeconds
-    )
-    
-    // Métricas de proxy si es una solicitud proxeada
+    // Proxy metrics if it's a proxied request
     if (request.headers['x-gateway-service']) {
       const service = request.headers['x-gateway-service']
       
       fastify.proxyMetrics.recordRequest(service, method, statusCode)
       fastify.proxyMetrics.recordLatency(service, method, responseTimeInSeconds)
       
-      // Si es un error, registrarlo también
-      if (reply.statusCode >= 400) {
-        fastify.proxyMetrics.recordError(service, method, statusCode)
-      }
+      // If it's an error, register it as well
+      if (reply.statusCode >= 400) { fastify.proxyMetrics.recordError(service, method, statusCode) }
     }
     
     done()
   })
   
-  // Exponer endpoint para métricas de Prometheus
+  // Expose endpoint for Prometheus metrics
   fastify.get('/metrics', async (request, reply) => {
     return reply
       .header('Content-Type', register.contentType)
       .send(await register.metrics())
   })
-  
-  fastify.log.info('Métricas de Prometheus disponibles en /metrics')
+
 }
 
-module.exports = fp(metricsPlugin, {
-  name: 'metrics',
-  dependencies: ['logger']
-})
+module.exports = fp(metricsPlugin, { name: 'metrics' })

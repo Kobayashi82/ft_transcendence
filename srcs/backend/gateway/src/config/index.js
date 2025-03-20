@@ -7,17 +7,17 @@ const env = process.env.NODE_ENV || 'development'
 const isDev = env === 'development'
 
 const config = {
-  // Configuración del servidor
+  // Server config
   port: process.env.PORT || 3000,
   host: process.env.HOST || '0.0.0.0',
-  serviceName: process.env.SERVICE_NAME || 'Gateway',
+  serviceName: process.env.SERVICE_NAME || 'gateway',
   isDev,
   env,
   
-  // Nivel de log
+  // Log level
   logLevel: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
   
-  // Servicios backend
+  // Backend services
   services: services.services,
   routeMap: services.routeMap,
   
@@ -44,13 +44,13 @@ const config = {
     timeWindow: process.env.RATE_LIMIT_WINDOW || '1 minute',
   },
   
-  // JWT para autenticación (si se usa)
+  // JWT
   jwt: {
     secret: process.env.JWT_SECRET || 'your-super-secret-key-change-in-production',
     expiresIn: process.env.JWT_EXPIRES_IN || '1h',
   },
   
-  // Métricas
+  // Metrics
   metrics: {
     endpoint: process.env.METRICS_ENDPOINT || '/metrics',
   },
