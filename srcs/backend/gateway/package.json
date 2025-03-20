@@ -1,16 +1,41 @@
 {
-  "name": "gateway-service",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
-  },
-  "dependencies": {
-    "fastify": "^4.26.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.3"
+	"name": "gateway",
+	"version": "1.0.0",
+	"description": "API Gateway para ft_transcendence",
+	"main": "src/app.js",
+	"type": "commonjs",
+	"scripts": {
+	  "start": "node src/app.js",
+	  "dev": "nodemon",
+	  "test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"engines": {
+	  "node": ">=20.0.0"
+	},
+	"dependencies": {
+	  "@fastify/cors": "^8.5.0",
+	  "@fastify/helmet": "^11.0.0",
+	  "@fastify/http-proxy": "^9.3.0",
+	  "@fastify/rate-limit": "^8.0.3",
+	  "@fastify/redis": "^6.1.1",
+	  "@fastify/sensible": "^5.0.0",
+	  "axios": "^1.6.2",
+	  "dotenv": "^16.3.1",
+	  "fastify": "^4.24.3",
+	  "fastify-plugin": "^4.5.1",
+	  "http-errors": "^2.0.0",
+	  "pino": "^8.16.2",
+	  "pino-pretty": "^10.2.3",
+	  "prom-client": "^14.2.0",
+	  "winston": "^3.8.0",
+	  "winston-logstash-transport": "^2.0.0"
+	},
+	"devDependencies": {
+	  "nodemon": "^3.0.1"
+	},
+	"overrides": {
+	  "winston-logstash-transport": {
+		"winston": "^3.8.0"
+	  }
+	}
   }
-}

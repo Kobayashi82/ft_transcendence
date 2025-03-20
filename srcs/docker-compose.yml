@@ -24,7 +24,7 @@ services:
       context: ./frontend/web
       dockerfile: Dockerfile.dev                        # Usaremos un Dockerfile específico para desarrollo
     volumes:
-      - ./frontend/web:/app                        # Montar código fuente
+      - ./frontend/web:/app                             # Montar código fuente
       - /app/node_modules
     environment:
       - VITE_API_URL=http://backend:3000/api            # Variable para tu API
@@ -120,6 +120,7 @@ services:
       - SERVER_BASEPATH=/kibana                         # Base path for Kibana
       - ELASTICSEARCH_USERNAME=elastic                  # Admin name
       - ELASTICSEARCH_PASSWORD=${ADMIN_PASS}            # Admin pass
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m                  # Set the minimum and maximum heap size to 512MB
     networks:
       - pong-net                                        # Network connecting all containers
     restart: always                                     # Restart container in case of failure
@@ -141,28 +142,57 @@ services:
   # API Gateway + Fastify (3000)
   gateway:
     container_name: gateway                             # Container name
+    env_file: .env                                      # File with environment variables
     build:
       context: ./backend/gateway
       dockerfile: Dockerfile.dev
     volumes:
-      - ./backend/gateway/src:/app/src  # Hot-reload
-      - /app/node_modules
+      - ./backend/gateway:/app
+      - ./backend/gateway/data:/app/data
     ports:
       - "3000:3000" 
     networks:
       - pong-net
     environment:
-      - AUTH_SERVICE_URL=http://template:3001
+      - AUTH_SERVICE_URL=http://template:3000
 
   # Microservices
+
+  template:
+    container_name: template                            # Container name
+    build:
+      context: ./backend/microservices/template
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend/microservices/template/src:/app/src
+      - ./backend/microservices/template/data:/app/data
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - HOST=0.0.0.0
+      - LOG_LEVEL=debug
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
+      - APP_NAME=template
+    ports:
+      - "3001:3000"
+    networks:
+      - pong-net
+    depends_on:
+      - redis
+      - logstash
+    restart: unless-stopped
+
   # template:
-  #   container_name: template                            # Container name
+  #   container_name: template                          # Container name
   #   build:
   #     context: ./backend/microservices/template
   #     dockerfile: Dockerfile.dev
   #   volumes:
   #     - template_data:/data
-  #     - ./backend/microservices/template/src:/app/src  # Hot-reload
+  #     - ./backend/microservices/template/src:/app/src # Hot-reload
   #   environment:
   #     - REDIS_URL=redis://redis:6379
   #     - DB_PATH=/data/template.db

@@ -2,15 +2,18 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# 1. Copia SOLO package.json primero (para cachear dependencias)
-COPY package.json package-lock.json ./
+# Instalar dependencias de desarrollo
+COPY package*.json ./
+RUN npm install
 
-# 2. Instala dependencias
-RUN npm install --production=false
+# Copiar código fuente
+COPY . .
 
-# 3. Copia el resto del código (evita conflictos con volúmenes)
-COPY src/ ./src/
-
-# 4. Puerto y comando
+# Puerto por defecto
 EXPOSE 3000
+
+# Entorno de desarrollo
+ENV NODE_ENV=development
+
+# Comando para iniciar en modo desarrollo con hot reload
 CMD ["npm", "run", "dev"]

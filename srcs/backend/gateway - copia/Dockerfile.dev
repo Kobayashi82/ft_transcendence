@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 1. Copia SOLO package.json primero (para cachear dependencias)
+COPY package.json package-lock.json ./
+
+# 2. Instala dependencias
+RUN npm install --production=false
+
+# 3. Copia el resto del código (evita conflictos con volúmenes)
+COPY src/ ./src/
+
+# 4. Puerto y comando
+EXPOSE 3000
+CMD ["npm", "run", "dev"]

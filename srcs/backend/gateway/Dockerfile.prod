@@ -1,0 +1,36 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Instalar dependencias
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copiar código fuente
+COPY . .
+
+# Etapa de producción
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Configuración de usuario para producción
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 -G nodejs
+
+# Copiar archivos de la etapa de construcción
+COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/src ./src
+
+# Configuración de usuario no root
+USER nodejs
+
+# Puerto por defecto
+EXPOSE 3000
+
+# Entorno de producción
+ENV NODE_ENV=production
+
+# Comando para iniciar en modo producción
+CMD ["node", "src/app.js"]

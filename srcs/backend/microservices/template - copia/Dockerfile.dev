@@ -1,0 +1,22 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Instalamos dependencias globales
+RUN npm install -g nodemon
+
+# Copiamos package.json y package-lock.json
+COPY package*.json ./
+
+# Instalamos dependencias
+RUN npm install
+
+# Creamos directorio para la base de datos
+RUN mkdir -p data
+
+# Exponemos el puerto
+EXPOSE 3000
+
+# Comando para iniciar en modo desarrollo con hot-reload
+CMD ["npm", "run", "dev"]
+
