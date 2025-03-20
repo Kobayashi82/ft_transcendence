@@ -4,28 +4,23 @@ const fp = require('fastify-plugin')
 const net = require('net')
 
 /**
- * Plugin para enviar logs a Logstash en formato JSON correcto
+ * Plugin for logging with Logstash
  * 
- * @param {FastifyInstance} fastify - Instancia de Fastify
- * @param {Object} options - Opciones del plugin
+ * @param {FastifyInstance} fastify		Fastify instance
+ * @param {Object} options				Plugin options
  */
 async function logstashPlugin(fastify, options) {
   const config = fastify.config
   
-  // Paths o rutas de métricas que queremos filtrar
-  const metricsRoutes = [
-    '/metrics',
-    '/health',
-    '/ping',
-    '/status'
-  ]
+  // Metric routes to filter
+  const metricsRoutes = [ '/metrics', '/health', '/ping', '/status' ]
 
-  // Crear cliente TCP para Logstash
+  // Create TCP client
   let client = null
   let connected = false
   let reconnectTimer = null
   
-  // Función para conectar a Logstash
+  // Connect to Logstash
   function connect() {
     if (client) {
       client.removeAllListeners()
@@ -39,7 +34,7 @@ async function logstashPlugin(fastify, options) {
     
     client.on('connect', () => {
       connected = true
-      console.log(`Conectado a Logstash en ${host}:${port}`)
+      console.log(`Logstash connected on port ${port}`)
       
       if (reconnectTimer) {
         clearTimeout(reconnectTimer)
@@ -48,120 +43,76 @@ async function logstashPlugin(fastify, options) {
     })
     
     client.on('error', (err) => {
-      console.error(`Error de conexión a Logstash: ${err.message}`)
+      //console.error(`Logstash: connection error: ${err.message}`)
       connected = false
       
       if (!reconnectTimer) {
         reconnectTimer = setTimeout(() => {
           reconnectTimer = null
           connect()
-        }, 5000) // Reintentar cada 5 segundos
+        }, 5000) // retry every 5 seconds
       }
     })
     
     client.on('close', () => {
       connected = false
-      console.log('Conexión a Logstash cerrada')
+      //console.log('Logstash connection closed')
       
       if (!reconnectTimer) {
         reconnectTimer = setTimeout(() => {
           reconnectTimer = null
           connect()
-        }, 5000) // Reintentar cada 5 segundos
+        }, 5000) // retry every 5 seconds
       }
     })
     
     client.connect(port, host)
   }
   
-  // Conectar al iniciar
   connect()
-  
-  // Función para enviar logs a Logstash
+
+  // Send logs to Logstash
   function sendLog(level, data, message) {
-    // No enviar logs si no estamos conectados
-    if (!connected || !client) {
-      return
-    }
+    if (!connected || !client) return
     
     try {
-      // Preparar los datos del log - asegurándose de que message sea un campo de primer nivel
       const logData = {
-        // Campos estándar de Logstash
         '@timestamp': new Date().toISOString(),
         '@version': '1',
-        // Campos personalizados
-        service: 'gateway',
+        service: `${fastify.config.serviceName}`,
         env: config.env || 'production',
-        host: process.env.HOSTNAME || 'gateway',
+        host: `${fastify.config.serviceName}`,
         level: level
       }
       
-      // Añadir los datos adicionales, pero evitando campos reservados
       if (data && typeof data === 'object') {
         Object.keys(data).forEach(key => {
-          // No sobreescribir campos estándar
-          if (!['@timestamp', '@version', 'message'].includes(key)) {
-            logData[key] = data[key]
-          }
+          if (!['@timestamp', '@version', 'message'].includes(key)) logData[key] = data[key]
         })
       }
       
-      // Priorizar el mensaje del segundo parámetro, luego data.message
-      if (message) {
-        logData.message = message
-      } else if (data && data.message) {
-        logData.message = data.message
-      }
+      if (message)						logData.message = message
+	  else if (data && data.message)	logData.message = data.message
       
-      // Convertir a JSON y enviar con un salto de línea al final
+      // Convert to JSON
       const logString = JSON.stringify(logData) + '\n'
       client.write(logString)
+	  console.log('%s log: %s', fastify.config.serviceName, logData.message)
     } catch (err) {
       console.error(`Error al enviar log a Logstash: ${err.message}`)
     }
   }
   
-  // Decorar Fastify con el logger
+  // Decorate log with Fastify
   fastify.decorate('logstash', {
-    info: (data, msg) => {
-      // Si es un objeto de log y tiene una URL que corresponde a métricas, no lo logueamos
-      if (data && typeof data === 'object' && data.url && 
-          metricsRoutes.some(route => data.url.startsWith(route))) {
-        return // Filtrar rutas de métricas
-      }
-      sendLog('info', data, msg)
-    },
-    error: (data, msg) => {
-      // Para errores, siempre logueamos sin importar la ruta
-      sendLog('error', data, msg)
-    },
-    warn: (data, msg) => {
-      // Filtrar logs de warn para métricas
-      if (data && typeof data === 'object' && data.url && 
-          metricsRoutes.some(route => data.url.startsWith(route))) {
-        return
-      }
-      sendLog('warn', data, msg)
-    },
-    debug: (data, msg) => {
-      // Filtrar logs de debug para métricas
-      if (data && typeof data === 'object' && data.url && 
-          metricsRoutes.some(route => data.url.startsWith(route))) {
-        return
-      }
-      sendLog('debug', data, msg)
-    }
+    info: (data, msg) => { sendLog('info', data, msg) },
+    error: (data, msg) => { sendLog('error', data, msg) },
+    warn: (data, msg) => { sendLog('warn', data, msg) },
+    debug: (data, msg) => { sendLog('debug', data, msg) }
   })
   
-  // Cerrar conexión al salir
-  process.on('exit', () => {
-    if (client) {
-      client.destroy()
-    }
-  })
+  // Close connection on exit
+  process.on('exit', () => { if (client) client.destroy() })
 }
 
-module.exports = fp(logstashPlugin, {
-  name: 'logstash'
-})
+module.exports = fp(logstashPlugin, { name: 'logstash' })

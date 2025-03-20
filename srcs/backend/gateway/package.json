@@ -1,16 +1,13 @@
 {
 	"name": "gateway",
 	"version": "1.0.0",
-	"description": "API Gateway para ft_transcendence",
+	"description": "API Gateway",
+	"author": "vzurera-",
 	"main": "src/app.js",
 	"type": "commonjs",
 	"scripts": {
 	  "start": "node src/app.js",
-	  "dev": "nodemon",
-	  "test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"engines": {
-	  "node": ">=20.0.0"
+	  "dev": "nodemon"
 	},
 	"dependencies": {
 	  "@fastify/cors": "^8.5.0",
@@ -32,10 +29,5 @@
 	},
 	"devDependencies": {
 	  "nodemon": "^3.0.1"
-	},
-	"overrides": {
-	  "winston-logstash-transport": {
-		"winston": "^3.8.0"
-	  }
 	}
-  }
+}

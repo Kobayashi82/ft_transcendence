@@ -10,6 +10,7 @@ const config = {
   // Configuración del servidor
   port: process.env.PORT || 3000,
   host: process.env.HOST || '0.0.0.0',
+  serviceName: process.env.SERVICE_NAME || 'Gateway',
   isDev,
   env,
   
