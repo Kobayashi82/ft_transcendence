@@ -2,9 +2,9 @@
 
 // Definition of microservices
 const services = {
-  template: {
-    url: process.env.TEMPLATE_SERVICE_URL || 'http://template:3000',
-    prefix: '/template',
+  user: {
+    url: process.env.USER_SERVICE_URL || 'http://user:3000',
+    prefix: '/user',
     routes: {
       // Here you can map specific routes if needed
     },
@@ -29,7 +29,7 @@ const services = {
 // Route map to redirect to specific services
 // This will be used in the proxy plugin to determine which service to route each request to
 const routeMap = {
-  '/template': 'template',
+  '/user': 'user',
   '/auth': 'auth',
 };
 

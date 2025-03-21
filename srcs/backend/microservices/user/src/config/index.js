@@ -10,7 +10,7 @@ const config = {
   // Server
   port: process.env.PORT || 3000,
   host: process.env.HOST || '0.0.0.0',
-  serviceName: process.env.SERVICE_NAME || 'gateway',
+  serviceName: process.env.SERVICE_NAME || 'user',
   isDev, env,
   
   // Log level
@@ -19,30 +19,21 @@ const config = {
   // Services
   services: services.services,
   routeMap: services.routeMap,
-  
+
   // Redis
   redis: {
     host: process.env.REDIS_HOST || 'redis',
     port: process.env.REDIS_PORT || 6379,
     password: process.env.REDIS_PASSWORD,
-    db: process.env.REDIS_DB || 0,
+    db: process.env.REDIS_DB || 1,
     tls: process.env.REDIS_TLS === 'true' ? {} : null,
   },
-  
-  // CORS
-  cors: {
-    origin: process.env.CORS_ORIGIN || true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
+ 
+  // Database
+  database: {
+    path: process.env.DB_PATH || './data/database.sqlite'
   },
-  
-  // Rate limiting
-  rateLimit: {
-    max: process.env.RATE_LIMIT_MAX || 100,
-    timeWindow: process.env.RATE_LIMIT_WINDOW || '1 minute',
-  },
-  
+
   // JWT
   jwt: {
     secret: process.env.JWT_SECRET || 'your-super-secret-key-change-in-production',

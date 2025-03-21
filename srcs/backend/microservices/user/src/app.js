@@ -14,13 +14,10 @@ app.register(require('./plugins/logger'))
 app.register(require('./plugins/metrics'), { metrics: config.metrics })
 app.register(require('./plugins/redis'))
 app.register(require('./plugins/auth'))
-app.register(require('./plugins/proxy'))
+app.register(require('./plugins/db'), { database: config.database })
 app.register(require('./plugins/error-handler'))
 
 // Register middlewares
-app.register(require('@fastify/cors'), config.cors)
-app.register(require('@fastify/rate-limit'), config.rateLimit)
-app.register(require('@fastify/helmet'))
 app.register(require('@fastify/sensible'))
 
 // Register routes

@@ -1,34 +1,32 @@
-# Gateway
+# User
 
-Responsable de enrutar solicitudes del cliente a los microservicios correspondientes.
+Responsable de...
 
 ## Características
 
-- Reverse proxy para microservicios
 - Monitoreo con Prometheus y logs centralizados
 - Caché con Redis
-- Rate limiting
-- Seguridad y autenticación centralizada
 - Health checks
 
 ## Estructura
 
 ```
-gateway/
+user/
 ├── src/									- Código fuente
 │   ├── app.js								- Aplicación principal
 │   ├── config/								- Configuración
-│   │   ├── index.js						- Configuración centralizada
-│   │   └── services.js						- Definición de microservicios
+│   │   └── index.js						- Configuración centralizada
 │   ├── plugins/							- Plugins Fastify
 │   │   ├── auth.js							- Plugin de autenticación
 │   │   ├── logstash.js						- Plugin de logging
 │   │   ├── metrics.js						- Plugin para Prometheus
-│   │   ├── proxy.js						- Plugin para proxy a microservicios
+│   │   ├── db.js							- Plugin para SQLite
 │   │   └── redis.js						- Plugin para Redis
+│   ├── schemes/							- Define Schemes
+│   │   └── users.js						- Scheme para users
 │   └── routes/								- Definición de rutas
-│       ├── api.js							- Endpoints del gateway
-│       ├── health.js						- Rutas de health check
+│       ├── health.js						- Rutas de health
+│       ├── users.js						- Rutas de users
 │       └── index.js						- Punto de entrada de rutas
 ├── nodemon.json							- Comando para hot-reload
 ├── Dockerfile.dev							- Docker para desarrollo
@@ -40,17 +38,16 @@ gateway/
 
 - `GET /`									- Información básica del gateway
 - `GET /health`								- Health check del gateway y servicios
-- `GET /health/services`					- Health check detallado de los servicios
-- `GET /health/redis`						- Health check de Redis
 - `GET /metrics`							- Métricas de Prometheus
-- `GET /services`							- Listado de servicios disponibles
 
 ## Métricas
 
 Métricas en formato Prometheus en el endpoint `/metrics`.
 
-- `gateway_http_requests_total`				- Total de solicitudes HTTP
-- `gateway_http_request_duration_seconds`	- Duración de las solicitudes HTTP
-- `gateway_proxy_requests_total`			- Total de solicitudes proxeadas por servicio
-- `gateway_proxy_latency_seconds`			- Latencia de solicitudes proxeadas
-- `gateway_proxy_errors_total`				- Total de errores en solicitudes proxeadas
+- `user_http_requests_total`				- Total de solicitudes HTTP
+- `user_http_request_duration_seconds`		- Duración de las solicitudes HTTP
+- `user_db_operations_total`				- 
+- `user_db_operation_duration_seconds`		- 
+- `user_external_calls_total`				- 
+- `user_external_call_duration_seconds`	- 
+- `user_business_operations_total`			- 

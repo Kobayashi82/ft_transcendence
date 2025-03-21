@@ -12,8 +12,6 @@ async function proxyPlugin(fastify, options) {
   for (const [serviceName, serviceConfig] of Object.entries(services)) {
     const { url, prefix, proxyOptions = {}, timeout } = serviceConfig
     
-    // console.log(`Registering proxy for ${serviceName} at ${prefix} →  ${url}`)
-    
     fastify.register(httpProxy, {
       upstream: url,
       prefix: prefix,

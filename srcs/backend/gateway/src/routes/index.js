@@ -8,9 +8,8 @@ async function routes(fastify, options) {
   fastify.get('/', async (request, reply) => {
 
 	// Example of logs
-	console.log('Your message here')		// Log using console
-	fastify.logstash.info({					// Log using logstash
-	  message: "Your message here",
+	console.log('Your message here')		        // Log using console
+	fastify.logger.info("Tu mensaje aquí", {    // Log using logstash
 	  userId: 123,
 	  action: "login"
 	});
@@ -21,7 +20,7 @@ async function routes(fastify, options) {
 	console.log(result.mensaje);
 
     return { 
-      gateway: 'ft_transcendence API Gateway',
+      gateway: 'gateway',
       status: 'active', 
       version: '1.0.0' 
     }

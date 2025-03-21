@@ -152,14 +152,14 @@ services:
 
   # Microservices
 
-  template:
-    container_name: template                            # Container name
+  user:
+    container_name: user                            # Container name
     build:
-      context: ./backend/microservices/template
+      context: ./backend/microservices/user
       dockerfile: Dockerfile.dev
     volumes:
-      - ./backend/microservices/template/src:/app/src
-      - ./backend/microservices/template/data:/app/data
+      - ./backend/microservices/user/src:/app/src
+      - ./backend/microservices/user/data:/app/data
     environment:
       - NODE_ENV=development
       - PORT=3000
@@ -169,7 +169,7 @@ services:
       - REDIS_PORT=6379
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5044
-      - APP_NAME=template
+      - APP_NAME=user
     ports:
       - "3001:3000"
     networks:
@@ -179,26 +179,11 @@ services:
       - logstash
     restart: unless-stopped
 
-  # template:
-  #   container_name: template                          # Container name
-  #   build:
-  #     context: ./backend/microservices/template
-  #     dockerfile: Dockerfile.dev
-  #   volumes:
-  #     - template_data:/data
-  #     - ./backend/microservices/template/src:/app/src # Hot-reload
-  #   environment:
-  #     - REDIS_URL=redis://redis:6379
-  #     - DB_PATH=/data/template.db
-  #   networks:
-  #     - pong-net
-
 
 # ------------------ VOLUMES ------------------- #
 
 
 volumes:
-  # template_data:
   prometheus_data:                                      # Prometheus data volume
   grafana_data:                                         # Grafana data volume
   alertmanager_data:                                    # AlertManager data volume

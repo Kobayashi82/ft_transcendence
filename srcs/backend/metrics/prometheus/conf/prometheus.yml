@@ -27,10 +27,10 @@ scrape_configs:
     static_configs:
       - targets: ['gateway:3000']
 
-  - job_name: 'template'
+  - job_name: 'user'
     scrape_interval: 30s
     static_configs:
-      - targets: ['template:3000']
+      - targets: ['user:3000']
 
 alerting:
   alertmanagers:
