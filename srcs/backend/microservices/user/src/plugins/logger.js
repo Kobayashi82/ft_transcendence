@@ -18,9 +18,7 @@ async function loggerPlugin(fastify, options) {
     console.warn('No gateway configuration found. Logs will only be displayed in console.')
   }
   
-  const gatewayUrl = config.services && config.services.gateway
-    ? `http://${config.services.gateway.host}:${config.services.gateway.port}`
-    : null
+  const gatewayUrl = config.services && config.services.gateway ? config.services.gateway.url : null
   
   // Buffer to store logs if the gateway is unavailable
   let logBuffer = []

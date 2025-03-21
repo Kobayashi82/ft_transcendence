@@ -36,8 +36,8 @@ async function loggerPlugin(fastify, options) {
   
   // Connect to Logstash if not in dev mode (!config.isDev)
   if (config.isDev) {
-    const host = process.env.LOGSTASH_HOST || 'logstash'
-    const port = parseInt(process.env.LOGSTASH_PORT || '5044')
+    const host = fastify.config.logstash.host
+    const port = parseInt(fastify.config.logstash.port)
     
     try {
       logstashClient = new net.Socket()

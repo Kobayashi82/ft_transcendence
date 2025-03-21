@@ -11,7 +11,7 @@ app.decorate('config', config)
 
 // Register plugins
 app.register(require('./plugins/logger'))
-app.register(require('./plugins/metrics'), { metrics: config.metrics })
+app.register(require('./plugins/metrics'))
 app.register(require('./plugins/redis'))
 app.register(require('./plugins/auth'))
 app.register(require('./plugins/proxy'))
@@ -42,8 +42,6 @@ const start = async () => {
 
 // Shutdown
 const gracefulShutdown = async () => {
-	console.log('Shutting down server...')
-	
 	try {
 	  await app.close()
 	  console.log('Server shut down successfully')

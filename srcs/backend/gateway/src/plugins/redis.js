@@ -33,7 +33,7 @@ async function redisPlugin(fastify, options) {
     fastify.decorate('cache', {
       /**
        * Get a cached value
-       * @param {string} key			Key to retrieve
+       * @param {string} key		  	Key to retrieve
        * @returns {Promise<any>}		Stored value or null
        */
       async get(key) {
@@ -43,9 +43,9 @@ async function redisPlugin(fastify, options) {
 
       /**
        * Store a value in cache
-       * @param {string} key			Key to store
-       * @param {any} value				Value to store
-       * @param {number} ttl		 	Time to live in seconds
+       * @param {string} key		    	Key to store
+       * @param {any} value			    	Value to store
+       * @param {number} ttl		     	Time to live in seconds
        * @returns {Promise<boolean>}	Operation success
        */
       async set(key, value, ttl = 3600) {
@@ -57,22 +57,22 @@ async function redisPlugin(fastify, options) {
 
       /**
        * Delete a key from the cache
-       * @param {string} key			Key to delete
+       * @param {string} key		    	Key to delete
        * @returns {Promise<number>}		Number of deleted keys
        */
       async del(key) { return await fastify.redis.del(key) },
 
       /**
        * Check if a key exists
-       * @param {string} key			Key to check
+       * @param {string} key		    	Key to check
        * @returns {Promise<number>}		1 if exists, 0 if not
        */
       async exists(key) { return await fastify.redis.exists(key) }
     })
 
   } catch (err) {
-	console.error(`Error connecting to Redis: ${err}`)
-	throw err
+	  console.error(`Error connecting to Redis: ${err}`)
+	  throw err
   }    
 }
 

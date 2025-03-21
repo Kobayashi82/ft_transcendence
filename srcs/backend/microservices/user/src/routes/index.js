@@ -3,6 +3,12 @@
 async function routes(fastify, options) {
   
   fastify.get('/', async (request, reply) => {
+
+    fastify.logger.info("soy user", {    // Log using logstash
+      userId: 123,
+      action: "login"
+    });
+
     return { 
       service: fastify.config.serviceName,
       status: 'activo',

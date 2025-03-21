@@ -22,19 +22,19 @@ async function redisPlugin(fastify, options) {
       // Add listeners for events
       ...config.redis,
     })
-
+    
     // Check the connection
     const ping = await fastify.redis.ping()
     if (ping !== 'PONG') throw new Error('Did not receive PONG from Redis')
-    
-    console.log(`Redis connected on port ${config.redis.port}`)
+		
+	console.log(`Redis connected on port ${config.redis.port}`)
 
     // Add utils for cache
     fastify.decorate('cache', {
       /**
        * Get a cached value
-       * @param {string} key            Key to retrieve
-       * @returns {Promise<any>}        Stored value or null
+       * @param {string} key			  Key to retrieve
+       * @returns {Promise<any>}		Stored value or null
        */
       async get(key) {
         const value = await fastify.redis.get(key)
@@ -43,37 +43,37 @@ async function redisPlugin(fastify, options) {
 
       /**
        * Store a value in cache
-       * @param {string} key            Key to store
-       * @param {any} value             Value to store
-       * @param {number} ttl            Time to live in seconds
-       * @returns {Promise<boolean>}    Operation success
+       * @param {string} key		    	Key to store
+       * @param {any} value			    	Value to store
+       * @param {number} ttl		 	    Time to live in seconds
+       * @returns {Promise<boolean>}	Operation success
        */
       async set(key, value, ttl = 3600) {
         const stringValue = JSON.stringify(value)
         
-        if (ttl)  return await fastify.redis.set(key, stringValue, 'EX', ttl)
-        else    return await fastify.redis.set(key, stringValue)
+        if (ttl)	return await fastify.redis.set(key, stringValue, 'EX', ttl)
+        else		return await fastify.redis.set(key, stringValue)
       },
 
       /**
        * Delete a key from the cache
-       * @param {string} key             Key to delete
-       * @returns {Promise<number>}      Number of deleted keys
+       * @param {string} key			    Key to delete
+       * @returns {Promise<number>}		Number of deleted keys
        */
       async del(key) { return await fastify.redis.del(key) },
 
       /**
        * Check if a key exists
-       * @param {string} key            Key to check
-       * @returns {Promise<number>}     1 if exists, 0 if not
+       * @param {string} key		    	Key to check
+       * @returns {Promise<number>}		1 if exists, 0 if not
        */
       async exists(key) { return await fastify.redis.exists(key) }
     })
 
   } catch (err) {
-    console.error(`Error connecting to Redis: ${err}`)
-    throw err
-  }
+	console.error(`Error connecting to Redis: ${err}`)
+	throw err
+  }    
 }
 
 module.exports = fp(redisPlugin, { name: 'redis' })
