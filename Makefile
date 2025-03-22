@@ -90,5 +90,9 @@ _remove:
 	@docker rmi srcs-prometheus > /dev/null 2>&1 || true
 	@docker rmi srcs-service1 > /dev/null 2>&1 || true
 
+# Show docker-compose.yml with variables expanded
+config:
+	@d$(DC) config
+
 .PHONY: all up down restart build rebuild clean vclean fclean fcclean _remove
 

@@ -30,7 +30,69 @@ services:
       - CHOKIDAR_USEPOLLING=true
     networks:
       - pong-net
+    restart: unless-stopped
 
+
+# ------------------- LOGGING ------------------ #
+
+
+  # ElasticSearch (9200 & 9114)
+  elasticsearch:
+    container_name: elasticsearch
+    build:
+      context: ./backend/logging/elasticsearch
+    environment:
+      - discovery.type=single-node                      # Set to single-node mode (multi-node clustering is unnecessary for this project)
+      - xpack.security.enabled=true                     # Enable security features (e.g., authentication)
+      - logger.level=ERROR                              # Set logging level to show only errors (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m                  # Set the minimum and maximum heap size to 512MB
+      - ELASTICSEARCH_USERNAME=${ADMIN_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ADMIN_PASSWORD}
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -f -u $$ELASTICSEARCH_USERNAME:$$ELASTICSEARCH_PASSWORD http://localhost:9200/_cluster/health?wait_for_status=yellow\\&timeout=30s"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - pong-net
+    restart: unless-stopped
+
+  # LogStash (5044)
+  logstash:
+    container_name: logstash
+    build:
+      context: ./backend/logging/logstash
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200   # Elasticsearch URL
+      - ELASTICSEARCH_USERNAME=${ADMIN_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ADMIN_PASSWORD}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - pong-net
+    restart: unless-stopped
+
+  # Kibana (5601)
+  kibana:
+    container_name: kibana
+    build:
+      context: ./backend/logging/kibana
+    environment:
+      - SERVER_BASEPATH=/kibana                         # Base path for Kibana
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m                  # Set the minimum and maximum heap size to 512MB
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200   # Elasticsearch URL
+      - ELASTICSEARCH_USERNAME=${ADMIN_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ADMIN_PASSWORD}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - pong-net
+    restart: unless-stopped
 
 # ------------------- METRICS ------------------ #
 
@@ -51,10 +113,10 @@ services:
     container_name: grafana
     build:
       context: ./backend/metrics/grafana
-    env_file:
-        - ./env/.env_grafana
     environment:
       - GF_SERVER_ROOT_URL=https://localhost/grafana/   # Base path for Grafana
+      - GF_SECURITY_ADMIN_USER=${ADMIN_USERNAME}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD}
     volumes:
       - grafana_data:/var/lib/grafana
     networks:
@@ -73,51 +135,6 @@ services:
     restart: unless-stopped
 
 
-# ------------------- LOGGING ------------------ #
-
-
-  # ElasticSearch (9200 & 9114)
-  elasticsearch:
-    container_name: elasticsearch
-    build:
-      context: ./backend/logging/elasticsearch
-    env_file:
-      - ./env/.env_elasticsearch
-    environment:
-      - discovery.type=single-node                      # Set to single-node mode (multi-node clustering is unnecessary for this project)
-      - xpack.security.enabled=true                     # Enable security features (e.g., authentication)
-      - logger.level=ERROR                              # Set logging level to show only errors (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
-    volumes:
-      - elastic_data:/usr/share/elasticsearch/data      # Bind mount (temporary)
-    networks:
-      - pong-net
-    restart: unless-stopped
-
-  # LogStash (5044)
-  logstash:
-    container_name: logstash
-    build:
-      context: ./backend/logging/logstash
-    env_file:
-      - ./env/.env_elasticsearch
-    networks:
-      - pong-net
-    restart: unless-stopped
-
-  # Kibana (5601)
-  kibana:
-    container_name: kibana
-    image: docker.elastic.co/kibana/kibana:7.17.4
-    env_file:
-      - ./env/.env_elasticsearch
-    environment:
-      - SERVER_BASEPATH=/kibana                         # Base path for Kibana
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m                  # Set the minimum and maximum heap size to 512MB
-    networks:
-      - pong-net
-    restart: unless-stopped
-
-
 # --------------- MICRO-SERVICES --------------- #
 
 
@@ -128,8 +145,6 @@ services:
     image: redis:7.4.2
     volumes:
       - redis_data:/data
-    env_file:
-      - ./env/.env_redis
     command: >
       redis-server 
       --maxmemory 512mb 
@@ -148,9 +163,23 @@ services:
   # Gateway (3000)
   gateway:
     container_name: gateway
-    env_file:
-      - ./env/.env_redis
-      - ./env/.env_gateway
+    environment:
+      - SERVICE_NAME=gateway
+      - PORT=3000
+      - RATE_LIMIT_MAX=100
+      - RATE_LIMIT_WINDOW=1m
+      - NODE_ENV=${NODE_ENV}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - AUTH_SERVICE_URL=http://auth:3000
+      - USER_SERVICE_URL=http://user:3000
     build:
       context: ./backend/gateway
       dockerfile: Dockerfile.dev
@@ -172,9 +201,17 @@ services:
 
   user:
     container_name: user
-    env_file:
-      - ./env/.env_redis
-      - ./env/.env_user
+    environment:
+      - SERVICE_NAME=user
+      - PORT=3000
+      - NODE_ENV=${NODE_ENV}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - DB_PATH=./data/database.sqlite
+      - GATEWAY_SERVICE_URL=http://gateway:3000
+      - USER_SERVICE_URL=http://user:3000
     build:
       context: ./backend/microservices/user
       dockerfile: Dockerfile.dev
@@ -193,19 +230,12 @@ services:
 
 # ------------------ VOLUMES ------------------- #
 
-
 volumes:
   alertmanager_data:
   prometheus_data:
   grafana_data:
   elastic_data:
   redis_data:
-    driver: local                                       # Use the local driver for this volume
-    driver_opts:
-      type: none                                        # Use a bind mount instead of creating a separate filesystem
-      device: ./backend/logging/data                    # Path in the host filesystem for the bind mount
-      o: bind                                           # Activate the bind mount
-
 
 # ------------------ NETWORK ------------------- #
 
