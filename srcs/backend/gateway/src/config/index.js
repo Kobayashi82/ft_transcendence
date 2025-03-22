@@ -34,7 +34,7 @@ const config = {
     db: 0, tls: null,
   },
 
-  // Redis
+  // Logstash
   logstash: {
     host: process.env.LOGSTASH_HOST || 'logstash',
     port: process.env.LOGSTASH_PORT || 5044,

@@ -195,6 +195,41 @@ services:
 
   # Microservices
 
+  auth:
+    container_name: auth
+    environment:
+      - SERVICE_NAME=auth
+      - PORT=3000
+      - NODE_ENV=${NODE_ENV}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - FORTYTWO_CLIENT_ID=${FORTYTWO_CLIENT_ID}
+      - FORTYTWO_CLIENT_SECRET=${FORTYTWO_CLIENT_SECRET}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - DB_PATH=./data/database.sqlite
+      - GATEWAY_SERVICE_URL=http://gateway:3000
+    build:
+      context: ./backend/microservices/auth
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend/microservices/auth/src:/app/src
+      - ./backend/microservices/auth/data:/app/data
+    depends_on:
+      gateway:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pong-net
+    restart: unless-stopped
+
   user:
     container_name: user
     environment:

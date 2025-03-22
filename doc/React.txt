@@ -1,0 +1,9 @@
+React + TypeScript + Tailwind CSS
+
+Esta es una combinación muy popular y potente para el desarrollo front-end moderno.
+
+React:			Crea componentes interactivos y reutilizables para tu interfaz.
+TypeScript:		Te ayuda a evitar errores agregando "tipos" a las variables (ej: edad: number en vez de solo edad).
+Tailwind CSS:	Diseña al instante con clases simples en tu HTML (ej: bg-blue-500 para fondo azul, p-4 para padding).
+
+Juntos, React organiza la lógica, TypeScript previene bugs y Tailwind estiliza sin CSS manual.
