@@ -52,18 +52,18 @@ const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '15m',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
   },
-
+ 
   // OAuth
   oauth: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      redirectUri: 'http://localhost:3000/auth/oauth/google/callback',
+      redirectUri: 'https://localhost/api/auth/oauth/google/callback',
     },
     fortytwo: {
       clientId: process.env.FORTYTWO_CLIENT_ID,
       clientSecret: process.env.FORTYTWO_CLIENT_SECRET,
-      redirectUri: 'http://localhost:3000/auth/oauth/42/callback',
+      redirectUri: 'https://localhost/api/auth/oauth/42/callback',
     }
   },
 

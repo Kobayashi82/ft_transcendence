@@ -53,15 +53,15 @@ iclean:
 	@$(DC) down || exit 1
 	@printf "\nplease wait...\n"
 	@$(MAKE) -s _remove_images
-	@printf "$(CU)$(CL) ✔ Images\t\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Network\t\t\t$(GR)Removed$(NC)\n\n"
+	@printf "$(CU)$(CL) ✔ Images\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Network\t\t$(GR)Removed$(NC)\n\n"
 
 # Removes volumes
 vclean:
 	@$(DC) down || exit 1
 	@printf "\nplease wait...\n"
 	@$(MAKE) -s _remove_volumes
-	@printf "$(CU)$(CL) ✔ Volumes\t\t\t$(GR)Removed$(NC)\n\n"
+	@printf "$(CU)$(CL) ✔ Volumes\t\t$(GR)Removed$(NC)\n\n"
 
 # Removes images, volumes and network
 clean:
@@ -70,9 +70,9 @@ clean:
 	@$(MAKE) -s _remove_images
 	@$(MAKE) -s _remove_volumes
 	@docker network rm pong-net > /dev/null 2>&1 || true
-	@printf "$(CU)$(CL) ✔ Images\t\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Volumes\t\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Network\t\t\t$(GR)Removed$(NC)\n\n"
+	@printf "$(CU)$(CL) ✔ Images\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Volumes\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Network\t\t$(GR)Removed$(NC)\n\n"
 
 # Removes images, volumes, network and cache
 fclean:
@@ -82,10 +82,10 @@ fclean:
 	@$(MAKE) -s _remove_volumes
 	@docker network rm pong-net > /dev/null 2>&1 || true
 	@docker builder prune -f > /dev/null 2>&1 || true
-	@printf "$(CU)$(CL) ✔ Images\t\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Volumes\t\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Network\t\t\t$(GR)Removed$(NC)\n"
-	@printf " ✔ Cache\t\t\t$(GR)Removed$(NC)\n\n"
+	@printf "$(CU)$(CL) ✔ Images\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Volumes\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Network\t\t$(GR)Removed$(NC)\n"
+	@printf " ✔ Cache\t\t$(GR)Removed$(NC)\n\n"
 
 
 # ============================== PRIVATE RULES ==============================
@@ -111,6 +111,7 @@ _remove_images:
 	@docker rmi srcs-alertmanager > /dev/null 2>&1 || true
 	@docker rmi redis:7.4.2 > /dev/null 2>&1 || true
 	@docker rmi srcs-gateway > /dev/null 2>&1 || true
+	@docker rmi srcs-auth > /dev/null 2>&1 || true
 	@docker rmi srcs-user > /dev/null 2>&1 || true
 
 

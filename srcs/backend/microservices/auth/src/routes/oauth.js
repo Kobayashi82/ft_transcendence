@@ -141,7 +141,7 @@ async function oauthRoutes(fastify, options) {
       // Generar tokens
       const accessToken = fastify.authTools.generateJWT(user)
       const refreshToken = fastify.authTools.generateRefreshToken()
-      
+
       // Almacenar token de refresco
       await fastify.authDB.createRefreshToken(
         user.id, 
@@ -165,20 +165,37 @@ async function oauthRoutes(fastify, options) {
       const cacheKey = `user:${user.id}:info`
       await fastify.cache.set(cacheKey, userInfoCache, 1800) // 30 minutos
       
+      // Obtener el origen del frontend
+      const frontendUrl = 'https://localhost';
+
+      // Construir la URL de redirección con los tokens
+      const redirectUrl = new URL(`${frontendUrl}/dashboard`);
+      redirectUrl.searchParams.append('access_token', accessToken);
+      redirectUrl.searchParams.append('refresh_token', refreshToken);
+      redirectUrl.searchParams.append('expires_in', (parseInt(fastify.config.jwt.expiresIn) || 900).toString());
+
+      // También podemos añadir datos básicos del usuario
+      redirectUrl.searchParams.append('user_id', user.id);
+      redirectUrl.searchParams.append('username', encodeURIComponent(user.username));
+      redirectUrl.searchParams.append('email', encodeURIComponent(user.email));
+
+      // Redirigir al frontend
+      return reply.redirect(redirectUrl.toString());
+
       // Responder con tokens y datos de usuario
-      reply.send({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-        expires_in: parseInt(fastify.config.jwt.expiresIn) || 900, // 15 minutos por defecto
-        token_type: 'Bearer',
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          roles: user.roles,
-          has_2fa: user.has_2fa
-        }
-      })
+      // reply.send({
+      //   access_token: accessToken,
+      //   refresh_token: refreshToken,
+      //   expires_in: parseInt(fastify.config.jwt.expiresIn) || 900, // 15 minutos por defecto
+      //   token_type: 'Bearer',
+      //   user: {
+      //     id: user.id,
+      //     username: user.username,
+      //     email: user.email,
+      //     roles: user.roles,
+      //     has_2fa: user.has_2fa
+      //   }
+      // })
     } catch (err) {
       fastify.logger.error(err)
       reply.code(500).send({ 
@@ -347,21 +364,38 @@ async function oauthRoutes(fastify, options) {
       // Almacenar en Redis
       const cacheKey = `user:${user.id}:info`
       await fastify.cache.set(cacheKey, userInfoCache, 1800) // 30 minutos
-      
-      // Responder con tokens y datos de usuario
-      reply.send({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-        expires_in: parseInt(fastify.config.jwt.expiresIn) || 900, // 15 minutos por defecto
-        token_type: 'Bearer',
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          roles: user.roles,
-          has_2fa: user.has_2fa
-        }
-      })
+
+      // Obtener el origen del frontend
+      const frontendUrl = 'https://localhost';
+
+      // Construir la URL de redirección con los tokens
+      const redirectUrl = new URL(`${frontendUrl}/dashboard`);
+      redirectUrl.searchParams.append('access_token', accessToken);
+      redirectUrl.searchParams.append('refresh_token', refreshToken);
+      redirectUrl.searchParams.append('expires_in', (parseInt(fastify.config.jwt.expiresIn) || 900).toString());
+
+      // También podemos añadir datos básicos del usuario
+      redirectUrl.searchParams.append('user_id', user.id);
+      redirectUrl.searchParams.append('username', encodeURIComponent(user.username));
+      redirectUrl.searchParams.append('email', encodeURIComponent(user.email));
+
+      // Redirigir al frontend
+      return reply.redirect(redirectUrl.toString());
+
+      // // Responder con tokens y datos de usuario
+      // reply.send({
+      //   access_token: accessToken,
+      //   refresh_token: refreshToken,
+      //   expires_in: parseInt(fastify.config.jwt.expiresIn) || 900, // 15 minutos por defecto
+      //   token_type: 'Bearer',
+      //   user: {
+      //     id: user.id,
+      //     username: user.username,
+      //     email: user.email,
+      //     roles: user.roles,
+      //     has_2fa: user.has_2fa
+      //   }
+      // })
     } catch (err) {
       fastify.logger.error(err)
       reply.code(500).send({ 

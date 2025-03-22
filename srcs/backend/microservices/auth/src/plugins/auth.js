@@ -61,22 +61,35 @@ async function authToolsPlugin(fastify, options) {
       return codes
     },
     
-    // Generar token JWT
+    // Generar token JWT - VERSIÓN CORREGIDA
     generateJWT(user, expiresIn) {
+      // Calcular timestamp actual
+      const now = Math.floor(Date.now() / 1000);
+      
+      // Asegurar que expiresIn es un número
+      let expiresInSeconds;
+      if (expiresIn) {
+        expiresInSeconds = parseInt(expiresIn, 10);
+      } else if (fastify.config.jwt.expiresIn) {
+        expiresInSeconds = parseInt(fastify.config.jwt.expiresIn, 10);
+      } else {
+        expiresInSeconds = 900; // Valor predeterminado: 15 minutos
+      }
+      
+      // Crear el payload incluyendo iat y exp explícitamente
       const payload = {
         sub: user.id,
         email: user.email,
         username: user.username,
         roles: user.roles,
         has_2fa: user.has_2fa,
-        account_type: user.account_type
+        account_type: user.account_type,
+        iat: now,
+        exp: now + expiresInSeconds // Fecha de expiración explícita
       }
       
-      const options = {
-        expiresIn: expiresIn || fastify.config.jwt.expiresIn
-      }
-      
-      return fastify.jwt.sign(payload, options)
+      // Firmar el token sin pasar opciones de expiración (ya las incluimos en el payload)
+      return fastify.jwt.sign(payload)
     },
     
     // Generar token de refresco
