@@ -49,7 +49,7 @@ services:
       - ELASTICSEARCH_USERNAME=${ADMIN_USERNAME}
       - ELASTICSEARCH_PASSWORD=${ADMIN_PASSWORD}
     volumes:
-      - elastic_data:/usr/share/elasticsearch/data
+      - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
       test: ["CMD", "bash", "-c", "curl -f -u $$ELASTICSEARCH_USERNAME:$$ELASTICSEARCH_PASSWORD http://localhost:9200/_cluster/health?wait_for_status=yellow\\&timeout=30s"]
       interval: 10s
@@ -145,11 +145,7 @@ services:
     image: redis:7.4.2
     volumes:
       - redis_data:/data
-    command: >
-      redis-server 
-      --maxmemory 512mb 
-      --maxmemory-policy allkeys-lru 
-      --requirepass ${REDIS_PASSWORD}
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
@@ -231,10 +227,10 @@ services:
 # ------------------ VOLUMES ------------------- #
 
 volumes:
-  alertmanager_data:
+  elasticsearch_data:
   prometheus_data:
   grafana_data:
-  elastic_data:
+  alertmanager_data:
   redis_data:
 
 # ------------------ NETWORK ------------------- #
