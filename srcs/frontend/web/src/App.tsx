@@ -5,7 +5,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import OAuthCallback from './pages/OAuthCallback';
+import ServerStatusPage from './pages/ServerStatusPage';
 import Spinner from './components/ui/Spinner';
+import ConnectionChecker from './components/ConnectionChecker';
 
 // Componente para rutas protegidas
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -28,38 +30,41 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <AuthProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* OAuth callback routes */}
-          <Route path="/api/auth/oauth/:provider/callback" element={<OAuthCallback />} />
-          
-          {/* Protected routes */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Redirect to dashboard or login depending on auth state */}
-          <Route 
-            path="*" 
-            element={
-              <ProtectedRoute>
-                <Navigate to="/dashboard" replace />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </AuthProvider>
-    </Router>
+    <ConnectionChecker healthEndpoint="/api">
+      <Router>
+        <AuthProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/status" element={<ServerStatusPage />} />
+            
+            {/* OAuth callback routes */}
+            <Route path="/api/auth/oauth/:provider/callback" element={<OAuthCallback />} />
+            
+            {/* Protected routes */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Redirect to dashboard or login depending on auth state */}
+            <Route 
+              path="*" 
+              element={
+                <ProtectedRoute>
+                  <Navigate to="/dashboard" replace />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </AuthProvider>
+      </Router>
+    </ConnectionChecker>
   );
 };
 

@@ -1,6 +1,6 @@
 // API service for making requests to the backend
 
-const API_BASE_URL = 'https://localhost/api';
+const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}/api`;
 
 // Types
 export interface LoginCredentials {

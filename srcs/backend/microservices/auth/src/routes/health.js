@@ -86,7 +86,7 @@ async function checkDatabase(fastify) {
     }
   } catch (error) {
     return {
-      status: 'unhealthy',
+      status: 'down',
       error: error.message
     }
   }
@@ -105,7 +105,7 @@ async function checkRedis(fastify) {
     }
   } catch (error) {
     return {
-      status: 'unhealthy',
+      status: 'down',
       error: error.message
     }
   }
@@ -117,7 +117,7 @@ function checkJWT(fastify) {
     // Verify JWT configuration
     if (!fastify.config.jwt || !fastify.config.jwt.secret) {
       return {
-        status: 'unhealthy',
+        status: 'down',
         error: 'JWT secret not configured'
       }
     }
@@ -139,7 +139,7 @@ function checkJWT(fastify) {
     }
   } catch (error) {
     return {
-      status: 'unhealthy',
+      status: 'down',
       error: error.message
     }
   }

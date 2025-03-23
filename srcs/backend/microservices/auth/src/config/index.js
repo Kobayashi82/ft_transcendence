@@ -39,13 +39,6 @@ const config = {
     path: process.env.DB_PATH || './data/auth.sqlite'
   },
 
-  // CORS
-  cors: {
-    origin: process.env.CORS_ORIGIN || true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    credentials: true,
-  },
-
   // JWT
   jwt: {
     secret: process.env.JWT_SECRET || 'super-secret-auth-key',
@@ -58,12 +51,12 @@ const config = {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      redirectUri: 'https://localhost/api/auth/oauth/google/callback',
+      redirectUri: (process.env.GOOGLE_CLIENT_REDIRECT && process.env.GOOGLE_CLIENT_REDIRECT.trim()) || 'https://localhost/api/auth/oauth/google/callback',
     },
     fortytwo: {
       clientId: process.env.FORTYTWO_CLIENT_ID,
       clientSecret: process.env.FORTYTWO_CLIENT_SECRET,
-      redirectUri: 'https://localhost/api/auth/oauth/42/callback',
+      redirectUri: (process.env.FORTYTWO_CLIENT_REDIRECT && process.env.FORTYTWO_CLIENT_REDIRECT.trim()) || 'https://localhost/api/auth/oauth/42/callback',
     }
   },
 

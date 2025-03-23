@@ -82,7 +82,7 @@ async function checkRedis(fastify) {
     }
   } catch (error) {
     return {
-      status: 'unhealthy',
+      status: 'down',
       error: error.message
     }
   }
@@ -115,7 +115,7 @@ async function checkServices(services) {
         }
       } catch (error) {
         serviceStatus[name] = {
-          status: 'unhealthy',
+          status: 'down',
           error: error.code || error.message
         }
       }

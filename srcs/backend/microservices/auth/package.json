@@ -4,12 +4,7 @@
 	"description": "Authentication Microservice",
 	"author": "vzurera-",
 	"main": "src/app.js",
-	"scripts": {
-		"start": "node src/app.js",
-		"dev": "nodemon"
-	},
 	"dependencies": {
-		"@fastify/cors": "^8.3.0",
 		"@fastify/jwt": "^7.2.0",
 		"@fastify/redis": "^6.2.0",
 		"@fastify/sensible": "^5.6.0",
@@ -27,8 +22,5 @@
 		"prom-client": "^14.2.0",
 		"qrcode": "^1.5.3",
 		"uuid": "^9.0.1"
-	},
-	"devDependencies": {
-		"nodemon": "^3.0.1"
 	}
 }

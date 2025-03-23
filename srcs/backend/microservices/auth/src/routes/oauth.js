@@ -165,11 +165,29 @@ async function oauthRoutes(fastify, options) {
       const cacheKey = `user:${user.id}:info`
       await fastify.cache.set(cacheKey, userInfoCache, 1800) // 30 minutos
       
-      // Obtener el origen del frontend
-      const frontendUrl = 'https://localhost';
+      // Determinamos la URL base para la redirección de forma más robusta
+      let frontendHost;
+      // Intentamos obtener el host del referer si está disponible
+      if (request.headers['referer']) {
+        try {
+          const refererUrl = new URL(request.headers['referer']);
+          frontendHost = refererUrl.hostname;
+        } catch (e) {
+          // Si hay un error al parsear el referer, usamos el host de la solicitud
+          frontendHost = request.headers.host ? request.headers.host.split(':')[0] : 'localhost';
+        }
+      } else {
+        // Si no hay referer, usamos el host de la solicitud
+        frontendHost = request.headers.host ? request.headers.host.split(':')[0] : 'localhost';
+      }
 
-      // Construir la URL de redirección con los tokens
-      const redirectUrl = new URL(`${frontendUrl}/dashboard`);
+      // Aseguramos que no estamos redirigiendo a dominios externos
+      if (frontendHost === 'accounts.google.com' || frontendHost === 'www.googleapis.com' || !frontendHost) {
+        frontendHost = 'localhost'; // valor por defecto seguro
+      }
+
+      // Construir URL de redirección con el hostname determinado
+      const redirectUrl = new URL(`https://${frontendHost}/dashboard`);
       redirectUrl.searchParams.append('access_token', accessToken);
       redirectUrl.searchParams.append('refresh_token', refreshToken);
       redirectUrl.searchParams.append('expires_in', (parseInt(fastify.config.jwt.expiresIn) || 900).toString());
@@ -181,21 +199,6 @@ async function oauthRoutes(fastify, options) {
 
       // Redirigir al frontend
       return reply.redirect(redirectUrl.toString());
-
-      // Responder con tokens y datos de usuario
-      // reply.send({
-      //   access_token: accessToken,
-      //   refresh_token: refreshToken,
-      //   expires_in: parseInt(fastify.config.jwt.expiresIn) || 900, // 15 minutos por defecto
-      //   token_type: 'Bearer',
-      //   user: {
-      //     id: user.id,
-      //     username: user.username,
-      //     email: user.email,
-      //     roles: user.roles,
-      //     has_2fa: user.has_2fa
-      //   }
-      // })
     } catch (err) {
       fastify.logger.error(err)
       reply.code(500).send({ 
@@ -365,11 +368,29 @@ async function oauthRoutes(fastify, options) {
       const cacheKey = `user:${user.id}:info`
       await fastify.cache.set(cacheKey, userInfoCache, 1800) // 30 minutos
 
-      // Obtener el origen del frontend
-      const frontendUrl = 'https://localhost';
+      // Determinamos la URL base para la redirección de forma más robusta
+      let frontendHost;
+      // Intentamos obtener el host del referer si está disponible
+      if (request.headers['referer']) {
+        try {
+          const refererUrl = new URL(request.headers['referer']);
+          frontendHost = refererUrl.hostname;
+        } catch (e) {
+          // Si hay un error al parsear el referer, usamos el host de la solicitud
+          frontendHost = request.headers.host ? request.headers.host.split(':')[0] : 'localhost';
+        }
+      } else {
+        // Si no hay referer, usamos el host de la solicitud
+        frontendHost = request.headers.host ? request.headers.host.split(':')[0] : 'localhost';
+      }
 
-      // Construir la URL de redirección con los tokens
-      const redirectUrl = new URL(`${frontendUrl}/dashboard`);
+      // Aseguramos que no estamos redirigiendo a dominios de 42
+      if (frontendHost === 'api.intra.42.fr' || frontendHost === 'intra.42.fr' || !frontendHost) {
+        frontendHost = 'localhost'; // valor por defecto seguro
+      }
+
+      // Construir URL de redirección con el hostname determinado
+      const redirectUrl = new URL(`https://${frontendHost}/dashboard`);
       redirectUrl.searchParams.append('access_token', accessToken);
       redirectUrl.searchParams.append('refresh_token', refreshToken);
       redirectUrl.searchParams.append('expires_in', (parseInt(fastify.config.jwt.expiresIn) || 900).toString());
@@ -381,21 +402,6 @@ async function oauthRoutes(fastify, options) {
 
       // Redirigir al frontend
       return reply.redirect(redirectUrl.toString());
-
-      // // Responder con tokens y datos de usuario
-      // reply.send({
-      //   access_token: accessToken,
-      //   refresh_token: refreshToken,
-      //   expires_in: parseInt(fastify.config.jwt.expiresIn) || 900, // 15 minutos por defecto
-      //   token_type: 'Bearer',
-      //   user: {
-      //     id: user.id,
-      //     username: user.username,
-      //     email: user.email,
-      //     roles: user.roles,
-      //     has_2fa: user.has_2fa
-      //   }
-      // })
     } catch (err) {
       fastify.logger.error(err)
       reply.code(500).send({ 

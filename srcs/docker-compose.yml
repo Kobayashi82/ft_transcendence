@@ -25,9 +25,6 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./frontend/web:/app
-    environment:
-      - VITE_API_URL=http://gateway:3000/api
-      - CHOKIDAR_USEPOLLING=true
     networks:
       - pong-net
     restart: unless-stopped
@@ -41,15 +38,15 @@ services:
     container_name: elasticsearch
     build:
       context: ./backend/logging/elasticsearch
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
       - discovery.type=single-node                      # Set to single-node mode (multi-node clustering is unnecessary for this project)
       - xpack.security.enabled=true                     # Enable security features (e.g., authentication)
       - logger.level=ERROR                              # Set logging level to show only errors (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
       - ES_JAVA_OPTS=-Xms512m -Xmx512m                  # Set the minimum and maximum heap size to 512MB
-      - ELASTICSEARCH_USERNAME=${ADMIN_USERNAME}
-      - ELASTICSEARCH_PASSWORD=${ADMIN_PASSWORD}
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
     healthcheck:
       test: ["CMD", "bash", "-c", "curl -f -u $$ELASTICSEARCH_USERNAME:$$ELASTICSEARCH_PASSWORD http://localhost:9200/_cluster/health?wait_for_status=yellow\\&timeout=30s"]
       interval: 10s
@@ -67,8 +64,8 @@ services:
       context: ./backend/logging/logstash
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200   # Elasticsearch URL
-      - ELASTICSEARCH_USERNAME=${ADMIN_USERNAME}
-      - ELASTICSEARCH_PASSWORD=${ADMIN_PASSWORD}
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -85,8 +82,8 @@ services:
       - SERVER_BASEPATH=/kibana                         # Base path for Kibana
       - ES_JAVA_OPTS=-Xms512m -Xmx512m                  # Set the minimum and maximum heap size to 512MB
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200   # Elasticsearch URL
-      - ELASTICSEARCH_USERNAME=${ADMIN_USERNAME}
-      - ELASTICSEARCH_PASSWORD=${ADMIN_PASSWORD}
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -113,12 +110,12 @@ services:
     container_name: grafana
     build:
       context: ./backend/metrics/grafana
-    environment:
-      - GF_SERVER_ROOT_URL=https://localhost/grafana/   # Base path for Grafana
-      - GF_SECURITY_ADMIN_USER=${ADMIN_USERNAME}
-      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD}
     volumes:
       - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SERVER_ROOT_URL=https://localhost/grafana/   # Base path for Grafana
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME-${ADMIN_USERNAME}}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD-${ADMIN_PASSWORD}}
     networks:
       - pong-net
     restart: unless-stopped
@@ -145,9 +142,9 @@ services:
     image: redis:7.4.2
     volumes:
       - redis_data:/data
-    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD-${ADMIN_PASSWORD}}
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD-${ADMIN_PASSWORD}}", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -159,26 +156,27 @@ services:
   # Gateway (3000)
   gateway:
     container_name: gateway
+    build:
+      context: ./backend/gateway
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend/gateway:/app
     environment:
       - SERVICE_NAME=gateway
       - PORT=3000
       - RATE_LIMIT_MAX=100
       - RATE_LIMIT_WINDOW=1m
-      - NODE_ENV=${NODE_ENV}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - CORS_ORIGIN=${CORS_ORIGIN}
+      - CORS_ORIGIN=${CORS_ORIGIN-*}
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN-15m}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN-7d}
       - LOGSTASH_HOST=logstash
       - LOGSTASH_PORT=5044
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
       - AUTH_SERVICE_URL=http://auth:3000
       - USER_SERVICE_URL=http://user:3000
-    build:
-      context: ./backend/gateway
-      dockerfile: Dockerfile.dev
     healthcheck:
       test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:3000/health"]
       interval: 10s
@@ -188,8 +186,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    volumes:
-      - ./backend/gateway:/app
     networks:
       - pong-net
 
@@ -197,30 +193,29 @@ services:
 
   auth:
     container_name: auth
-    environment:
-      - SERVICE_NAME=auth
-      - PORT=3000
-      - NODE_ENV=${NODE_ENV}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - CORS_ORIGIN=${CORS_ORIGIN}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
-      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - FORTYTWO_CLIENT_ID=${FORTYTWO_CLIENT_ID}
-      - FORTYTWO_CLIENT_SECRET=${FORTYTWO_CLIENT_SECRET}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - DB_PATH=./data/database.sqlite
-      - GATEWAY_SERVICE_URL=http://gateway:3000
     build:
       context: ./backend/microservices/auth
       dockerfile: Dockerfile.dev
     volumes:
       - ./backend/microservices/auth/src:/app/src
       - ./backend/microservices/auth/data:/app/data
+    environment:
+      - SERVICE_NAME=auth
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN-15m}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN-7d}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CLIENT_REDIRECT=${GOOGLE_CLIENT_REDIRECT-}
+      - FORTYTWO_CLIENT_ID=${FORTYTWO_CLIENT_ID}
+      - FORTYTWO_CLIENT_SECRET=${FORTYTWO_CLIENT_SECRET}
+      - FORTYTWO_CLIENT_REDIRECT=${FORTYTWO_CLIENT_REDIRECT-}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
+      - DB_PATH=./data/database.sqlite
+      - GATEWAY_SERVICE_URL=http://gateway:3000
     depends_on:
       gateway:
         condition: service_healthy
@@ -232,23 +227,21 @@ services:
 
   user:
     container_name: user
-    environment:
-      - SERVICE_NAME=user
-      - PORT=3000
-      - NODE_ENV=${NODE_ENV}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - DB_PATH=./data/database.sqlite
-      - GATEWAY_SERVICE_URL=http://gateway:3000
-      - USER_SERVICE_URL=http://user:3000
     build:
       context: ./backend/microservices/user
       dockerfile: Dockerfile.dev
     volumes:
       - ./backend/microservices/user/src:/app/src
       - ./backend/microservices/user/data:/app/data
+    environment:
+      - SERVICE_NAME=user
+      - PORT=3000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
+      - DB_PATH=./data/database.sqlite
+      - GATEWAY_SERVICE_URL=http://gateway:3000
+      - USER_SERVICE_URL=http://user:3000
     depends_on:
       gateway:
         condition: service_healthy

@@ -27,7 +27,7 @@ const Login: React.FC = () => {
       setOauthLoading(true);
       
       // Obtener la URL de OAuth del backend
-      const response = await fetch('https://localhost/api/auth/oauth/google/init');
+      const response = await fetch('/api/auth/oauth/google/init');
       
       if (!response.ok) {
         throw new Error('Failed to initialize Google login');
@@ -53,7 +53,7 @@ const Login: React.FC = () => {
       setOauthLoading(true);
       
       // Obtener la URL de OAuth del backend
-      const response = await fetch('https://localhost/api/auth/oauth/42/init');
+      const response = await fetch('/api/auth/oauth/42/init');
       
       if (!response.ok) {
         throw new Error('Failed to initialize 42 login');
