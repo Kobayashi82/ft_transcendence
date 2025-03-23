@@ -15,3 +15,59 @@ ENV LOG_LEVEL=debug
 EXPOSE 3000
 
 CMD ["nodemon", "--watch", "./", "--ext", "js,json", "--ignore", "node_modules/", "--ignore", "dist/", "--legacy-watch", "src/app.js"]
+
+# Resumen de cambios e implementaciones
+# 1. Seguridad de base de datos
+
+# Se implementó cifrado para datos sensibles usando AES-256
+# Se añadieron timeouts para operaciones de base de datos
+# Se mejoró el manejo de errores y logging en operaciones de BD
+
+# 2. Seguridad de contraseñas
+
+# Se implementó política de contraseñas robustas (mayúsculas, minúsculas, números, caracteres especiales)
+# Se incrementó el coste de bcrypt a 12 rondas (más seguro)
+# Se agregó mecanismo de bloqueo de cuentas tras intentos fallidos
+# Se actualizaron los flujos de reseteo y cambio de contraseña con validaciones
+
+# 3. Rate limiting
+
+# Se agregó rate limiting general por IP
+# Se implementaron límites específicos para endpoints críticos (login, registro, reset)
+# Se configuraron diferentes ventanas de tiempo según la operación
+
+# 4. Circuit breakers
+
+# Se implementaron circuit breakers para llamadas a APIs externas (OAuth)
+# Se agregó manejo de errores y fallbacks cuando los servicios externos fallan
+
+# 5. Manejo de datos sensibles
+
+# Se implementó cifrado AES-256 para datos PII
+# Se añadió módulo de retención de datos con limpieza periódica
+# Se implementó anonimización de datos de usuarios eliminados
+
+# 6. Headers de seguridad
+
+# Se agregó helmet para configurar headers de seguridad HTTP
+# Se configuró CSP, XSS Protection, y otros headers
+
+# 7. Múltiples sesiones simultáneas
+
+# El diseño permite múltiples sesiones activas por usuario
+# Cada sesión tiene su propio token y puede ser revocada individualmente
+# Las sesiones se manejan por separado, permitiendo acceso desde diferentes dispositivos
+
+# 8. Logging mejorado
+
+# Se añadieron logs detallados para eventos de seguridad
+# Se implementó logging estructurado para análisis posterior
+# Se evita el logging de datos sensibles
+
+# 9. Monitoreo y salud
+
+# Se expandió el endpoint de health para incluir verificaciones de seguridad
+# Se agregó monitoreo del estado de los circuit breakers
+# Se mejoró la detección de problemas en componentes críticos
+
+# Estos cambios proporcionan una implementación robusta de seguridad para el microservicio de autenticación, siguiendo las mejores prácticas de la industria, y permiten múltiples sesiones simultáneas desde diferentes dispositivos sin que una afecte a las otras.

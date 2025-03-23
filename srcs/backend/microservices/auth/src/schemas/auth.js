@@ -7,7 +7,7 @@ const loginSchema = {
     required: ['email', 'password'],
     properties: {
       email: { type: 'string', format: 'email' },
-      password: { type: 'string', minLength: 6 }
+      password: { type: 'string', minLength: 8 }
     }
   },
   response: {
@@ -33,7 +33,21 @@ const loginSchema = {
         }
       }
     },
+    400: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
+    },
     401: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
+    },
+    429: {
       type: 'object',
       properties: {
         error: { type: 'string' },
@@ -82,11 +96,18 @@ const verify2FASchema = {
         error: { type: 'string' },
         message: { type: 'string' }
       }
+    },
+    429: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
     }
   }
 }
 
-// Esquema para registro de usuario
+// Esquema para registro de usuario con validación de contraseña
 const registerSchema = {
   body: {
     type: 'object',
@@ -94,7 +115,12 @@ const registerSchema = {
     properties: {
       username: { type: 'string', minLength: 3 },
       email: { type: 'string', format: 'email' },
-      password: { type: 'string', minLength: 6 }
+      password: { 
+        type: 'string', 
+        minLength: 8,
+        // Patrón para contraseña fuerte (sin errorMessage)
+        pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\\d!@#$%^&*(),.?":{}|<>]{8,}$'
+      }
     }
   },
   response: {
@@ -119,7 +145,21 @@ const registerSchema = {
         }
       }
     },
+    400: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
+    },
     409: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
+    },
+    429: {
       type: 'object',
       properties: {
         error: { type: 'string' },
@@ -149,6 +189,13 @@ const refreshTokenSchema = {
       }
     },
     401: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
+    },
+    429: {
       type: 'object',
       properties: {
         error: { type: 'string' },
@@ -198,6 +245,13 @@ const validateTokenSchema = {
         error: { type: 'string' },
         message: { type: 'string' }
       }
+    },
+    429: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
     }
   }
 }
@@ -218,6 +272,13 @@ const resetPasswordRequestSchema = {
         success: { type: 'boolean' },
         message: { type: 'string' }
       }
+    },
+    429: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
     }
   }
 }
@@ -229,7 +290,12 @@ const resetPasswordSchema = {
     required: ['token', 'password'],
     properties: {
       token: { type: 'string' },
-      password: { type: 'string', minLength: 6 }
+      password: { 
+        type: 'string', 
+        minLength: 8,
+        // Patrón para contraseña fuerte (sin errorMessage)
+        pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\\d!@#$%^&*(),.?":{}|<>]{8,}$'
+      }
     }
   },
   response: {
@@ -246,6 +312,13 @@ const resetPasswordSchema = {
         error: { type: 'string' },
         message: { type: 'string' }
       }
+    },
+    429: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
     }
   }
 }
@@ -257,7 +330,12 @@ const changePasswordSchema = {
     required: ['current_password', 'new_password'],
     properties: {
       current_password: { type: 'string' },
-      new_password: { type: 'string', minLength: 6 }
+      new_password: { 
+        type: 'string', 
+        minLength: 8,
+        // Patrón para contraseña fuerte (sin errorMessage)
+        pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\\d!@#$%^&*(),.?":{}|<>]{8,}$'
+      }
     }
   },
   response: {
@@ -269,6 +347,13 @@ const changePasswordSchema = {
       }
     },
     400: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
+    },
+    429: {
       type: 'object',
       properties: {
         error: { type: 'string' },
@@ -301,6 +386,13 @@ const enable2FASchema = {
       }
     },
     400: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
+    },
+    429: {
       type: 'object',
       properties: {
         error: { type: 'string' },
@@ -344,6 +436,13 @@ const oauthCallbackSchema = {
       }
     },
     400: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' }
+      }
+    },
+    429: {
       type: 'object',
       properties: {
         error: { type: 'string' },

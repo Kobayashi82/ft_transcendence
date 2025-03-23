@@ -2,17 +2,18 @@
 
 const fp = require('fastify-plugin')
 const jwt = require('jsonwebtoken')
+const axios = require('axios')
 
-// Plugin for basic authentication in the gateway
-// Implements minimal verification and token information extraction
+// Plugin para autenticación y manejo de tokens en el gateway
 async function authPlugin(fastify, options) {
   const config = fastify.config
   
   // Token cache expiration time (in seconds)
-  const TOKEN_CACHE_TTL = 300 // 5 minutes
+  const TOKEN_CACHE_TTL = 300 // 5 minutos
   
   // Prefix for Redis keys
   const CACHE_PREFIX = 'auth:token:'
+  const USER_INFO_PREFIX = 'auth:user:'
   
   // Function to extract and minimally verify the token
   fastify.decorate('extractToken', function(request) {
@@ -35,8 +36,77 @@ async function authPlugin(fastify, options) {
       // IMPORTANT: This only extracts data, it does not validate the token
       return jwt.decode(token)
     } catch (error) {
-      console.error(`Error decoding token: ${error.message}`)
+      fastify.logger.error(`Error decoding token: ${error.message}`, {
+        error: error.message,
+        stack: error.stack
+      })
       return null
+    }
+  })
+  
+  // Function to validate token against auth service
+  fastify.decorate('validateToken', async function(token) {
+    // Create Redis key
+    const cacheKey = `${CACHE_PREFIX}${token}`
+    
+    // Check if token validation result is in cache
+    let authInfo = await fastify.cache.get(cacheKey)
+    if (authInfo) {
+      return authInfo
+    }
+    
+    // If not in cache, verify token with auth service
+    try {
+      const authService = fastify.config.services.auth
+      const response = await axios.get(`${authService.url}/validate`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        timeout: 5000
+      })
+      
+      // Procesamos la respuesta
+      if (response.data && response.data.valid) {
+        authInfo = {
+          authenticated: true,
+          userId: response.data.user_info.user_id,
+          roles: response.data.user_info.roles || [],
+          email: response.data.user_info.email,
+          username: response.data.user_info.username,
+          userInfo: response.data.user_info,
+          token: token
+        }
+        
+        // Almacenar en caché
+        await fastify.cache.set(cacheKey, authInfo, TOKEN_CACHE_TTL)
+        
+        // También almacenar información de usuario para consultas rápidas
+        const userKey = `${USER_INFO_PREFIX}${authInfo.userId}`
+        await fastify.cache.set(userKey, response.data.user_info, TOKEN_CACHE_TTL * 2) // TTL más largo para user info
+        
+        return authInfo
+      } else {
+        return { authenticated: false, reason: 'invalid-token' }
+      }
+    } catch (error) {
+      fastify.logger.error(`Error validating token with auth service: ${error.message}`, {
+        error: error.message,
+        stack: error.stack
+      })
+      
+      // En caso de error, intentamos decodificar localmente para mensajes más específicos
+      const decoded = fastify.decodeToken(token)
+      
+      if (!decoded) {
+        return { authenticated: false, reason: 'invalid-format' }
+      }
+      
+      // Verificar la expiración del token si está disponible
+      if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+        return { authenticated: false, reason: 'token-expired' }
+      }
+      
+      return { authenticated: false, reason: 'service-unavailable' }
     }
   })
   
@@ -44,8 +114,16 @@ async function authPlugin(fastify, options) {
   fastify.addHook('onRequest', async (request, reply) => {
     try {
       // Routes that do not require authentication
-      const publicPaths = ['/auth', '/health', '/metrics' ]
-      if (publicPaths.some(path => request.url.startsWith(path))) { return }
+      const publicPaths = ['/auth/login', '/auth/register', '/auth/password/reset-request', 
+                          '/auth/password/reset', '/auth/oauth', '/health', '/metrics']
+      
+      // Check if route matches any public path
+      const isPublicRoute = publicPaths.some(path => request.url.startsWith(path))
+      
+      if (isPublicRoute) {
+        request.auth = { authenticated: false, reason: 'public-route' }
+        return
+      }
       
       // Extract token
       const token = fastify.extractToken(request)
@@ -54,50 +132,45 @@ async function authPlugin(fastify, options) {
         return
       }
       
-      // Create Redis key
-      const cacheKey = `${CACHE_PREFIX}${token}`
+      // Validate token (usando caché o servicio de auth)
+      const authInfo = await fastify.validateToken(token)
       
-      // Check if the token is in cache
-      let authInfo = await fastify.cache.get(cacheKey)
-      if (authInfo) {
-        request.auth = authInfo
-        return
-      }
-      
-      // Decode token for basic information extraction
-      const decoded = fastify.decodeToken(token)
-      if (!decoded) {
-        request.auth = { authenticated: false, reason: 'invalid-format' }
-        return
-      }
-      
-      // NOTE: In the future, verification would be done with the auth service
-      
-      // Extract relevant information for routing decisions
-      authInfo = {
-        authenticated: true, // This will actually be determined by the auth service
-        userId: decoded.sub || decoded.userId,
-        roles: decoded.roles || [],
-        permissions: decoded.permissions || [],
-        token: token
-      }
-      
-      // Save in cache using the helper you already have
-      await fastify.cache.set(cacheKey, authInfo, TOKEN_CACHE_TTL)
-      
-      // Attach to the request for later use
+      // Attach auth info to request
       request.auth = authInfo
       
+      // Si estamos autenticados, adjuntar la información del usuario al request
+      if (authInfo.authenticated) {
+        request.user = authInfo.userInfo
+      }
+      
     } catch (error) {
-      console.error(`Error in authentication middleware: ${error.message}`)
+      fastify.logger.error(`Error in authentication middleware: ${error.message}`, {
+        error: error.message,
+        stack: error.stack,
+        path: request.url
+      })
+      
       // Do not block the request, just mark it as unauthenticated
       request.auth = { authenticated: false, reason: 'error', message: error.message }
     }
   })
   
-  // Helper function to verify authorization requirements (future use)
-  fastify.decorate('requireAuth', function(rolesRequired = []) {
+  // Middleware for routes that require authentication
+  fastify.decorate('authenticate', async (request, reply) => {
+    if (!request.auth || !request.auth.authenticated) {
+      reply.status(401).send({
+        statusCode: 401,
+        error: 'Unauthorized',
+        message: 'Authentication required'
+      })
+      return
+    }
+  })
+  
+  // Middleware for routes that require specific roles
+  fastify.decorate('requireRoles', function(rolesRequired = []) {
     return async (request, reply) => {
+      // Primero verificar que está autenticado
       if (!request.auth || !request.auth.authenticated) {
         reply.status(401).send({
           statusCode: 401,
@@ -107,32 +180,87 @@ async function authPlugin(fastify, options) {
         return
       }
       
-      // If specific roles are required, check them
-      if (rolesRequired.length > 0) {
-        const hasRequiredRole = request.auth.roles.some(role => rolesRequired.includes(role))
-        
-        if (!hasRequiredRole) {
-          reply.status(403).send({
-            statusCode: 403,
-            error: 'Forbidden',
-            message: 'You do not have permission to access this resource'
-          })
-          return
-        }
+      // Si no se requieren roles específicos, ya está autorizado
+      if (rolesRequired.length === 0) return
+      
+      // Verificar que el usuario tiene al menos uno de los roles requeridos
+      const hasRequiredRole = request.auth.roles.some(role => rolesRequired.includes(role))
+      
+      if (!hasRequiredRole) {
+        reply.status(403).send({
+          statusCode: 403,
+          error: 'Forbidden',
+          message: 'You do not have permission to access this resource'
+        })
+        return
       }
     }
   })
   
-  // Prepare for future communication with the authentication service
+  // Decorar con el servicio de autenticación
   fastify.decorate('authService', {
-    validateToken: async function(token) {
-      // Future implementation - call to the authentication service
-      // For now, simply return local decoding
-      return { valid: !!fastify.decodeToken(token), decoded: fastify.decodeToken(token) }
+    // Obtener información de usuario por ID
+    getUserInfo: async function(userId) {
+      // Intentar obtener de caché primero
+      const cacheKey = `${USER_INFO_PREFIX}${userId}`
+      const cachedInfo = await fastify.cache.get(cacheKey)
+      
+      if (cachedInfo) return cachedInfo
+      
+      // Si no está en caché, obtener del servicio de auth
+      try {
+        const authService = fastify.config.services.auth
+        const token = request.headers.authorization
+        
+        const response = await axios.get(`${authService.url}/me`, {
+          headers: {
+            'Authorization': token
+          },
+          timeout: 5000
+        })
+        
+        if (response.data) {
+          // Almacenar en caché
+          await fastify.cache.set(cacheKey, response.data, TOKEN_CACHE_TTL * 2)
+          return response.data
+        }
+      } catch (error) {
+        fastify.logger.error(`Error getting user info: ${error.message}`, {
+          error: error.message,
+          stack: error.stack,
+          userId
+        })
+      }
+      
+      return null
     },
-	// Remove from cache when a token is invalidated
-    invalidateToken: async function(token) { await fastify.cache.del(`${CACHE_PREFIX}${token}`) }
+    
+    // Revocar token
+    revokeToken: async function(token) {
+      // Eliminar de caché
+      await fastify.cache.del(`${CACHE_PREFIX}${token}`)
+      
+      // Intentar revocar en el servicio de auth
+      try {
+        const authService = fastify.config.services.auth
+        await axios.post(`${authService.url}/logout`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          timeout: 5000
+        })
+        return true
+      } catch (error) {
+        fastify.logger.warn(`Error revoking token in auth service: ${error.message}`, {
+          error: error.message
+        })
+        // Aún consideramos exitoso porque lo eliminamos de caché local
+        return true
+      }
+    }
   })
+  
+  fastify.logger.info('Auth plugin configurado correctamente')
 }
 
-module.exports = fp(authPlugin, { name: 'auth', dependencies: ['redis'] })
+module.exports = fp(authPlugin, { name: 'auth', dependencies: ['redis', 'logger'] })

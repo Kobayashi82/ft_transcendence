@@ -6,11 +6,20 @@ const { oauthCallbackSchema } = require('../schemas/auth')
 // Rutas para OAuth
 async function oauthRoutes(fastify, options) {
   // GET /auth/oauth/google/init - Iniciar flujo OAuth con Google
-  fastify.get('/oauth/google/init', async (request, reply) => {
+  fastify.get('/oauth/google/init', {
+    config: {
+      rateLimit: {
+        max: 30,
+        timeWindow: '5 minutes'
+      }
+    }
+  }, async (request, reply) => {
     try {
       const config = fastify.config.oauth.google
       
       if (!config.clientId || !config.clientSecret) {
+        fastify.logger.error('Credenciales de Google OAuth no configuradas')
+        
         reply.code(500).send({ 
           error: 'Error de configuración', 
           message: 'Credenciales de Google OAuth no configuradas' 
@@ -32,9 +41,19 @@ async function oauthRoutes(fastify, options) {
       authUrl.searchParams.append('scope', 'email profile')
       authUrl.searchParams.append('state', state)
       
+      fastify.logger.info(`Iniciando flujo OAuth con Google para IP=${request.ip}`, {
+        ip: request.ip,
+        state
+      })
+      
       reply.send({ url: authUrl.toString() })
     } catch (err) {
-      fastify.logger.error(err)
+      fastify.logger.error(`Error al iniciar flujo OAuth con Google: ${err.message}`, {
+        error: err.message,
+        stack: err.stack,
+        ip: request.ip
+      })
+      
       reply.code(500).send({ 
         error: 'Error interno', 
         message: 'Error al iniciar flujo OAuth' 
@@ -51,6 +70,12 @@ async function oauthRoutes(fastify, options) {
       
       // Verificar si hay error
       if (error) {
+        fastify.logger.warn(`Error en callback OAuth de Google: ${error}`, {
+          error,
+          state,
+          ip: request.ip
+        })
+        
         reply.code(400).send({ 
           error: 'Error de autorización', 
           message: error 
@@ -61,6 +86,12 @@ async function oauthRoutes(fastify, options) {
       // Verificar estado para prevenir CSRF
       const storedProvider = await fastify.cache.get(`oauth:state:${state}`)
       if (!storedProvider || storedProvider !== 'google') {
+        fastify.logger.warn(`Estado inválido en callback OAuth de Google: ${state}`, {
+          state,
+          storedProvider,
+          ip: request.ip
+        })
+        
         reply.code(400).send({ 
           error: 'Estado inválido', 
           message: 'Posible ataque CSRF' 
@@ -73,23 +104,77 @@ async function oauthRoutes(fastify, options) {
       
       const config = fastify.config.oauth.google
       
-      // Intercambiar código por token
-      const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
-        code,
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
-        redirect_uri: config.redirectUri,
-        grant_type: 'authorization_code'
-      })
-      
-      // Obtener información del usuario
-      const userInfoResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: {
-          Authorization: `Bearer ${tokenResponse.data.access_token}`
+      // Intercambiar código por token usando circuit breaker
+      let tokenResponse;
+      try {
+        const response = await fastify.security.breakers.googleOAuth.fire({
+          method: 'post',
+          url: 'https://oauth2.googleapis.com/token',
+          data: {
+            code,
+            client_id: config.clientId,
+            client_secret: config.clientSecret,
+            redirect_uri: config.redirectUri,
+            grant_type: 'authorization_code'
+          },
+          timeout: 5000
+        });
+        
+        tokenResponse = response.data;
+        
+      } catch (err) {
+        fastify.logger.error(`Error en OAuth Google al obtener token: ${err.message}`, {
+          error: err.message,
+          stack: err.stack,
+          ip: request.ip
+        });
+        
+        if (fastify.security.breakers.googleOAuth.status === 'open') {
+          reply.code(503).send({
+            error: 'Servicio no disponible',
+            message: 'El servicio de autenticación de Google no está disponible temporalmente'
+          });
+        } else {
+          reply.code(500).send({
+            error: 'Error interno',
+            message: 'Error en callback OAuth de Google'
+          });
         }
-      })
+        return;
+      }
+      
+      // Obtener información del usuario usando circuit breaker
+      let userInfoResponse;
+      try {
+        userInfoResponse = await fastify.security.breakers.googleOAuth.fire({
+          method: 'get',
+          url: 'https://www.googleapis.com/oauth2/v2/userinfo',
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`
+          },
+          timeout: 5000
+        });
+      } catch (err) {
+        fastify.logger.error(`Error en OAuth Google al obtener información del usuario: ${err.message}`, {
+          error: err.message,
+          stack: err.stack,
+          ip: request.ip
+        });
+        
+        reply.code(500).send({
+          error: 'Error interno',
+          message: 'Error al obtener información del usuario de Google'
+        });
+        return;
+      }
       
       const userInfo = userInfoResponse.data
+      
+      fastify.logger.info(`Información de usuario obtenida de Google OAuth: ${userInfo.email}`, {
+        email: userInfo.email,
+        googleId: userInfo.id,
+        ip: request.ip
+      })
       
       // Verificar si el usuario ya existe
       let user = await fastify.authDB.getUserByOAuthId(userInfo.id, 'google')
@@ -104,13 +189,30 @@ async function oauthRoutes(fastify, options) {
             oauth_id: userInfo.id,
             account_type: existingUser.account_type === 'local' ? 'local' : 'google'
           })
+          
+          fastify.logger.info(`Cuenta existente vinculada con Google: ${existingUser.id}`, {
+            userId: existingUser.id,
+            email: userInfo.email,
+            googleId: userInfo.id
+          })
         } else {
+          // Sanitizar username
+          const sanitizedUsername = userInfo.name 
+            ? fastify.security.sanitizeInput(userInfo.name) 
+            : userInfo.email.split('@')[0]
+          
           // Crear nuevo usuario
           user = await fastify.authDB.createUser({
             email: userInfo.email,
-            username: userInfo.name || userInfo.email.split('@')[0],
+            username: sanitizedUsername,
             account_type: 'google',
             oauth_id: userInfo.id
+          })
+          
+          fastify.logger.info(`Nuevo usuario creado desde Google OAuth: ${user.id}`, {
+            userId: user.id,
+            email: userInfo.email,
+            googleId: userInfo.id
           })
         }
       }
@@ -126,6 +228,11 @@ async function oauthRoutes(fastify, options) {
             exp: Math.floor(Date.now() / 1000) + 300 // 5 minutos
           }
         )
+        
+        fastify.logger.info(`2FA requerido para login con Google OAuth: ${user.id}`, {
+          userId: user.id,
+          email: user.email
+        })
         
         reply.code(200).send({
           requires_2fa: true,
@@ -164,6 +271,12 @@ async function oauthRoutes(fastify, options) {
       // Almacenar en Redis
       const cacheKey = `user:${user.id}:info`
       await fastify.cache.set(cacheKey, userInfoCache, 1800) // 30 minutos
+      
+      fastify.logger.info(`Login exitoso con Google OAuth: ${user.id}`, {
+        userId: user.id,
+        email: user.email,
+        ip: request.ip
+      })
 
       const frontendHost = request.headers['x-forwarded-host'] || request.headers.host || 'localhost';
 
@@ -181,7 +294,12 @@ async function oauthRoutes(fastify, options) {
       // Redirigir al frontend
       return reply.redirect(redirectUrl.toString());
     } catch (err) {
-      fastify.logger.error(err)
+      fastify.logger.error(`Error en callback OAuth de Google: ${err.message}`, {
+        error: err.message,
+        stack: err.stack,
+        ip: request.ip
+      })
+      
       reply.code(500).send({ 
         error: 'Error interno', 
         message: 'Error en callback OAuth' 
@@ -190,11 +308,20 @@ async function oauthRoutes(fastify, options) {
   })
 
   // GET /auth/oauth/42/init - Iniciar flujo OAuth con 42
-  fastify.get('/oauth/42/init', async (request, reply) => {
+  fastify.get('/oauth/42/init', {
+    config: {
+      rateLimit: {
+        max: 30,
+        timeWindow: '5 minutes'
+      }
+    }
+  }, async (request, reply) => {
     try {
       const config = fastify.config.oauth.fortytwo
       
       if (!config.clientId || !config.clientSecret) {
+        fastify.logger.error('Credenciales de 42 OAuth no configuradas')
+        
         reply.code(500).send({ 
           error: 'Error de configuración', 
           message: 'Credenciales de 42 OAuth no configuradas' 
@@ -216,9 +343,19 @@ async function oauthRoutes(fastify, options) {
       authUrl.searchParams.append('scope', 'public')
       authUrl.searchParams.append('state', state)
       
+      fastify.logger.info(`Iniciando flujo OAuth con 42 para IP=${request.ip}`, {
+        ip: request.ip,
+        state
+      })
+      
       reply.send({ url: authUrl.toString() })
     } catch (err) {
-      fastify.logger.error(err)
+      fastify.logger.error(`Error al iniciar flujo OAuth con 42: ${err.message}`, {
+        error: err.message,
+        stack: err.stack,
+        ip: request.ip
+      })
+      
       reply.code(500).send({ 
         error: 'Error interno', 
         message: 'Error al iniciar flujo OAuth' 
@@ -235,6 +372,12 @@ async function oauthRoutes(fastify, options) {
       
       // Verificar si hay error
       if (error) {
+        fastify.logger.warn(`Error en callback OAuth de 42: ${error}`, {
+          error,
+          state,
+          ip: request.ip
+        })
+        
         reply.code(400).send({ 
           error: 'Error de autorización', 
           message: error 
@@ -245,6 +388,12 @@ async function oauthRoutes(fastify, options) {
       // Verificar estado para prevenir CSRF
       const storedProvider = await fastify.cache.get(`oauth:state:${state}`)
       if (!storedProvider || storedProvider !== '42') {
+        fastify.logger.warn(`Estado inválido en callback OAuth de 42: ${state}`, {
+          state,
+          storedProvider,
+          ip: request.ip
+        })
+        
         reply.code(400).send({ 
           error: 'Estado inválido', 
           message: 'Posible ataque CSRF' 
@@ -257,23 +406,77 @@ async function oauthRoutes(fastify, options) {
       
       const config = fastify.config.oauth.fortytwo
       
-      // Intercambiar código por token
-      const tokenResponse = await axios.post('https://api.intra.42.fr/oauth/token', {
-        grant_type: 'authorization_code',
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
-        code: code,
-        redirect_uri: config.redirectUri
-      })
-      
-      // Obtener información del usuario
-      const userInfoResponse = await axios.get('https://api.intra.42.fr/v2/me', {
-        headers: {
-          Authorization: `Bearer ${tokenResponse.data.access_token}`
+      // Intercambiar código por token usando circuit breaker
+      let tokenResponse;
+      try {
+        const response = await fastify.security.breakers.fortytwoOAuth.fire({
+          method: 'post',
+          url: 'https://api.intra.42.fr/oauth/token',
+          data: {
+            grant_type: 'authorization_code',
+            client_id: config.clientId,
+            client_secret: config.clientSecret,
+            code: code,
+            redirect_uri: config.redirectUri
+          },
+          timeout: 5000
+        });
+        
+        tokenResponse = response.data;
+        
+      } catch (err) {
+        fastify.logger.error(`Error en OAuth 42 al obtener token: ${err.message}`, {
+          error: err.message,
+          stack: err.stack,
+          ip: request.ip
+        });
+        
+        if (fastify.security.breakers.fortytwoOAuth.status === 'open') {
+          reply.code(503).send({
+            error: 'Servicio no disponible',
+            message: 'El servicio de autenticación de 42 no está disponible temporalmente'
+          });
+        } else {
+          reply.code(500).send({
+            error: 'Error interno',
+            message: 'Error en callback OAuth de 42'
+          });
         }
-      })
+        return;
+      }
+      
+      // Obtener información del usuario usando circuit breaker
+      let userInfoResponse;
+      try {
+        userInfoResponse = await fastify.security.breakers.fortytwoOAuth.fire({
+          method: 'get',
+          url: 'https://api.intra.42.fr/v2/me',
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`
+          },
+          timeout: 5000
+        });
+      } catch (err) {
+        fastify.logger.error(`Error en OAuth 42 al obtener información del usuario: ${err.message}`, {
+          error: err.message,
+          stack: err.stack,
+          ip: request.ip
+        });
+        
+        reply.code(500).send({
+          error: 'Error interno',
+          message: 'Error al obtener información del usuario de 42'
+        });
+        return;
+      }
       
       const userInfo = userInfoResponse.data
+      
+      fastify.logger.info(`Información de usuario obtenida de 42 OAuth: ${userInfo.email}`, {
+        email: userInfo.email,
+        fortytwoId: userInfo.id,
+        ip: request.ip
+      })
       
       // Verificar si el usuario ya existe
       let user = await fastify.authDB.getUserByOAuthId(userInfo.id.toString(), '42')
@@ -288,13 +491,30 @@ async function oauthRoutes(fastify, options) {
             oauth_id: userInfo.id.toString(),
             account_type: existingUser.account_type === 'local' ? 'local' : '42'
           })
+          
+          fastify.logger.info(`Cuenta existente vinculada con 42: ${existingUser.id}`, {
+            userId: existingUser.id,
+            email: userInfo.email,
+            fortytwoId: userInfo.id
+          })
         } else {
+          // Sanitizar username
+          const sanitizedUsername = userInfo.login 
+            ? fastify.security.sanitizeInput(userInfo.login) 
+            : userInfo.email.split('@')[0]
+          
           // Crear nuevo usuario
           user = await fastify.authDB.createUser({
             email: userInfo.email,
-            username: userInfo.login || userInfo.email.split('@')[0],
+            username: sanitizedUsername,
             account_type: '42',
             oauth_id: userInfo.id.toString()
+          })
+          
+          fastify.logger.info(`Nuevo usuario creado desde 42 OAuth: ${user.id}`, {
+            userId: user.id,
+            email: userInfo.email,
+            fortytwoId: userInfo.id
           })
         }
       }
@@ -310,6 +530,11 @@ async function oauthRoutes(fastify, options) {
             exp: Math.floor(Date.now() / 1000) + 300 // 5 minutos
           }
         )
+        
+        fastify.logger.info(`2FA requerido para login con 42 OAuth: ${user.id}`, {
+          userId: user.id,
+          email: user.email
+        })
         
         reply.code(200).send({
           requires_2fa: true,
@@ -348,6 +573,12 @@ async function oauthRoutes(fastify, options) {
       // Almacenar en Redis
       const cacheKey = `user:${user.id}:info`
       await fastify.cache.set(cacheKey, userInfoCache, 1800) // 30 minutos
+      
+      fastify.logger.info(`Login exitoso con 42 OAuth: ${user.id}`, {
+        userId: user.id,
+        email: user.email,
+        ip: request.ip
+      })
 
       // Determinamos la URL base para la redirección de forma más robusta
       const frontendHost = request.headers['x-forwarded-host'] || request.headers.host || 'localhost';
@@ -366,7 +597,12 @@ async function oauthRoutes(fastify, options) {
       // Redirigir al frontend
       return reply.redirect(redirectUrl.toString());
     } catch (err) {
-      fastify.logger.error(err)
+      fastify.logger.error(`Error en callback OAuth de 42: ${err.message}`, {
+        error: err.message,
+        stack: err.stack,
+        ip: request.ip
+      })
+      
       reply.code(500).send({ 
         error: 'Error interno', 
         message: 'Error en callback OAuth' 

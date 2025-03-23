@@ -10,7 +10,7 @@ async function proxyPlugin(fastify, options) {
   
   // Register a proxy for each service
   for (const [serviceName, serviceConfig] of Object.entries(services)) {
-    const { url, prefix, proxyOptions = {}, timeout } = serviceConfig
+    const { url, prefix, routes = {}, proxyOptions = {}, timeout } = serviceConfig
     
     fastify.register(httpProxy, {
       upstream: url,
@@ -25,6 +25,18 @@ async function proxyPlugin(fastify, options) {
           // Custom headers to identify requests from the gateway
           headers['x-gateway-timestamp'] = Date.now().toString()
           headers['x-gateway-service'] = serviceName
+          
+          // Add user information to the request if authenticated
+          if (req.auth && req.auth.authenticated) {
+            headers['x-user-id'] = req.auth.userId.toString()
+            headers['x-user-roles'] = JSON.stringify(req.auth.roles)
+            headers['x-user-email'] = req.auth.email
+            
+            // Adicionalmente, podrías agregar más información según sea necesario
+            if (req.user) {
+              headers['x-user-info'] = Buffer.from(JSON.stringify(req.user)).toString('base64')
+            }
+          }
           
           // Apply custom header rewrites specific to the service
           if (proxyOptions.rewriteRequestHeaders) {
@@ -45,10 +57,10 @@ async function proxyPlugin(fastify, options) {
   fastify.setErrorHandler(function (error, request, reply) {
     // Specific handling for proxy errors
     if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
-      console.error({
+      fastify.logger.error('Communication error with the microservice', {
         err: error, 
         service: request.headers['x-gateway-service']
-      }, 'Communication error with the microservice')
+      })
       
       const httpError = createError(503, 'Service temporarily unavailable')
       reply.status(503).send({
@@ -62,7 +74,6 @@ async function proxyPlugin(fastify, options) {
     // For other errors, delegate to the global error handler
     reply.send(error)
   })
-
 }
 
-module.exports = fp(proxyPlugin, { name: 'proxy', dependencies: ['redis', 'metrics'] })
+module.exports = fp(proxyPlugin, { name: 'proxy', dependencies: ['redis', 'metrics', 'auth'] })

@@ -8,25 +8,29 @@ async function healthRoutes(fastify, options) {
     const databaseStatus = await checkDatabase(fastify)
     const redisStatus = await checkRedis(fastify)
     const jwtStatus = checkJWT(fastify)
+    const securityStatus = checkSecurity(fastify)
     
     const serviceStatus = {
       service: {
         name: fastify.config.serviceName,
         status: 'healthy',
         uptime: process.uptime(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        version: '1.1.0' // Incrementado por las mejoras de seguridad
       },
       dependencies: {
         database: databaseStatus,
         redis: redisStatus,
-        jwt: jwtStatus
+        jwt: jwtStatus,
+        security: securityStatus
       }
     }
 
     // Si algún componente crítico falla, devolver 503
     const isHealthy = databaseStatus.status === 'healthy' && 
                       redisStatus.status === 'healthy' && 
-                      jwtStatus.status === 'healthy'
+                      jwtStatus.status === 'healthy' &&
+                      securityStatus.status === 'healthy'
     
     if (!isHealthy) {
       serviceStatus.service.status = 'degraded'
@@ -68,6 +72,17 @@ async function healthRoutes(fastify, options) {
     
     return { jwt: jwtStatus }
   })
+  
+  // Detailed health check for security components
+  fastify.get('/health/security', async (request, reply) => {
+    const securityStatus = checkSecurity(fastify)
+    
+    if (securityStatus.status !== 'healthy') {
+      reply.status(503)
+    }
+    
+    return { security: securityStatus }
+  })
 }
 
 // Check the status of the database
@@ -85,6 +100,7 @@ async function checkDatabase(fastify) {
       responseTime: `${responseTime}ms`
     }
   } catch (error) {
+    fastify.logger.error(`Error en health check de base de datos: ${error.message}`)
     return {
       status: 'down',
       error: error.message
@@ -104,6 +120,7 @@ async function checkRedis(fastify) {
       responseTime: `${responseTime}ms`
     }
   } catch (error) {
+    fastify.logger.error(`Error en health check de Redis: ${error.message}`)
     return {
       status: 'down',
       error: error.message
@@ -138,6 +155,50 @@ function checkJWT(fastify) {
       status: 'healthy'
     }
   } catch (error) {
+    fastify.logger.error(`Error en health check de JWT: ${error.message}`)
+    return {
+      status: 'down',
+      error: error.message
+    }
+  }
+}
+
+// Check security components
+function checkSecurity(fastify) {
+  try {
+    // Verificar que el módulo de seguridad está configurado
+    if (!fastify.security) {
+      return {
+        status: 'down',
+        error: 'Security module not initialized'
+      }
+    }
+    
+    // Verificar encriptación
+    const testString = 'test-security-string'
+    const encrypted = fastify.security.encrypt(testString)
+    const decrypted = fastify.security.decrypt(encrypted)
+    
+    if (decrypted !== testString) {
+      return {
+        status: 'degraded',
+        error: 'Encryption/decryption test failed'
+      }
+    }
+    
+    // Verificar circuit breakers
+    const circuitStatus = {
+      googleOAuth: fastify.security.breakers.googleOAuth.status,
+      fortytwoOAuth: fastify.security.breakers.fortytwoOAuth.status
+    }
+    
+    return {
+      status: 'healthy',
+      encryption: 'working',
+      circuitBreakers: circuitStatus
+    }
+  } catch (error) {
+    fastify.logger.error(`Error en health check de seguridad: ${error.message}`)
     return {
       status: 'down',
       error: error.message

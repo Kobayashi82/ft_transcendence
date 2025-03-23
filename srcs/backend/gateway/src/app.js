@@ -14,12 +14,13 @@ app.register(require('./plugins/logger'))
 app.register(require('./plugins/metrics'))
 app.register(require('./plugins/redis'))
 app.register(require('./plugins/auth'))
+app.register(require('./plugins/rate-limit')) // Agregar el nuevo plugin
 app.register(require('./plugins/proxy'))
 app.register(require('./plugins/error-handler'))
 
 // Register middlewares
 app.register(require('@fastify/cors'), config.cors)
-app.register(require('@fastify/rate-limit'), config.rateLimit)
+// Ya no necesitamos el rate-limit aquí, porque tenemos nuestro plugin personalizado
 app.register(require('@fastify/helmet'))
 app.register(require('@fastify/sensible'))
 
@@ -42,14 +43,14 @@ const start = async () => {
 
 // Shutdown
 const gracefulShutdown = async () => {
-	try {
-	  await app.close()
-	  console.log('Server shut down successfully')
-	  process.exit(0)
-	} catch (err) {
-	  console.error('Error shutting down the server:', err)
-	  process.exit(1)
-	}
+  try {
+    await app.close()
+    console.log('Server shut down successfully')
+    process.exit(0)
+  } catch (err) {
+    console.error('Error shutting down the server:', err)
+    process.exit(1)
+  }
 }
 
 start()

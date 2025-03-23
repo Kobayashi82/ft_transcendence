@@ -11,9 +11,11 @@ app.decorate('config', config)
 app.register(require('./plugins/logger'))
 app.register(require('./plugins/metrics'))
 app.register(require('./plugins/redis'))
+app.register(require('./plugins/security'))
 app.register(require('./plugins/jwt'))
 app.register(require('./plugins/auth'))
 app.register(require('./plugins/db'), { database: config.database })
+app.register(require('./plugins/helmet'))
 app.register(require('./plugins/error-handler'))
 
 // Register middlewares

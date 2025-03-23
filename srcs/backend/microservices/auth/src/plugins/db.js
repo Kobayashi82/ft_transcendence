@@ -8,7 +8,10 @@ async function dbPlugin(fastify, options) {
   // Crear una conexión a la base de datos SQLite
   const dbPath = path.resolve(options.database.path)
   
-  const db = new SQLite(dbPath, { verbose: fastify.log.debug })
+  const db = new SQLite(dbPath, { 
+    verbose: fastify.log.debug,
+    timeout: options.database.operationTimeout || 5000 // Timeout para operaciones
+  })
   
   // Inicializar esquema de base de datos para autenticación
   db.exec(`
@@ -25,6 +28,8 @@ async function dbPlugin(fastify, options) {
         last_login TIMESTAMP,
         is_active BOOLEAN DEFAULT TRUE,
         is_deleted BOOLEAN DEFAULT FALSE,
+        is_anonymized BOOLEAN DEFAULT FALSE,
+        phone TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -89,7 +94,7 @@ async function dbPlugin(fastify, options) {
     );
   `)
   
-  console.log(`SQLite connected`)
+  fastify.logger.info(`SQLite conectado en ${dbPath}`)
 
   // Función auxiliar para medir y registrar operaciones de base de datos
   const measureDbOp = async (operation, entity, fn) => {
@@ -115,6 +120,12 @@ async function dbPlugin(fastify, options) {
         fastify.metrics.db.recordOperation(operation, entity, 'error')
         fastify.metrics.db.recordDuration(operation, entity, duration)
       }
+      
+      fastify.logger.error(`Error en operación de base de datos ${operation} en ${entity}: ${error.message}`, {
+        error: error.message,
+        operation,
+        entity
+      })
       
       throw error
     }
@@ -233,16 +244,32 @@ async function dbPlugin(fastify, options) {
     
     // Crear un nuevo usuario
     async createUser(userData) {
-      const { email, username, password_hash, account_type, oauth_id = null } = userData
+      const { email, username, password_hash, account_type, oauth_id = null, phone = null } = userData
+      
+      // Sanitizar datos
+      const sanitizedUsername = fastify.security ? fastify.security.sanitizeInput(username) : username
       
       try {
         return await fastify.db.transaction(async () => {
           // Insertar usuario
-          const result = await fastify.db.insert(
-            'INSERT INTO users (email, username, password_hash, account_type, oauth_id) VALUES (?, ?, ?, ?, ?)',
-            [email, username, password_hash, account_type, oauth_id],
-            'users'
-          )
+          let sql = 'INSERT INTO users (email, username, password_hash, account_type, oauth_id'
+          let params = [email, sanitizedUsername, password_hash, account_type, oauth_id]
+          
+          // Cifrar teléfono si se proporciona
+          if (phone && fastify.security) {
+            sql += ', phone) VALUES (?, ?, ?, ?, ?, ?)'
+            try {
+              const encryptedPhone = fastify.security.encrypt(phone)
+              params.push(encryptedPhone)
+            } catch (err) {
+              fastify.logger.error(`Error al cifrar teléfono: ${err.message}`)
+              sql += ') VALUES (?, ?, ?, ?, ?)'
+            }
+          } else {
+            sql += ') VALUES (?, ?, ?, ?, ?)'
+          }
+          
+          const result = await fastify.db.insert(sql, params, 'users')
           
           const userId = result.id
           
@@ -255,9 +282,13 @@ async function dbPlugin(fastify, options) {
           
           // Obtener el usuario creado
           const user = await this.getUserById(userId)
+          
+          fastify.logger.info(`Usuario creado: ID=${userId}, Email=${email}`, { userId, email })
+          
           return user
         }, 'users')
       } catch (err) {
+        fastify.logger.error(`Error al crear usuario: ${err.message}`)
         throw new Error(`Error al crear usuario: ${err.message}`)
       }
     },
@@ -277,7 +308,8 @@ async function dbPlugin(fastify, options) {
       
       if (username !== undefined) {
         setClause.push('username = ?')
-        params.push(username)
+        const sanitizedUsername = fastify.security ? fastify.security.sanitizeInput(username) : username
+        params.push(sanitizedUsername)
       }
       
       if (password_hash !== undefined) {
@@ -313,10 +345,107 @@ async function dbPlugin(fastify, options) {
           'users'
         )
         
+        fastify.logger.info(`Usuario actualizado: ID=${id}`, { userId: id })
+        
         return await this.getUserById(id)
       } catch (err) {
+        fastify.logger.error(`Error al actualizar usuario: ${err.message}`, { userId: id })
         throw new Error(`Error al actualizar usuario: ${err.message}`)
       }
+    },
+    
+    // Actualizar usuario con datos cifrados
+    async updateUserSecure(id, userData) {
+      const { email, username, password_hash, is_active, has_2fa, phone } = userData
+      
+      // Construir la consulta dinámicamente según los campos proporcionados
+      let setClause = []
+      let params = []
+      
+      if (email !== undefined) {
+        setClause.push('email = ?')
+        params.push(email)
+      }
+      
+      if (username !== undefined) {
+        setClause.push('username = ?')
+        const sanitizedUsername = fastify.security ? fastify.security.sanitizeInput(username) : username
+        params.push(sanitizedUsername)
+      }
+      
+      if (password_hash !== undefined) {
+        setClause.push('password_hash = ?')
+        params.push(password_hash)
+      }
+      
+      if (is_active !== undefined) {
+        setClause.push('is_active = ?')
+        params.push(is_active)
+      }
+      
+      if (has_2fa !== undefined) {
+        setClause.push('has_2fa = ?')
+        params.push(has_2fa)
+      }
+      
+      // Cifrar teléfono si se proporciona
+      if (phone !== undefined && phone !== null && fastify.security) {
+        setClause.push('phone = ?')
+        try {
+          const encryptedPhone = fastify.security.encrypt(phone)
+          params.push(encryptedPhone)
+        } catch (err) {
+          fastify.logger.error(`Error al cifrar teléfono: ${err.message}`)
+          params.push(null)
+        }
+      }
+      
+      // Añadir siempre updated_at
+      setClause.push('updated_at = CURRENT_TIMESTAMP')
+      
+      // Si no hay nada que actualizar, devolver
+      if (setClause.length === 1) {
+        const user = await this.getUserById(id)
+        return user
+      }
+      
+      params.push(id)
+      
+      try {
+        await fastify.db.update(
+          `UPDATE users SET ${setClause.join(', ')} WHERE id = ?`,
+          params,
+          'users'
+        )
+        
+        fastify.logger.info(`Usuario actualizado de forma segura: ID=${id}`, { userId: id })
+        return await this.getUserById(id)
+      } catch (err) {
+        fastify.logger.error(`Error al actualizar usuario: ${err.message}`, { 
+          error: err.message, 
+          userId: id 
+        })
+        throw new Error(`Error al actualizar usuario: ${err.message}`)
+      }
+    },
+    
+    // Obtener datos descifrados
+    async getUserWithDecryptedData(id) {
+      const user = await this.getUserById(id)
+      
+      if (!user) return null
+      
+      // Descifrar teléfono si existe
+      if (user.phone && fastify.security) {
+        try {
+          user.phone = fastify.security.decrypt(user.phone)
+        } catch (err) {
+          fastify.logger.error(`Error al descifrar teléfono: ${err.message}`, { userId: id })
+          user.phone = null
+        }
+      }
+      
+      return user
     },
     
     // Registrar último login
@@ -327,8 +456,10 @@ async function dbPlugin(fastify, options) {
           [id],
           'users'
         )
+        fastify.logger.debug(`Último login actualizado: ID=${id}`, { userId: id })
         return true
       } catch (err) {
+        fastify.logger.error(`Error al actualizar último login: ${err.message}`, { userId: id })
         throw new Error(`Error al actualizar último login: ${err.message}`)
       }
     },
@@ -356,8 +487,11 @@ async function dbPlugin(fastify, options) {
           'sessions'
         )
         
+        fastify.logger.info(`Usuario eliminado (soft delete): ID=${id}`, { userId: id })
+        
         return { id, deleted: true }
       } catch (err) {
+        fastify.logger.error(`Error al eliminar usuario: ${err.message}`, { userId: id })
         throw new Error(`Error al eliminar usuario: ${err.message}`)
       }
     },
@@ -382,9 +516,12 @@ async function dbPlugin(fastify, options) {
             )
           }
           
+          fastify.logger.info(`Roles actualizados para usuario: ID=${userId}`, { userId, roles })
+          
           return { userId, roles, updated: true }
         }, 'user_roles')
       } catch (err) {
+        fastify.logger.error(`Error al actualizar roles de usuario: ${err.message}`, { userId })
         throw new Error(`Error al actualizar roles de usuario: ${err.message}`)
       }
     },
@@ -400,6 +537,12 @@ async function dbPlugin(fastify, options) {
           'refresh_tokens'
         )
         
+        fastify.logger.debug(`Token de refresco creado para usuario: ID=${userId}`, { 
+          userId, 
+          tokenId: result.id,
+          expiresAt 
+        })
+        
         return {
           id: result.id,
           userId,
@@ -407,16 +550,22 @@ async function dbPlugin(fastify, options) {
           expiresAt
         }
       } catch (err) {
+        fastify.logger.error(`Error al crear token de refresco: ${err.message}`, { userId })
         throw new Error(`Error al crear token de refresco: ${err.message}`)
       }
     },
     
     async getRefreshToken(token) {
-      return await fastify.db.get(
-        'SELECT * FROM refresh_tokens WHERE token = ? AND revoked = false AND expires_at > CURRENT_TIMESTAMP',
-        [token],
-        'refresh_tokens'
-      )
+      try {
+        return await fastify.db.get(
+          'SELECT * FROM refresh_tokens WHERE token = ? AND revoked = false AND expires_at > CURRENT_TIMESTAMP',
+          [token],
+          'refresh_tokens'
+        )
+      } catch (err) {
+        fastify.logger.error(`Error al obtener token de refresco: ${err.message}`)
+        throw err
+      }
     },
     
     async revokeRefreshToken(token) {
@@ -426,21 +575,32 @@ async function dbPlugin(fastify, options) {
           [token],
           'refresh_tokens'
         )
+        
+        fastify.logger.debug(`Token de refresco revocado: ${token.substring(0, 8)}...`)
+        
         return true
       } catch (err) {
+        fastify.logger.error(`Error al revocar token de refresco: ${err.message}`)
         throw new Error(`Error al revocar token de refresco: ${err.message}`)
       }
     },
     
     async revokeAllRefreshTokens(userId) {
       try {
-        await fastify.db.update(
+        const result = await fastify.db.update(
           'UPDATE refresh_tokens SET revoked = true WHERE user_id = ?',
           [userId],
           'refresh_tokens'
         )
+        
+        fastify.logger.info(`Todos los tokens de refresco revocados para usuario: ID=${userId}`, {
+          userId,
+          tokensRevoked: result.changes
+        })
+        
         return true
       } catch (err) {
+        fastify.logger.error(`Error al revocar todos los tokens de refresco: ${err.message}`, { userId })
         throw new Error(`Error al revocar todos los tokens de refresco: ${err.message}`)
       }
     },
@@ -455,34 +615,74 @@ async function dbPlugin(fastify, options) {
           'two_factor'
         )
         
+        // Cifrar phone si es proporcionado y existe el módulo de seguridad
+        let encryptedPhone = null
+        if (phone && fastify.security) {
+          try {
+            encryptedPhone = fastify.security.encrypt(phone)
+          } catch (err) {
+            fastify.logger.error(`Error al cifrar teléfono para 2FA: ${err.message}`, { userId })
+          }
+        }
+        
         if (existing) {
           // Actualizar existente
           await fastify.db.update(
             'UPDATE two_factor SET secret = ?, phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-            [secret, phone, existing.id],
+            [secret, encryptedPhone || phone, existing.id],
             'two_factor'
           )
+          
+          fastify.logger.info(`Configuración 2FA actualizada para usuario: ID=${userId}, Tipo=${type}`, {
+            userId,
+            type
+          })
+          
           return { id: existing.id, updated: true }
         } else {
           // Crear nuevo
           const result = await fastify.db.insert(
             'INSERT INTO two_factor (user_id, type, secret, phone) VALUES (?, ?, ?, ?)',
-            [userId, type, secret, phone],
+            [userId, type, secret, encryptedPhone || phone],
             'two_factor'
           )
+          
+          fastify.logger.info(`Configuración 2FA creada para usuario: ID=${userId}, Tipo=${type}`, {
+            userId,
+            type
+          })
+          
           return { id: result.id, created: true }
         }
       } catch (err) {
+        fastify.logger.error(`Error al gestionar 2FA: ${err.message}`, { userId, type })
         throw new Error(`Error al gestionar 2FA: ${err.message}`)
       }
     },
     
     async get2FAConfig(userId, type) {
-      return await fastify.db.get(
-        'SELECT * FROM two_factor WHERE user_id = ? AND type = ?',
-        [userId, type],
-        'two_factor'
-      )
+      try {
+        const config = await fastify.db.get(
+          'SELECT * FROM two_factor WHERE user_id = ? AND type = ?',
+          [userId, type],
+          'two_factor'
+        )
+        
+        // Descifrar teléfono si existe y está el módulo de seguridad
+        if (config && config.phone && fastify.security) {
+          try {
+            config.phone = fastify.security.decrypt(config.phone)
+          } catch (err) {
+            fastify.logger.error(`Error al descifrar teléfono para 2FA: ${err.message}`, { userId })
+            config.phone = null
+          }
+        }
+        
+        return config
+      } catch (err) {
+        fastify.logger.error(`Error al obtener configuración 2FA: ${err.message}`, { userId, type })
+        throw err
+      }
     },
     
     async verify2FA(userId, type) {
@@ -500,8 +700,14 @@ async function dbPlugin(fastify, options) {
           'users'
         )
         
+        fastify.logger.info(`2FA verificado para usuario: ID=${userId}, Tipo=${type}`, {
+          userId,
+          type
+        })
+        
         return true
       } catch (err) {
+        fastify.logger.error(`Error al verificar 2FA: ${err.message}`, { userId, type })
         throw new Error(`Error al verificar 2FA: ${err.message}`)
       }
     },
@@ -513,8 +719,15 @@ async function dbPlugin(fastify, options) {
           [userId, type],
           'two_factor'
         )
+        
+        fastify.logger.info(`2FA habilitado para usuario: ID=${userId}, Tipo=${type}`, {
+          userId,
+          type
+        })
+        
         return true
       } catch (err) {
+        fastify.logger.error(`Error al habilitar 2FA: ${err.message}`, { userId, type })
         throw new Error(`Error al habilitar 2FA: ${err.message}`)
       }
     },
@@ -535,8 +748,11 @@ async function dbPlugin(fastify, options) {
           'users'
         )
         
+        fastify.logger.info(`2FA deshabilitado para usuario: ID=${userId}`, { userId })
+        
         return true
       } catch (err) {
+        fastify.logger.error(`Error al deshabilitar 2FA: ${err.message}`, { userId })
         throw new Error(`Error al deshabilitar 2FA: ${err.message}`)
       }
     },
@@ -560,6 +776,11 @@ async function dbPlugin(fastify, options) {
           'password_reset'
         )
         
+        fastify.logger.info(`Token de reseteo de contraseña creado para usuario: ID=${userId}`, {
+          userId,
+          expiresAt
+        })
+        
         return {
           id: result.id,
           userId,
@@ -567,16 +788,22 @@ async function dbPlugin(fastify, options) {
           expiresAt
         }
       } catch (err) {
+        fastify.logger.error(`Error al crear token de reseteo: ${err.message}`, { userId })
         throw new Error(`Error al crear token de reseteo: ${err.message}`)
       }
     },
     
     async getPasswordResetToken(token) {
-      return await fastify.db.get(
-        'SELECT * FROM password_reset WHERE token = ? AND used = false AND expires_at > CURRENT_TIMESTAMP',
-        [token],
-        'password_reset'
-      )
+      try {
+        return await fastify.db.get(
+          'SELECT * FROM password_reset WHERE token = ? AND used = false AND expires_at > CURRENT_TIMESTAMP',
+          [token],
+          'password_reset'
+        )
+      } catch (err) {
+        fastify.logger.error(`Error al obtener token de reseteo: ${err.message}`)
+        throw err
+      }
     },
     
     async usePasswordResetToken(token) {
@@ -586,8 +813,12 @@ async function dbPlugin(fastify, options) {
           [token],
           'password_reset'
         )
+        
+        fastify.logger.info(`Token de reseteo de contraseña utilizado: ${token.substring(0, 8)}...`)
+        
         return true
       } catch (err) {
+        fastify.logger.error(`Error al usar token de reseteo: ${err.message}`)
         throw new Error(`Error al usar token de reseteo: ${err.message}`)
       }
     },
@@ -603,6 +834,13 @@ async function dbPlugin(fastify, options) {
           'sessions'
         )
         
+        fastify.logger.info(`Sesión creada para usuario: ID=${userId}`, {
+          userId,
+          sessionId: result.id,
+          ip,
+          expiresAt
+        })
+        
         return {
           id: result.id,
           userId,
@@ -610,16 +848,22 @@ async function dbPlugin(fastify, options) {
           expiresAt
         }
       } catch (err) {
+        fastify.logger.error(`Error al crear sesión: ${err.message}`, { userId, ip })
         throw new Error(`Error al crear sesión: ${err.message}`)
       }
     },
     
     async getActiveSessions(userId) {
-      return await fastify.db.all(
-        'SELECT id, ip_address, user_agent, created_at, expires_at FROM sessions WHERE user_id = ? AND revoked = false AND expires_at > CURRENT_TIMESTAMP',
-        [userId],
-        'sessions'
-      )
+      try {
+        return await fastify.db.all(
+          'SELECT id, ip_address, user_agent, created_at, expires_at FROM sessions WHERE user_id = ? AND revoked = false AND expires_at > CURRENT_TIMESTAMP',
+          [userId],
+          'sessions'
+        )
+      } catch (err) {
+        fastify.logger.error(`Error al obtener sesiones activas: ${err.message}`, { userId })
+        throw err
+      }
     },
     
     async revokeSession(id, userId) {
@@ -629,31 +873,93 @@ async function dbPlugin(fastify, options) {
           [id, userId],
           'sessions'
         )
+        
+        fastify.logger.info(`Sesión revocada: ID=${id} para usuario ID=${userId}`, {
+          sessionId: id,
+          userId
+        })
+        
         return true
       } catch (err) {
+        fastify.logger.error(`Error al revocar sesión: ${err.message}`, { sessionId: id, userId })
         throw new Error(`Error al revocar sesión: ${err.message}`)
       }
     },
     
     async revokeAllSessions(userId) {
       try {
-        await fastify.db.update(
+        const result = await fastify.db.update(
           'UPDATE sessions SET revoked = true WHERE user_id = ?',
           [userId],
           'sessions'
         )
+        
+        fastify.logger.info(`Todas las sesiones revocadas para usuario: ID=${userId}`, {
+          userId,
+          sessionsRevoked: result.changes
+        })
+        
         return true
       } catch (err) {
+        fastify.logger.error(`Error al revocar todas las sesiones: ${err.message}`, { userId })
         throw new Error(`Error al revocar todas las sesiones: ${err.message}`)
+      }
+    },
+    
+    // Estadísticas y métricas
+    async getUsersCount() {
+      try {
+        const result = await fastify.db.get(
+          'SELECT COUNT(*) as count FROM users WHERE is_deleted = false',
+          [],
+          'users'
+        )
+        return result.count
+      } catch (err) {
+        fastify.logger.error(`Error al obtener conteo de usuarios: ${err.message}`)
+        return 0
+      }
+    },
+    
+    async getActiveUsersCount() {
+      try {
+        const result = await fastify.db.get(
+          'SELECT COUNT(*) as count FROM users WHERE is_active = true AND is_deleted = false',
+          [],
+          'users'
+        )
+        return result.count
+      } catch (err) {
+        fastify.logger.error(`Error al obtener conteo de usuarios activos: ${err.message}`)
+        return 0
+      }
+    },
+    
+    async getSessionsCount() {
+      try {
+        const result = await fastify.db.get(
+          'SELECT COUNT(*) as count FROM sessions WHERE revoked = false AND expires_at > CURRENT_TIMESTAMP',
+          [],
+          'sessions'
+        )
+        return result.count
+      } catch (err) {
+        fastify.logger.error(`Error al obtener conteo de sesiones: ${err.message}`)
+        return 0
       }
     }
   })
   
   // Cerrar la conexión cuando el servidor se apague
   fastify.addHook('onClose', (instance, done) => {
-    if (db) db.close()
+    if (db) {
+      fastify.logger.info('Cerrando conexión SQLite')
+      db.close()
+    }
     done()
   })
+  
+  fastify.logger.info('Plugin de base de datos inicializado correctamente')
 }
 
-module.exports = fp(dbPlugin, { name: 'db', dependencies: ['metrics'] })
+module.exports = fp(dbPlugin, { name: 'db', dependencies: ['metrics', 'logger'] })

@@ -16,8 +16,8 @@ async function authToolsPlugin(fastify, options) {
   
   // Decorar fastify con herramientas para autenticación
   fastify.decorate('authTools', {
-    // Bcrypt para contraseñas
-    async hashPassword(password, saltRounds = 10) {
+    // Bcrypt para contraseñas (incrementado a 12 rounds por seguridad)
+    async hashPassword(password, saltRounds = 12) {
       return await bcrypt.hash(password, saltRounds)
     },
     
@@ -61,8 +61,14 @@ async function authToolsPlugin(fastify, options) {
       return codes
     },
     
-    // Generar token JWT - VERSIÓN CORREGIDA
+    // Generar token JWT con protección adicional
     generateJWT(user, expiresIn) {
+      // Verificar que el usuario es válido
+      if (!user || !user.id) {
+        fastify.logger.error('Intento de generar JWT para usuario inválido', { user })
+        throw new Error('Usuario inválido para generar JWT')
+      }
+      
       // Calcular timestamp actual
       const now = Math.floor(Date.now() / 1000);
       
@@ -85,33 +91,53 @@ async function authToolsPlugin(fastify, options) {
         has_2fa: user.has_2fa,
         account_type: user.account_type,
         iat: now,
-        exp: now + expiresInSeconds // Fecha de expiración explícita
+        exp: now + expiresInSeconds, // Fecha de expiración explícita
+        jti: this.generateUUID() // Identificador único para el token (permite revocación individual)
       }
+      
+      // Loggear la generación del token (sin datos sensibles)
+      fastify.logger.info(`JWT generado para usuario ${user.id}`, {
+        userId: user.id,
+        exp: now + expiresInSeconds,
+        jti: payload.jti
+      })
       
       // Firmar el token sin pasar opciones de expiración (ya las incluimos en el payload)
       return fastify.jwt.sign(payload)
     },
     
-    // Generar token de refresco
+    // Generar token de refresco con mayor entropía
     generateRefreshToken() {
       return this.generateRandomToken(40)
     },
     
-    // Crear objeto user_info para Redis
+    // Crear objeto user_info para Redis con datos sanitizados
     createUserInfo(user) {
+      // Sanitizar los datos del usuario antes de almacenarlos
+      const sanitizeIfString = (value) => {
+        return typeof value === 'string' ? fastify.security.sanitizeInput(value) : value
+      }
+      
       return {
         user_id: user.id,
-        email: user.email,
-        username: user.username,
-        roles: user.roles || ['user'],
+        email: sanitizeIfString(user.email),
+        username: sanitizeIfString(user.username),
+        roles: Array.isArray(user.roles) ? user.roles.map(sanitizeIfString) : ['user'],
         has_2fa: !!user.has_2fa,
-        account_type: user.account_type,
+        account_type: sanitizeIfString(user.account_type),
         last_login: user.last_login || new Date().toISOString(),
         created_at: user.created_at,
         is_active: !!user.is_active
       }
+    },
+    
+    // Validar contraseña según política de seguridad
+    validatePassword(password) {
+      return fastify.security.validatePasswordStrength(password)
     }
   })
+  
+  fastify.logger.info('Herramientas de autenticación inicializadas correctamente')
 }
 
-module.exports = fp(authToolsPlugin, { name: 'authTools', dependencies: ['jwt'] })
+module.exports = fp(authToolsPlugin, { name: 'authTools', dependencies: ['jwt', 'security'] })
