@@ -41,10 +41,10 @@ services:
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
-      - discovery.type=single-node                      # Set to single-node mode (multi-node clustering is unnecessary for this project)
-      - xpack.security.enabled=true                     # Enable security features (e.g., authentication)
-      - logger.level=ERROR                              # Set logging level to show only errors (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m                  # Set the minimum and maximum heap size to 512MB
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - logger.level=ERROR
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
     healthcheck:
@@ -63,7 +63,7 @@ services:
     build:
       context: ./backend/logging/logstash
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200   # Elasticsearch URL
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
     depends_on:
@@ -79,9 +79,10 @@ services:
     build:
       context: ./backend/logging/kibana
     environment:
-      - SERVER_BASEPATH=/kibana                         # Base path for Kibana
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m                  # Set the minimum and maximum heap size to 512MB
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200   # Elasticsearch URL
+      - SERVER_BASEPATH=/kibana
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - SERVER_PUBLICBASEURL=${HOST_NAME-https://localhost}/kibana
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
     depends_on:
@@ -113,7 +114,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
-      - GF_SERVER_ROOT_URL=https://localhost/grafana/   # Base path for Grafana
+      - GF_SERVER_ROOT_URL=https://localhost/grafana/
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME-${ADMIN_USERNAME}}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD-${ADMIN_PASSWORD}}
     networks:

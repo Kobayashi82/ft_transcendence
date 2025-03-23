@@ -164,27 +164,8 @@ async function oauthRoutes(fastify, options) {
       // Almacenar en Redis
       const cacheKey = `user:${user.id}:info`
       await fastify.cache.set(cacheKey, userInfoCache, 1800) // 30 minutos
-      
-      // Determinamos la URL base para la redirección de forma más robusta
-      let frontendHost;
-      // Intentamos obtener el host del referer si está disponible
-      if (request.headers['referer']) {
-        try {
-          const refererUrl = new URL(request.headers['referer']);
-          frontendHost = refererUrl.hostname;
-        } catch (e) {
-          // Si hay un error al parsear el referer, usamos el host de la solicitud
-          frontendHost = request.headers.host ? request.headers.host.split(':')[0] : 'localhost';
-        }
-      } else {
-        // Si no hay referer, usamos el host de la solicitud
-        frontendHost = request.headers.host ? request.headers.host.split(':')[0] : 'localhost';
-      }
 
-      // Aseguramos que no estamos redirigiendo a dominios externos
-      if (frontendHost === 'accounts.google.com' || frontendHost === 'www.googleapis.com' || !frontendHost) {
-        frontendHost = 'localhost'; // valor por defecto seguro
-      }
+      const frontendHost = request.headers['x-forwarded-host'] || request.headers.host || 'localhost';
 
       // Construir URL de redirección con el hostname determinado
       const redirectUrl = new URL(`https://${frontendHost}/dashboard`);
@@ -369,25 +350,7 @@ async function oauthRoutes(fastify, options) {
       await fastify.cache.set(cacheKey, userInfoCache, 1800) // 30 minutos
 
       // Determinamos la URL base para la redirección de forma más robusta
-      let frontendHost;
-      // Intentamos obtener el host del referer si está disponible
-      if (request.headers['referer']) {
-        try {
-          const refererUrl = new URL(request.headers['referer']);
-          frontendHost = refererUrl.hostname;
-        } catch (e) {
-          // Si hay un error al parsear el referer, usamos el host de la solicitud
-          frontendHost = request.headers.host ? request.headers.host.split(':')[0] : 'localhost';
-        }
-      } else {
-        // Si no hay referer, usamos el host de la solicitud
-        frontendHost = request.headers.host ? request.headers.host.split(':')[0] : 'localhost';
-      }
-
-      // Aseguramos que no estamos redirigiendo a dominios de 42
-      if (frontendHost === 'api.intra.42.fr' || frontendHost === 'intra.42.fr' || !frontendHost) {
-        frontendHost = 'localhost'; // valor por defecto seguro
-      }
+      const frontendHost = request.headers['x-forwarded-host'] || request.headers.host || 'localhost';
 
       // Construir URL de redirección con el hostname determinado
       const redirectUrl = new URL(`https://${frontendHost}/dashboard`);

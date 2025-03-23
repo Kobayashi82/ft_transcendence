@@ -48,11 +48,10 @@ if [ -d "/usr/share/kibana/dashboards" ] && [ "$(ls -A /usr/share/kibana/dashboa
       
       if $needs_import; then
         echo "Importing dashboard: $dashboard_file"
-        curl -X POST "http://localhost:5601/api/saved_objects/_import" \
-          -H "kbn-xsrf: true" \
-          --form file=@${dashboard_file} \
-          -u ${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD} \
-          --form overwrite=true
+		curl -X POST "http://localhost:5601/api/saved_objects/_import?overwrite=true" \
+			-H "kbn-xsrf: true" \
+			--form file=@${dashboard_file} \
+			-u ${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}
       fi
     fi
   done
