@@ -1,7 +1,7 @@
 'use strict'
 
 async function profileRoutes(fastify, options) {
-  // GET /auth/me - Obtain current user information
+
   fastify.get('/me', {
     preValidation: [fastify.verifyJWT]
   }, async (request, reply) => {

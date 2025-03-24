@@ -11,7 +11,7 @@ const {
 // Rutas para la API de usuarios
 async function userRoutes(fastify, options) {
   // Ruta interna para verificar si un email existe (usado por el servicio de auth)
-  fastify.get('/internal/check-email', async (request, reply) => {
+  fastify.get('/check-email', async (request, reply) => {
     try {
       const email = request.query.email
       if (!email) {

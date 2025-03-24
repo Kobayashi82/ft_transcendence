@@ -9,25 +9,25 @@ const crypto = require('crypto')
 const env = process.env.NODE_ENV || 'development'
 const isDev = env === 'development'
 
-// Generar claves de cifrado si no existe en el entorno (solo en modo desarrollo)
+// Generate encryption keys if not set in the environment (only in development mode)
 let encryptionKey = process.env.ENCRYPTION_KEY;
 if (!encryptionKey) {
   if (env === 'production') {
-    console.error('ENCRYPTION_KEY is required in production');
+    console.log('[ERROR] ENCRYPTION_KEY is required in production');
     process.exit(1);
   } else {
     encryptionKey = crypto.randomBytes(32).toString('hex');
-    console.warn('Using generated ENCRYPTION_KEY for development. In production, set this value in the environment');
+    console.warn('[WARN] Using generated ENCRYPTION_KEY for development. In production, set this value in the environment');
   }
 }
 let JWTSecret = process.env.JWT_SECRET;
 if (!JWTSecret) {
   if (env === 'production') {
-    console.error('JWT_SECRET is required in production');
+    console.error('[ERROR] JWT_SECRET is required in production');
     process.exit(1);
   } else {
     JWTSecret = crypto.randomBytes(32).toString('hex');
-    console.warn('Using generated JWT_SECRET for development. In production, set this value in the environment');
+    console.warn('[WARN] Using generated JWT_SECRET for development. In production, set this value in the environment');
   }
 }
 
@@ -43,14 +43,12 @@ const config = {
   
   // Services
   services: services.services,
-  routeMap: services.routeMap,
 
   // Redis
   redis: {
     host: (process.env.REDIS_URL && process.env.REDIS_URL.split(':')[0]) || 'redis',
     port: (process.env.REDIS_URL && process.env.REDIS_URL.split(':')[1]) || 6379,
-    password: process.env.REDIS_PASSWORD, db: 0, tls: null,
-    connectTimeout: 5000, maxRetriesPerRequest: 3
+    password: process.env.REDIS_PASSWORD, db: 0,
   },
  
   // SQLite

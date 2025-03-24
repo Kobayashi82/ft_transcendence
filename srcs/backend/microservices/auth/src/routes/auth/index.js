@@ -1,8 +1,6 @@
 'use strict'
 
-// Archivo principal que registra todas las rutas de autenticación
 async function authRoutes(fastify, options) {
-  // Registrar las rutas separadas por funcionalidad
   fastify.register(require('./login'))
   fastify.register(require('./register'))
   fastify.register(require('./token'))

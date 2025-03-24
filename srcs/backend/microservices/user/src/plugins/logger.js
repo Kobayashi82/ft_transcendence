@@ -31,14 +31,14 @@ async function loggerPlugin(fastify, options) {
     if (!gatewayUrl) return
     
     try {
-      await axios.post(`${gatewayUrl}/internal/logs`, { level, message, meta, service: serviceName, timestamp: new Date().toISOString() })
+      await axios.post(`${gatewayUrl}/logs`, { level, message, meta, service: serviceName, timestamp: new Date().toISOString() })
       
       // If there are logs in the buffer, try to send them
       if (logBuffer.length > 0) {
         const logs = [...logBuffer]
         logBuffer = []
         
-        await axios.post(`${gatewayUrl}/internal/logs/batch`, { logs, service: serviceName })
+        await axios.post(`${gatewayUrl}/logs/batch`, { logs, service: serviceName })
       }
     } catch (error) {
       // If it fails, store in buffer to retry later
@@ -80,7 +80,7 @@ async function loggerPlugin(fastify, options) {
   fastify.addHook('onClose', async (instance, done) => {
     if (logBuffer.length > 0 && gatewayUrl) {
       try {
-        await axios.post(`${gatewayUrl}/internal/logs/batch`, { logs: logBuffer, service: serviceName })
+        await axios.post(`${gatewayUrl}/logs/batch`, { logs: logBuffer, service: serviceName })
       } catch (error) {
         console.error(`Could not send ${logBuffer.length} pending logs when closing`)
       }

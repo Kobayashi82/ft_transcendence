@@ -3,7 +3,7 @@
 const { loginSchema } = require('../../schemas/login')
 
 async function logoutRoutes(fastify, options) {
-  // POST /auth/logout - Cerrar sesión
+
   fastify.post('/logout', async (request, reply) => {
     try {
       // Intentar obtener el token de autorización

@@ -22,10 +22,10 @@ app.register(require('./routes'), { prefix: '' })
 const gracefulShutdown = async () => {
   try {
     await app.close()
-    console.log('Server shut down successfully')
+    console.log('[INFO] Server shut down successfully')
     process.exit(0)
   } catch (err) {
-    console.error('Error shutting down the server:', err)
+    console.error('[ERROR] Server shutdown failure:', err)
     process.exit(1)
   }
 }
@@ -33,13 +33,14 @@ const gracefulShutdown = async () => {
 // Start
 const start = async () => {
   try {
+    await app.ready()
     await app.listen({ port: config.port, host: config.host })
-    console.log(`${config.serviceName.charAt(0).toUpperCase() + config.serviceName.slice(1)} listening on port ${config.port}`)
+    console.log(`[INFO] ${config.serviceName.charAt(0).toUpperCase() + config.serviceName.slice(1)} listening on port ${config.port}`)
     
     process.on('SIGINT', gracefulShutdown)
     process.on('SIGTERM', gracefulShutdown)
   } catch (err) {
-    console.error(`Error starting ${config.serviceName}: ${err.message}`)
+    console.error(`[ERROR] Service ${config.serviceName} startup failed: ${err.message}`)
     process.exit(1)
   }
 }

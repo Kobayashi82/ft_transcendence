@@ -112,13 +112,13 @@ async function loggerPlugin(fastify, options) {
   }
   
   // Register endpoints to receive logs from microservices
-  fastify.post('/internal/logs', async (request, reply) => {
+  fastify.post('/logs', async (request, reply) => {
     const { level, message, meta = {}, service, timestamp } = request.body
     log(level, message, { ...meta, service, timestamp })
     return { success: true }
   })
   
-  fastify.post('/internal/logs/batch', async (request, reply) => {
+  fastify.post('/logs/batch', async (request, reply) => {
     const { logs, service } = request.body
     
     if (Array.isArray(logs)) {

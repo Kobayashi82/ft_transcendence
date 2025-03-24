@@ -22,7 +22,7 @@ async function authRoutes(fastify, options) {
       // 1. Verificar si el email ya existe en el servicio de usuarios
       try {
         const userServiceUrl = fastify.config.services.user.url
-        const response = await fastify.axios.get(`${userServiceUrl}/internal/check-email`, {
+        const response = await fastify.axios.get(`${userServiceUrl}/check-email`, {
           params: { email: request.body.email }
         })
         

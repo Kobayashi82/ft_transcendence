@@ -1,6 +1,5 @@
 'use strict'
 
-// Definition of microservices
 const services = {
   auth: {
     url: process.env.AUTH_SERVICE_URL || 'http://auth:3000',
@@ -33,7 +32,6 @@ const services = {
   }, 
 };
 
-// Route map to redirect to specific services
 const routeMap = {
   '/auth': 'auth',
   '/user': 'user',

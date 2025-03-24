@@ -3,10 +3,8 @@
 const { verify2FASchema } = require('../../schemas/twoFactor')
 
 async function twoFactorRoutes(fastify, options) {
-  // POST /auth/2fa/verify - Verificar código 2FA
-  fastify.post('/2fa/verify', {
-    schema: verify2FASchema
-  }, async (request, reply) => {
+
+  fastify.post('/2fa/verify', { schema: verify2FASchema }, async (request, reply) => {
     try {
       const { code, token, device_info } = request.body
       

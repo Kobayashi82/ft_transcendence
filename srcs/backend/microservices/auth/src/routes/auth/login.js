@@ -3,7 +3,7 @@
 const { loginSchema } = require('../../schemas/login')
 
 async function loginRoutes(fastify, options) {
-  // POST /auth/login - Iniciar sesión
+
   fastify.post('/login', {
     schema: loginSchema,
   }, async (request, reply) => {
@@ -151,7 +151,7 @@ async function loginRoutes(fastify, options) {
         userId: user.id,
         email: user.email,
         ip: request.ip,
-        deviceId
+        deviceId: deviceId
       })
 
       // Establecer cookie HttpOnly para el refresh token

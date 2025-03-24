@@ -3,7 +3,7 @@
 const { refreshTokenSchema, validateTokenSchema } = require('../../schemas/token')
 
 async function tokenRoutes(fastify, options) {
-  // GET /auth/validate - Validar token
+
   fastify.get('/validate', {
     schema: validateTokenSchema,
   }, async (request, reply) => {
@@ -75,7 +75,6 @@ async function tokenRoutes(fastify, options) {
     }
   })
 
-  // POST /auth/refresh - Refrescar token
   fastify.post('/refresh', {
     schema: refreshTokenSchema,
   }, async (request, reply) => {
