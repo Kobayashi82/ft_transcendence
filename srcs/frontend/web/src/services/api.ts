@@ -1,6 +1,6 @@
 // API service for making requests to the backend with cookie support
 
-const API_BASE_URL = `/api`; // Usando ruta relativa para funcionar en cualquier entorno
+const API_BASE_URL = `/api`; // Using relative path to work in any environment
 
 // Device ID management
 const DEVICE_ID_KEY = 'device_id';
@@ -19,7 +19,7 @@ export interface RegisterData {
 
 export interface AuthResponse {
   access_token: string;
-  refresh_token?: string; // Ahora opcional, podría no venir si usamos cookies
+  refresh_token?: string; // Now optional, might not come if using cookies
   expires_in: number;
   token_type: string;
   user: User;
@@ -35,6 +35,7 @@ export interface User {
   last_login?: string;
   created_at?: string;
   is_active?: boolean;
+  devices?: any[];
 }
 
 export interface DeviceInfo {
@@ -47,11 +48,11 @@ export interface DeviceInfo {
 
 // Generate or retrieve device ID
 const getDeviceId = (): string => {
-  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+  let deviceId = sessionStorage.getItem(DEVICE_ID_KEY);
   
   if (!deviceId) {
     deviceId = crypto.randomUUID ? crypto.randomUUID() : generateFallbackUUID();
-    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+    sessionStorage.setItem(DEVICE_ID_KEY, deviceId);
   }
   
   return deviceId;
@@ -121,18 +122,19 @@ class ApiError extends Error {
 
 // Check if session is active via session cookie
 export const isSessionActive = (): boolean => {
-  return document.cookie.includes('session_active=true');
+  const sessionCookie = getCookie('session_active');
+  return sessionCookie === 'true';
 };
 
-// Current access token in memory (not stored in localStorage for security)
+// Añadir un helper para obtener cookies
+const getCookie = (name: string): string | null => {
+  const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+  return match ? decodeURIComponent(match[3]) : null;
+};
+
+// Current access token in memory
 let currentAccessToken: string | null = null;
 let tokenExpiryTime: number | null = null;
-
-// Set the current access token in memory
-export const setAccessToken = (token: string, expiresIn: number): void => {
-  currentAccessToken = token;
-  tokenExpiryTime = Date.now() + expiresIn * 1000;
-};
 
 // Get the current access token from memory
 export const getAccessToken = (): string | null => {
@@ -142,17 +144,28 @@ export const getAccessToken = (): string | null => {
   
   // If token is expired, return null (will trigger refresh)
   if (Date.now() > tokenExpiryTime) {
+    console.log('Token expired, needs refresh');
     return null;
   }
   
   return currentAccessToken;
 };
 
+// Set the current access token in memory
+export const setAccessToken = (token: string, expiresIn: number): void => {
+  // Mantener en memoria para uso inmediato
+  currentAccessToken = token;
+  tokenExpiryTime = Date.now() + expiresIn * 1000;
+  
+  // No necesitamos almacenamiento local para tokens
+  console.log(`Access token set, expires in ${expiresIn} seconds`);
+}
+
 // Clear the current access token
 export const clearAccessToken = (): void => {
   currentAccessToken = null;
   tokenExpiryTime = null;
-};
+}
 
 // Refreshing flag to prevent multiple simultaneous refresh attempts
 let isRefreshing = false;
@@ -190,7 +203,8 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 // Attempt to refresh token
 const refreshAccessToken = async (): Promise<string> => {
   try {
-    // Intentar refrescar con las cookies (las cookies se envían automáticamente)
+    console.log('Attempting to refresh token');
+    // Intentar refrescar con cookies (las cookies se envían automáticamente)
     const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
       headers: {
@@ -199,20 +213,23 @@ const refreshAccessToken = async (): Promise<string> => {
       body: JSON.stringify({ 
         device_id: getDeviceId() 
       }),
-      credentials: 'include', // Importante para que envíe las cookies
+      credentials: 'include', // Importante para enviar cookies
     });
     
     if (!response.ok) {
+      console.error('Refresh token request failed:', response.status);
       throw new Error('Failed to refresh token');
     }
     
     const data: AuthResponse = await response.json();
+    console.log('Token refreshed successfully');
     
-    // Store token in memory only
+    // Almacenar token solo en memoria
     setAccessToken(data.access_token, data.expires_in);
     
     return data.access_token;
   } catch (error) {
+    console.error('Error refreshing token:', error);
     clearAccessToken(); // Limpiar token para forzar login
     throw error;
   }
@@ -226,60 +243,64 @@ async function fetchWithErrorHandling<T>(url: string, options?: RequestInit): Pr
   // Si no hay headers, crear un objeto vacío
   options.headers = options.headers || {};
   
-  // Obtener el token de localStorage (NO de memoria)
-  const token = localStorage.getItem('auth_token');
+  // Obtener token (solo de memoria)
+  const token = getAccessToken();
   
-  // Añadir token a los headers si existe
+  // Añadir token a headers si existe
   if (token) {
-    console.log(`Usando token: ${token.substring(0, 10)}...`);
+    console.log(`Using token: ${token.substring(0, 10)}...`);
     (options.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
   
-  // Always include credentials to send cookies with each request
+  // Siempre incluir credentials para enviar cookies con cada solicitud
   options = {
     ...options,
     credentials: 'include'
   };
   
   try {
-    // If we need a token but don't have one, try to refresh
-    if (!token && isSessionActive() && url !== `${API_BASE_URL}/auth/refresh`) {
-      // If we're not already refreshing, try to refresh
-      if (!isRefreshing) {
-        isRefreshing = true;
+  // If we need a token but don't have one, try to refresh
+  if (!token && isSessionActive() && url !== `${API_BASE_URL}/auth/refresh`) {
+    console.log('No token but session active, trying to refresh');
+    // If we're not already refreshing, try to refresh
+    if (!isRefreshing) {
+      isRefreshing = true;
+      
+      try {
+        const newToken = await refreshAccessToken();
         
-        try {
-          const newToken = await refreshAccessToken();
-          
-          // Update headers with new token
-          if (options?.headers) {
-            (options.headers as Record<string, string>)['Authorization'] = `Bearer ${newToken}`;
-          }
-          
-          // Process queued requests
-          processQueue(null, newToken);
-        } catch (error) {
-          processQueue(error as Error);
-          throw error;
-        } finally {
-          isRefreshing = false;
+        // Update headers with new token
+        if (options?.headers) {
+          (options.headers as Record<string, string>)['Authorization'] = `Bearer ${newToken}`;
         }
-      } else {
-        // If already refreshing, add to queue
-        return new Promise((resolve, reject) => {
-          failedQueue.push({
-            resolve,
-            reject,
-            config: { ...options, url } as RequestInit & { url: string }
-          });
-        }) as Promise<T>;
+        
+        // Process queued requests
+        processQueue(null, newToken);
+      } catch (error) {
+        console.error('Token refresh failed:', error);
+        processQueue(error as Error);
+        throw error;
+      } finally {
+        isRefreshing = false;
       }
+    } else {
+      // If already refreshing, add to queue
+      console.log('Already refreshing, adding request to queue');
+      return new Promise((resolve, reject) => {
+        failedQueue.push({
+          resolve,
+          reject,
+          config: { ...options, url } as RequestInit & { url: string }
+        });
+      }) as Promise<T>;
     }
+  }
     
     const response = await fetch(url, options);
     
     // If token is invalid, try to refresh once
     if (response.status === 401 && url !== `${API_BASE_URL}/auth/refresh`) {
+      console.log('401 response, trying to refresh token');
       // Similar to above, but we know the token is definitely invalid now
       if (!isRefreshing) {
         isRefreshing = true;
@@ -296,6 +317,7 @@ async function fetchWithErrorHandling<T>(url: string, options?: RequestInit): Pr
           const retryResponse = await fetch(url, options);
           
           if (!retryResponse.ok) {
+            console.error('Retry failed:', retryResponse.status);
             throw new ApiError(
               `Error: ${retryResponse.status} ${retryResponse.statusText}`,
               retryResponse.status
@@ -307,6 +329,7 @@ async function fetchWithErrorHandling<T>(url: string, options?: RequestInit): Pr
           
           return await retryResponse.json() as T;
         } catch (error) {
+          console.error('Token refresh failed:', error);
           processQueue(error as Error);
           throw error;
         } finally {
@@ -314,6 +337,7 @@ async function fetchWithErrorHandling<T>(url: string, options?: RequestInit): Pr
         }
       } else {
         // If already refreshing, add to queue
+        console.log('Already refreshing, adding request to queue');
         return new Promise((resolve, reject) => {
           failedQueue.push({
             resolve,
@@ -337,6 +361,7 @@ async function fetchWithErrorHandling<T>(url: string, options?: RequestInit): Pr
         // No JSON response
       }
       
+      console.error('API error:', errorMessage);
       throw new ApiError(errorMessage, response.status);
     }
     
@@ -358,18 +383,22 @@ async function fetchWithErrorHandling<T>(url: string, options?: RequestInit): Pr
 export const authApi = {
   // Login with email and password
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    const deviceInfo = getDeviceInfo();
+    
+    const requestBody = {
+      ...credentials,
+      device_info: deviceInfo
+    };
+    
     const response = await fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
+      body: JSON.stringify(requestBody),
     });
     
-    // Guardar tokens en localStorage
+    // Store token in memory
     if (response.access_token) {
-      localStorage.setItem('auth_token', response.access_token);
-    }
-    if (response.refresh_token) {
-      localStorage.setItem('refresh_token', response.refresh_token);
+      setAccessToken(response.access_token, response.expires_in);
     }
     
     return response;

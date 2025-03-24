@@ -134,6 +134,73 @@ async function authToolsPlugin(fastify, options) {
     // Validar contraseña según política de seguridad
     validatePassword(password) {
       return fastify.security.validatePasswordStrength(password)
+    },
+    
+    // Método para refrescar token desde una cookie
+    async refreshTokenFromCookie(request, reply) {
+      // Obtener el token de refresco de la cookie
+      const refreshToken = request.cookies.refresh_token;
+      
+      if (!refreshToken) {
+        throw new Error('No refresh token provided');
+      }
+      
+      // Verificar el token de refresco
+      const tokenData = await fastify.authDB.getRefreshToken(refreshToken);
+      
+      if (!tokenData || tokenData.revoked) {
+        throw new Error('Invalid or revoked refresh token');
+      }
+      
+      // Obtener el usuario
+      const user = await fastify.authDB.getUserById(tokenData.user_id);
+      
+      if (!user || !user.is_active) {
+        throw new Error('User not found or inactive');
+      }
+      
+      // Revocar el token actual
+      await fastify.authDB.revokeRefreshToken(refreshToken);
+      
+      // Generar nuevos tokens
+      const accessToken = this.generateJWT(user);
+      const newRefreshToken = this.generateRefreshToken();
+      
+      // Tiempos de expiración
+      const refreshExpiresIn = parseInt(fastify.config.jwt.refreshExpiresIn) || 604800;
+      const accessExpiresIn = parseInt(fastify.config.jwt.expiresIn) || 3600;
+      
+      // Almacenar el nuevo token de refresco
+      await fastify.authDB.createRefreshToken(
+        user.id,
+        newRefreshToken,
+        refreshExpiresIn,
+        tokenData.device_id,
+        tokenData.device_name,
+        tokenData.device_type
+      );
+      
+      // Establecer cookies
+      reply
+        .setCookie('refresh_token', newRefreshToken, {
+          path: '/api/auth',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: refreshExpiresIn
+        })
+        .setCookie('session_active', 'true', {
+          path: '/',
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: refreshExpiresIn
+        });
+      
+      return {
+        access_token: accessToken,
+        expires_in: accessExpiresIn,
+        user: this.createUserInfo(user)
+      };
     }
   })
   

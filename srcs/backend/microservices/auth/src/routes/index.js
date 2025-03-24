@@ -17,7 +17,7 @@ async function routes(fastify, options) {
   fastify.register(require('./auth'))
   
   // OAuth routes
-  // fastify.register(require('./oauth'))
+  fastify.register(require('./oauth'))
   
   // Admin routes (protegidas)
   fastify.register(require('./admin'), { prefix: '/admin' })

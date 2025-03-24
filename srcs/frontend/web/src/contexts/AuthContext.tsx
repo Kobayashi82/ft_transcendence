@@ -46,12 +46,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Convert to milliseconds and refresh at 85% of the time
     const refreshTime = (expiresIn * 1000) * 0.85;
     
+    console.log(`Setting up refresh timer for ${Math.round(refreshTime/1000)} seconds`);
+    
     const timer = setTimeout(async () => {
       try {
+        console.log('Executing token refresh');
         // Check if session is still active
-        if (!isSessionActive()) return;
+        if (!isSessionActive()) {
+          console.log('Session inactive, skipping refresh');
+          return;
+        }
         
         const refreshData = await authApi.refreshToken();
+        console.log('Token refreshed successfully', refreshData.expires_in);
         
         // Setup the next refresh
         setupRefreshTimer(refreshData.expires_in);
@@ -64,10 +71,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setRefreshTimer(timer);
   }, [refreshTimer]);
 
-  // Función para configurar token y obtener información del usuario
+  // Function to set user and tokens
   const setUserAndTokens = async (token: string, expiresIn = 3600) => {
     try {
-      // Store token in memory only (not localStorage)
+      // Store token in memory
       setAccessToken(token, expiresIn);
       
       // Setup token refresh timer
@@ -77,20 +84,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userData);
       return userData;
     } catch (err) {
-      console.error('Error al obtener datos del usuario:', err);
+      console.error('Error getting user data:', err);
       clearAccessToken();
-      setError('Error al obtener datos del usuario');
+      setError('Error getting user data');
       throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  // Procesar tokens de URL directamente del Dashboard como respaldo
+  // Process URL tokens
   useEffect(() => {
     const processURLTokens = async () => {
       try {
-        // Solo procesar si estamos en la ruta dashboard
+        // Only process if we're on the dashboard
         if (!location.pathname.includes('/dashboard')) {
           return;
         }
@@ -100,14 +107,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const expiresIn = params.get('expires_in') ? parseInt(params.get('expires_in')!) : undefined;
         
         if (token) {
-          console.log("AuthContext: Procesando token de URL...");
+          console.log("AuthContext: Processing URL token...");
           await setUserAndTokens(token, expiresIn);
           
-          // Limpiar URL para seguridad
+          // Clean URL for security
           navigate('/dashboard', { replace: true });
         }
       } catch (err) {
-        console.error("Error procesando token de URL:", err);
+        console.error("Error processing URL token:", err);
       }
     };
     
@@ -117,8 +124,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check if user is already logged in (session is active)
   useEffect(() => {
     const checkAuthStatus = async () => {
+      console.log('Checking auth status');
+      
+      const storedToken = null;
+      
       // Check if we have a session cookie
-      if (!isSessionActive()) {
+      const hasActiveCookie = isSessionActive();
+      
+      console.log('Auth status check:', { 
+        hasActiveCookie 
+      });
+      
+      if (!hasActiveCookie) {
+        console.log('No active session or token found');
         setLoading(false);
         return;
       }
@@ -126,11 +144,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         // Try to get current user info
         const userData = await authApi.getCurrentUser();
+        console.log('User data retrieved successfully:', userData?.id);
         setUser(userData);
         
         // Setup refresh timer - we'll need to get a fresh token first
         try {
+          console.log('Refreshing token during init...');
           const tokenData = await authApi.refreshToken();
+          console.log('Token refreshed successfully during init');
           setupRefreshTimer(tokenData.expires_in);
         } catch (refreshErr) {
           console.error('Failed to refresh token during init:', refreshErr);
@@ -138,8 +159,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (err) {
         console.error('Failed to get user data:', err);
-        setError('Session expired. Please login again.');
-        setLoading(false);
+        
+		setError('Session expired. Please login again.');
+		setLoading(false);
       } finally {
         setLoading(false);
       }
@@ -149,27 +171,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [setupRefreshTimer]);
 
   // Login function
-  const login = async (email, password) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await authApi.login({ email, password });
-      
-      // Asegurarte de que los tokens se almacenan
-      localStorage.setItem('auth_token', response.access_token);
-      localStorage.setItem('refresh_token', response.refresh_token);
-      console.log("Tokens almacenados:", response.access_token.substring(0, 10) + "...");
-      
-      // Set user state
-      setUser(response.user);
-      
-      navigate('/dashboard');
-    } catch (err) {
-      setError((err as Error).message || 'Login failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+  const login = async (email: string, password: string) => {
+	setLoading(true);
+	setError(null);
+	
+	try {
+	  const response = await authApi.login({ email, password });
+	  
+	  // Almacenar token en memoria solo
+	  if (response.access_token) {
+		setAccessToken(response.access_token, response.expires_in);
+	  }
+	  
+	  // Establecer usuario
+	  setUser(response.user);
+	  
+	  // Configurar temporizador de refresco
+	  if (response.expires_in) {
+		setupRefreshTimer(response.expires_in);
+	  }
+	  
+	  navigate('/dashboard');
+	} catch (err) {
+	  setError((err as Error).message || 'Login failed. Please try again.');
+	} finally {
+	  setLoading(false);
+	}
   };
 
   // Register function
@@ -179,13 +206,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     try {
       const response = await authApi.register({ email, username, password });
-      
-      // Set user state
+    
+      // Establecer usuario
       setUser(response.user);
-      
-      // Setup token refresh timer
+    
+      // Almacenar token solo en memoria
+      setAccessToken(response.access_token, response.expires_in);
+    
+      // Configurar temporizador de refresco
       setupRefreshTimer(response.expires_in);
-      
+    
       navigate('/dashboard');
     } catch (err) {
       setError((err as Error).message || 'Registration failed. Please try again.');
@@ -196,25 +226,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Logout function
   const logout = async () => {
     setLoading(true);
-    
+  
     try {
-      // Clear refresh timer
+      // Limpiar temporizador
       if (refreshTimer) clearTimeout(refreshTimer);
       setRefreshTimer(null);
-      
-      // Call API to logout (this will clear the cookie server side)
+  
+      // Llamar API para cerrar sesión (esto borrará las cookies del lado del servidor)
       await authApi.logout();
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
-      // Clear token from memory
+      // Limpiar token de memoria
       clearAccessToken();
-      
-      // Clear user state
+  
+      // Limpiar estado de usuario
       setUser(null);
       setLoading(false);
-      
-      // Redirect to login
+  
+      // Redirigir a login
       navigate('/login');
     }
   };

@@ -61,6 +61,73 @@ async function jwtPlugin(fastify, options) {
       })
       
     } catch (err) {
+      // Si falla la verificación JWT, intentar refrescar el token usando la cookie
+      if (!request.headers.authorization && request.cookies.refresh_token) {
+        try {
+          const refreshToken = request.cookies.refresh_token;
+          
+          // Verificar el token de refresco
+          const tokenData = await fastify.authDB.getRefreshToken(refreshToken);
+          
+          if (tokenData && !tokenData.revoked) {
+            // Obtener el usuario
+            const user = await fastify.authDB.getUserById(tokenData.user_id);
+            
+            if (user && user.is_active) {
+              // Generar un nuevo token de acceso
+              const newAccessToken = fastify.authTools.generateJWT(user);
+              
+              // Generar un nuevo token de refresco
+              const newRefreshToken = fastify.authTools.generateRefreshToken();
+              const refreshExpiresIn = parseInt(fastify.config.jwt.refreshExpiresIn) || 604800;
+              
+              // Almacenar el nuevo token de refresco
+              await fastify.authDB.createRefreshToken(
+                user.id, 
+                newRefreshToken, 
+                refreshExpiresIn,
+                tokenData.device_id,
+                tokenData.device_name,
+                tokenData.device_type
+              );
+              
+              // Revocar el token antiguo
+              await fastify.authDB.revokeRefreshToken(refreshToken);
+              
+              // Establecer cookies
+              reply
+                .setCookie('refresh_token', newRefreshToken, {
+                  path: '/api/auth',
+                  httpOnly: true,
+                  secure: process.env.NODE_ENV === 'production',
+                  sameSite: 'lax',
+                  maxAge: refreshExpiresIn
+                })
+                .setCookie('session_active', 'true', {
+                  path: '/',
+                  secure: process.env.NODE_ENV === 'production',
+                  sameSite: 'lax',
+                  maxAge: refreshExpiresIn
+                });
+              
+              // Establecer el token en el objeto de solicitud para que pueda continuar
+              request.user = fastify.jwt.decode(newAccessToken);
+              
+              // Continuar con la solicitud
+              return true;
+            }
+          }
+        } catch (refreshErr) {
+          fastify.logger.error(`Error al refrescar token desde cookie: ${refreshErr.message}`, {
+            error: refreshErr.message,
+            path: request.url,
+            method: request.method,
+            ip: request.ip
+          });
+          // Continuar con el flujo normal de error
+        }
+      }
+      
       fastify.logger.warn(`Verificación JWT fallida: ${err.message}`, {
         error: err.message,
         path: request.url,

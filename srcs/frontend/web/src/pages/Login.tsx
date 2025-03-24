@@ -1,58 +1,67 @@
-import React, { useState, FormEvent } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import React, { useState, FormEvent, useEffect } from 'react';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { authApi } from '../services/api';
 import Spinner from '../components/ui/Spinner';
+import { useToast } from '../components/ToastContext';
 
 const Login: React.FC = () => {
   const { login, loading: authLoading, error: authError, isAuthenticated, clearError } = useAuth();
+  const location = useLocation();
+  const { showToast } = useToast();
   
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [oauthLoading, setOauthLoading] = useState<boolean>(false);
+  const [oauthProvider, setOauthProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   // Handle form submission
-  const handleSubmit = async (e) => {
-	e.preventDefault();
-	
-	try {
-	  await login(email, password);
-	  
-	  // Verificar si se guardaron los tokens
-	  setTimeout(() => {
-		const token = localStorage.getItem('auth_token');
-		console.log("Token almacenado:", token ? "✓" : "✗");
-	  }, 1000); // Pequeño retraso para asegurar que se ejecute después del login
-	} catch (error) {
-	  console.error("Error en login:", error);
-	}
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    
+    // Basic validation
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
+    
+    try {
+      await login(email, password);
+    } catch (error) {
+      console.error("Error in login:", error);
+    }
   };
   
   // Handle Google OAuth
   const handleGoogleLogin = async () => {
     try {
       setOauthLoading(true);
+      setOauthProvider('google');
       
-      // Obtener la URL de OAuth del backend
-      const response = await fetch('/api/auth/oauth/google/init');
+      // Get OAuth URL from backend
+      const url = await authApi.getGoogleOAuthURL();
       
-      if (!response.ok) {
-        throw new Error('Failed to initialize Google login');
-      }
-      
-      const data = await response.json();
-      
-      // Redireccionar al usuario a la URL devuelta por el backend
-      if (data && data.url) {
-        window.location.href = data.url;
+      if (url) {
+        window.location.href = url;
       } else {
         throw new Error('Invalid response from server');
       }
     } catch (err) {
       setError('Failed to initialize Google login. Please try again.');
       setOauthLoading(false);
+      setOauthProvider(null);
+      showToast({
+        type: 'error',
+        message: 'Failed to connect to Google. Please try again later.'
+      });
     }
   };
   
@@ -60,31 +69,53 @@ const Login: React.FC = () => {
   const handle42Login = async () => {
     try {
       setOauthLoading(true);
+      setOauthProvider('42');
       
-      // Obtener la URL de OAuth del backend
-      const response = await fetch('/api/auth/oauth/42/init');
+      // Get OAuth URL from backend
+      const url = await authApi.get42OAuthURL();
       
-      if (!response.ok) {
-        throw new Error('Failed to initialize 42 login');
-      }
-      
-      const data = await response.json();
-      
-      // Redireccionar al usuario a la URL devuelta por el backend
-      if (data && data.url) {
-        window.location.href = data.url;
+      if (url) {
+        window.location.href = url;
       } else {
         throw new Error('Invalid response from server');
       }
     } catch (err) {
       setError('Failed to initialize 42 login. Please try again.');
       setOauthLoading(false);
+      setOauthProvider(null);
+      showToast({
+        type: 'error',
+        message: 'Failed to connect to 42. Please try again later.'
+      });
     }
   };
   
+  // Check if we were redirected here with an error message
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const errorMsg = params.get('error');
+    
+    if (errorMsg) {
+      setError(decodeURIComponent(errorMsg));
+      showToast({
+        type: 'error',
+        message: decodeURIComponent(errorMsg)
+      });
+    }
+  }, [location, showToast]);
+  
+  // Clear error on unmount
+  useEffect(() => {
+    return () => {
+      clearError();
+    };
+  }, [clearError]);
+  
   // Redirect if already authenticated
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    // Get the redirect path from location state or default to dashboard
+    const from = location.state?.from?.pathname || '/dashboard';
+    return <Navigate to={from} replace />;
   }
   
   const displayError = authError || error;
@@ -242,7 +273,7 @@ const Login: React.FC = () => {
               disabled={loading}
               className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-70"
             >
-              {oauthLoading ? (
+              {oauthLoading && oauthProvider === 'google' ? (
                 <Spinner size="sm" />
               ) : (
                 <>
@@ -274,7 +305,7 @@ const Login: React.FC = () => {
               disabled={loading}
               className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-70"
             >
-              {oauthLoading ? (
+              {oauthLoading && oauthProvider === '42' ? (
                 <Spinner size="sm" />
               ) : (
                 <>

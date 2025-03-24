@@ -39,11 +39,7 @@ const FortyTwoCallback: React.FC = () => {
           // User needs to verify 2FA
           setRequires2FA(true);
           setTempToken(data.temp_token);
-        } else {
-          // Authentication successful
-          localStorage.setItem('auth_token', data.access_token);
-          localStorage.setItem('refresh_token', data.refresh_token);
-          
+        } else {         
           // Redirect to dashboard
           navigate('/dashboard');
         }
@@ -88,11 +84,7 @@ const FortyTwoCallback: React.FC = () => {
         setLoading(false);
         return;
       }
-      
-      // Store tokens
-      localStorage.setItem('auth_token', data.access_token);
-      localStorage.setItem('refresh_token', data.refresh_token);
-      
+     
       // Redirect to dashboard
       navigate('/dashboard');
     } catch (err) {

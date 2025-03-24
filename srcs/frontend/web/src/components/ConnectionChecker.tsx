@@ -9,7 +9,7 @@ interface ConnectionCheckerProps {
 
 const ConnectionChecker: React.FC<ConnectionCheckerProps> = ({ 
   children, 
-  healthEndpoint = '/api', // URL relativa al host actual
+  healthEndpoint = '/api/health', // Relative URL to current host
   retryInterval = 5000,
   initialDelay = 500
 }) => {
@@ -22,14 +22,15 @@ const ConnectionChecker: React.FC<ConnectionCheckerProps> = ({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
       
-      // Usamos la URL relativa para que funcione en cualquier entorno (local o remoto)
+      // Use relative URL so it works in any environment (local or remote)
       const response = await fetch(healthEndpoint, {
         method: 'GET',
         signal: controller.signal,
         headers: {
           'Accept': 'application/json'
         },
-        cache: 'no-cache'
+        cache: 'no-cache',
+        credentials: 'same-origin' // Use cookies if available
       });
       
       clearTimeout(timeoutId);
@@ -37,16 +38,19 @@ const ConnectionChecker: React.FC<ConnectionCheckerProps> = ({
       if (response.ok) {
         setIsConnected(true);
       } else {
+        console.warn(`Health check failed with status: ${response.status}`);
         setIsConnected(false);
         setTimeout(() => setRetryCount(prev => prev + 1), retryInterval);
       }
     } catch (error) {
+      console.error('Health check error:', error);
       setIsConnected(false);
       setTimeout(() => setRetryCount(prev => prev + 1), retryInterval);
     }
   };
 
   useEffect(() => {
+    console.log(`Checking connection to ${healthEndpoint}, attempt #${retryCount + 1}`);
     checkConnection();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryCount]);
@@ -88,6 +92,12 @@ const ConnectionChecker: React.FC<ConnectionCheckerProps> = ({
             ? "Establishing connection to the server..." 
             : "We're having trouble connecting to the server. We'll automatically retry the connection."}
         </p>
+        
+        {retryCount > 0 && (
+          <p className="mt-4 text-sm text-gray-500">
+            Retry attempt: {retryCount}
+          </p>
+        )}
       </div>
     </div>
   );
