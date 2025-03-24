@@ -14,11 +14,20 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Handle form submission
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (email && password) {
-      await login(email, password);
-    }
+  const handleSubmit = async (e) => {
+	e.preventDefault();
+	
+	try {
+	  await login(email, password);
+	  
+	  // Verificar si se guardaron los tokens
+	  setTimeout(() => {
+		const token = localStorage.getItem('auth_token');
+		console.log("Token almacenado:", token ? "✓" : "✗");
+	  }, 1000); // Pequeño retraso para asegurar que se ejecute después del login
+	} catch (error) {
+	  console.error("Error en login:", error);
+	}
   };
   
   // Handle Google OAuth

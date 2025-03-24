@@ -1,6 +1,9 @@
-// API service for making requests to the backend
+// API service for making requests to the backend with cookie support
 
-const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}/api`;
+const API_BASE_URL = `/api`; // Usando ruta relativa para funcionar en cualquier entorno
+
+// Device ID management
+const DEVICE_ID_KEY = 'device_id';
 
 // Types
 export interface LoginCredentials {
@@ -16,7 +19,7 @@ export interface RegisterData {
 
 export interface AuthResponse {
   access_token: string;
-  refresh_token: string;
+  refresh_token?: string; // Ahora opcional, podría no venir si usamos cookies
   expires_in: number;
   token_type: string;
   user: User;
@@ -34,6 +37,77 @@ export interface User {
   is_active?: boolean;
 }
 
+export interface DeviceInfo {
+  id: string;
+  name: string;
+  type: string;
+  last_used?: string;
+  login_count?: number;
+}
+
+// Generate or retrieve device ID
+const getDeviceId = (): string => {
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+  
+  if (!deviceId) {
+    deviceId = crypto.randomUUID ? crypto.randomUUID() : generateFallbackUUID();
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  }
+  
+  return deviceId;
+};
+
+// Fallback UUID generation for browsers that don't support crypto.randomUUID
+const generateFallbackUUID = (): string => {
+  // Simple implementation to generate a UUID-like string
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+// Detect device type
+const detectDeviceType = (): string => {
+  const ua = navigator.userAgent;
+  
+  if (/android/i.test(ua)) {
+    return 'android';
+  }
+  
+  if (/iPad|iPhone|iPod/.test(ua)) {
+    return 'ios';
+  }
+  
+  if (/Windows/.test(ua)) {
+    return 'windows';
+  }
+  
+  if (/Macintosh/.test(ua)) {
+    return 'mac';
+  }
+  
+  if (/Linux/.test(ua)) {
+    return 'linux';
+  }
+  
+  return 'browser';
+};
+
+// Get device name
+const getDeviceName = (): string => {
+  return navigator.userAgent;
+};
+
+// Get device info
+export const getDeviceInfo = (): DeviceInfo => {
+  return {
+    id: getDeviceId(),
+    name: getDeviceName(),
+    type: detectDeviceType()
+  };
+};
+
 // API Error handler
 class ApiError extends Error {
   statusCode: number;
@@ -45,20 +119,230 @@ class ApiError extends Error {
   }
 }
 
-// Fetch wrapper with error handling
-async function fetchWithErrorHandling<T>(
-  url: string, 
-  options?: RequestInit
-): Promise<T> {
+// Check if session is active via session cookie
+export const isSessionActive = (): boolean => {
+  return document.cookie.includes('session_active=true');
+};
+
+// Current access token in memory (not stored in localStorage for security)
+let currentAccessToken: string | null = null;
+let tokenExpiryTime: number | null = null;
+
+// Set the current access token in memory
+export const setAccessToken = (token: string, expiresIn: number): void => {
+  currentAccessToken = token;
+  tokenExpiryTime = Date.now() + expiresIn * 1000;
+};
+
+// Get the current access token from memory
+export const getAccessToken = (): string | null => {
+  if (!currentAccessToken || !tokenExpiryTime) {
+    return null;
+  }
+  
+  // If token is expired, return null (will trigger refresh)
+  if (Date.now() > tokenExpiryTime) {
+    return null;
+  }
+  
+  return currentAccessToken;
+};
+
+// Clear the current access token
+export const clearAccessToken = (): void => {
+  currentAccessToken = null;
+  tokenExpiryTime = null;
+};
+
+// Refreshing flag to prevent multiple simultaneous refresh attempts
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+  config: RequestInit & { url: string }
+}> = [];
+
+// Process queued requests after token refresh
+const processQueue = (error: Error | null, token: string | null = null) => {
+  failedQueue.forEach(promise => {
+    if (error) {
+      promise.reject(error);
+    } else if (token) {
+      // Retry original request with new token
+      const newConfig = { ...promise.config };
+      if (newConfig.headers) {
+        newConfig.headers = { 
+          ...newConfig.headers as Record<string, string>, 
+          'Authorization': `Bearer ${token}` 
+        };
+      }
+      fetch(promise.config.url, newConfig)
+        .then(response => response.json())
+        .then(data => promise.resolve(data))
+        .catch(err => promise.reject(err));
+    }
+  });
+  
+  // Clear queue
+  failedQueue = [];
+};
+
+// Attempt to refresh token
+const refreshAccessToken = async (): Promise<string> => {
   try {
-    const response = await fetch(url, options);
+    // Intentar refrescar con las cookies (las cookies se envían automáticamente)
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        device_id: getDeviceId() 
+      }),
+      credentials: 'include', // Importante para que envíe las cookies
+    });
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        errorData.message || `Error: ${response.status} ${response.statusText}`,
-        response.status
-      );
+      throw new Error('Failed to refresh token');
+    }
+    
+    const data: AuthResponse = await response.json();
+    
+    // Store token in memory only
+    setAccessToken(data.access_token, data.expires_in);
+    
+    return data.access_token;
+  } catch (error) {
+    clearAccessToken(); // Limpiar token para forzar login
+    throw error;
+  }
+};
+
+// Fetch wrapper with error handling and token refresh
+async function fetchWithErrorHandling<T>(url: string, options?: RequestInit): Promise<T> {
+  // Si no hay opciones, crear un objeto vacío
+  options = options || {};
+  
+  // Si no hay headers, crear un objeto vacío
+  options.headers = options.headers || {};
+  
+  // Obtener el token de localStorage (NO de memoria)
+  const token = localStorage.getItem('auth_token');
+  
+  // Añadir token a los headers si existe
+  if (token) {
+    console.log(`Usando token: ${token.substring(0, 10)}...`);
+    (options.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
+  
+  // Always include credentials to send cookies with each request
+  options = {
+    ...options,
+    credentials: 'include'
+  };
+  
+  try {
+    // If we need a token but don't have one, try to refresh
+    if (!token && isSessionActive() && url !== `${API_BASE_URL}/auth/refresh`) {
+      // If we're not already refreshing, try to refresh
+      if (!isRefreshing) {
+        isRefreshing = true;
+        
+        try {
+          const newToken = await refreshAccessToken();
+          
+          // Update headers with new token
+          if (options?.headers) {
+            (options.headers as Record<string, string>)['Authorization'] = `Bearer ${newToken}`;
+          }
+          
+          // Process queued requests
+          processQueue(null, newToken);
+        } catch (error) {
+          processQueue(error as Error);
+          throw error;
+        } finally {
+          isRefreshing = false;
+        }
+      } else {
+        // If already refreshing, add to queue
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve,
+            reject,
+            config: { ...options, url } as RequestInit & { url: string }
+          });
+        }) as Promise<T>;
+      }
+    }
+    
+    const response = await fetch(url, options);
+    
+    // If token is invalid, try to refresh once
+    if (response.status === 401 && url !== `${API_BASE_URL}/auth/refresh`) {
+      // Similar to above, but we know the token is definitely invalid now
+      if (!isRefreshing) {
+        isRefreshing = true;
+        
+        try {
+          const newToken = await refreshAccessToken();
+          
+          // Update headers with new token
+          if (options?.headers) {
+            (options.headers as Record<string, string>)['Authorization'] = `Bearer ${newToken}`;
+          }
+          
+          // Retry request with new token
+          const retryResponse = await fetch(url, options);
+          
+          if (!retryResponse.ok) {
+            throw new ApiError(
+              `Error: ${retryResponse.status} ${retryResponse.statusText}`,
+              retryResponse.status
+            );
+          }
+          
+          // Process queued requests
+          processQueue(null, newToken);
+          
+          return await retryResponse.json() as T;
+        } catch (error) {
+          processQueue(error as Error);
+          throw error;
+        } finally {
+          isRefreshing = false;
+        }
+      } else {
+        // If already refreshing, add to queue
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve,
+            reject,
+            config: { ...options, url } as RequestInit & { url: string }
+          });
+        }) as Promise<T>;
+      }
+    }
+    
+    if (!response.ok) {
+      let errorMessage = `Error: ${response.status} ${response.statusText}`;
+      let errorData = {};
+      
+      try {
+        errorData = await response.json();
+        if (errorData && (errorData as any).message) {
+          errorMessage = (errorData as any).message;
+        }
+      } catch (e) {
+        // No JSON response
+      }
+      
+      throw new ApiError(errorMessage, response.status);
+    }
+    
+    // Check if the response is empty (for 204 No Content)
+    if (response.status === 204) {
+      return {} as T;
     }
     
     return await response.json() as T;
@@ -74,121 +358,165 @@ async function fetchWithErrorHandling<T>(
 export const authApi = {
   // Login with email and password
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    return fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/login`, {
+    const response = await fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
-      credentials: 'include',
     });
+    
+    // Guardar tokens en localStorage
+    if (response.access_token) {
+      localStorage.setItem('auth_token', response.access_token);
+    }
+    if (response.refresh_token) {
+      localStorage.setItem('refresh_token', response.refresh_token);
+    }
+    
+    return response;
   },
   
   // Register new user
   async register(data: RegisterData): Promise<AuthResponse> {
-    return fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/register`, {
+    // Add device info to request
+    const requestBody = {
+      ...data,
+      device_info: getDeviceInfo()
+    };
+    
+    const response = await fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data),
-      credentials: 'include',
+      body: JSON.stringify(requestBody),
     });
+    
+    // Store token in memory
+    setAccessToken(response.access_token, response.expires_in);
+    
+    return response;
   },
   
   // Refresh token
-  async refreshToken(token: string): Promise<AuthResponse> {
-    return fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/refresh`, {
+  async refreshToken(): Promise<AuthResponse> {
+    const deviceInfo = getDeviceInfo();
+    
+    const response = await fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ refresh_token: token }),
-      credentials: 'include',
+      body: JSON.stringify({ device_id: deviceInfo.id }),
     });
+    
+    // Store new token in memory
+    setAccessToken(response.access_token, response.expires_in);
+    
+    return response;
   },
   
   // Get current user info
   async getCurrentUser(): Promise<User> {
-    const token = localStorage.getItem('auth_token');
-    
     return fetchWithErrorHandling<User>(`${API_BASE_URL}/auth/me`, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-      credentials: 'include',
     });
   },
   
   // Logout
   async logout(): Promise<void> {
-    const token = localStorage.getItem('auth_token');
-    
     await fetchWithErrorHandling(`${API_BASE_URL}/auth/logout`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-      credentials: 'include',
     });
     
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('refresh_token');
+    // Clear token from memory
+    clearAccessToken();
   },
   
   // Initialize OAuth login processes
   async getGoogleOAuthURL(): Promise<string> {
-    const response = await fetchWithErrorHandling<{ url: string }>(`${API_BASE_URL}/auth/oauth/google/init`);
+    // Encode device info as base64
+    const deviceInfo = getDeviceInfo();
+    const encodedDeviceInfo = btoa(JSON.stringify(deviceInfo));
+    
+    const response = await fetchWithErrorHandling<{ url: string }>(
+      `${API_BASE_URL}/auth/oauth/google/init?device_info=${encodedDeviceInfo}`
+    );
     return response.url;
   },
   
   async get42OAuthURL(): Promise<string> {
-    const response = await fetchWithErrorHandling<{ url: string }>(`${API_BASE_URL}/auth/oauth/42/init`);
+    // Encode device info as base64
+    const deviceInfo = getDeviceInfo();
+    const encodedDeviceInfo = btoa(JSON.stringify(deviceInfo));
+    
+    const response = await fetchWithErrorHandling<{ url: string }>(
+      `${API_BASE_URL}/auth/oauth/42/init?device_info=${encodedDeviceInfo}`
+    );
     return response.url;
   },
   
   // Verify 2FA token
   async verify2FA(token: string, code: string): Promise<AuthResponse> {
-    return fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/2fa/verify`, {
+    const requestBody = {
+      token,
+      code,
+      device_info: getDeviceInfo()
+    };
+    
+    const response = await fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/2fa/verify`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
-        token,
-        code
-      }),
-      credentials: 'include',
+      body: JSON.stringify(requestBody),
     });
-  }
+    
+    // Store token in memory
+    setAccessToken(response.access_token, response.expires_in);
+    
+    return response;
+  },
+  
+  // Manage devices
+  async getUserDevices(): Promise<DeviceInfo[]> {
+    const user = await this.getCurrentUser();
+    return user.devices || [];
+  },
+  
+  async revokeDevice(deviceId: string): Promise<void> {
+    await fetchWithErrorHandling(`${API_BASE_URL}/auth/devices/${deviceId}`, {
+      method: 'DELETE',
+    });
+  },
+  
+  // Check if session is active
+  isSessionActive
 };
 
 // User API service
 export const userApi = {
   // Get user profile
   async getUserProfile(): Promise<User> {
-    const token = localStorage.getItem('auth_token');
-    
     return fetchWithErrorHandling<User>(`${API_BASE_URL}/user/profile`, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-      credentials: 'include',
     });
   },
   
   // Update user profile
   async updateUserProfile(data: Partial<User>): Promise<User> {
-    const token = localStorage.getItem('auth_token');
-    
     return fetchWithErrorHandling<User>(`${API_BASE_URL}/user/profile`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(data),
-      credentials: 'include',
     });
   },
 };
@@ -196,4 +524,9 @@ export const userApi = {
 export default {
   auth: authApi,
   user: userApi,
+  getDeviceInfo,
+  isSessionActive,
+  getAccessToken,
+  setAccessToken,
+  clearAccessToken
 };

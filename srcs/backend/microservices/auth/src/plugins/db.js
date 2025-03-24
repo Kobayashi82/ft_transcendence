@@ -885,24 +885,35 @@ async function dbPlugin(fastify, options) {
         throw new Error(`Error al revocar sesión: ${err.message}`)
       }
     },
-    
-    async revokeAllSessions(userId) {
+
+    // Método corregido para preservar la sesión actual
+    async revokeAllSessions(userId, currentTokenId = null) {
       try {
+        let sql = 'UPDATE sessions SET revoked = true WHERE user_id = ?';
+        let params = [userId];
+        
+        // Si se proporciona un token ID actual, preservar esa sesión
+        if (currentTokenId) {
+          sql += ' AND token_id != ?';
+          params.push(currentTokenId);
+        }
+        
         const result = await fastify.db.update(
-          'UPDATE sessions SET revoked = true WHERE user_id = ?',
-          [userId],
+          sql,
+          params,
           'sessions'
         )
         
-        fastify.logger.info(`Todas las sesiones revocadas para usuario: ID=${userId}`, {
+        fastify.logger.info(`Sesiones revocadas para usuario: ID=${userId}`, {
           userId,
-          sessionsRevoked: result.changes
+          sessionsRevoked: result.changes,
+          preservedSession: currentTokenId ? true : false
         })
         
         return true
       } catch (err) {
-        fastify.logger.error(`Error al revocar todas las sesiones: ${err.message}`, { userId })
-        throw new Error(`Error al revocar todas las sesiones: ${err.message}`)
+        fastify.logger.error(`Error al revocar sesiones: ${err.message}`, { userId })
+        throw new Error(`Error al revocar sesiones: ${err.message}`)
       }
     },
     
@@ -947,9 +958,54 @@ async function dbPlugin(fastify, options) {
         fastify.logger.error(`Error al obtener conteo de sesiones: ${err.message}`)
         return 0
       }
+    },
+
+    // Método para obtener todos los dispositivos de un usuario
+    async getUserDevices(userId) {
+      // Aquí no necesitamos referencia a fastify directamente
+      // porque ya tenemos acceso a this.db y a fastify.logger a través del contexto
+      try {
+
+        if (!this.db) {
+          return []; // Si no existe, simplemente devolver un array vacío
+        }
+        // Comprobar si la tabla tiene la columna device_id
+        const hasDeviceIdColumn = await this.db.get(
+          "SELECT COUNT(*) as count FROM pragma_table_info('refresh_tokens') WHERE name = 'device_id'",
+          [],
+          'refresh_tokens'
+        );
+        
+        // Si no existe la columna device_id, devolver array vacío
+        if (!hasDeviceIdColumn || hasDeviceIdColumn.count === 0) {
+          return [];
+        }
+        
+        // Si existe la columna, obtener los dispositivos
+        return await this.db.all(
+          `SELECT DISTINCT 
+            device_id, 
+            device_name, 
+            device_type, 
+            MAX(created_at) as last_used, 
+            COUNT(*) as login_count 
+          FROM refresh_tokens 
+          WHERE user_id = ? AND device_id IS NOT NULL 
+          GROUP BY device_id
+          ORDER BY last_used DESC`,
+          [userId],
+          'refresh_tokens'
+        );
+      } catch (err) {
+        // Usar la referencia de logger a través de fastify que ya está disponible en el contexto
+        fastify.logger.error(`Error al obtener dispositivos del usuario: ${err.message}`, { userId });
+        // En caso de error, devolver array vacío
+        return [];
+      }
     }
+
   })
-  
+
   // Cerrar la conexión cuando el servidor se apague
   fastify.addHook('onClose', (instance, done) => {
     if (db) {

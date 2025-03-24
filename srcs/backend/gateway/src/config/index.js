@@ -56,8 +56,9 @@ const config = {
 
   // JWT
   jwt: {
-    secret: process.env.JWT_SECRET || 'super-secret-key',
-    expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+    secret: process.env.JWT_SECRET || 'super-secret-auth-key',
+    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
   },
 }
 

@@ -16,49 +16,37 @@ const OAuthCallback: React.FC = () => {
   useEffect(() => {
     const processCallback = async () => {
       try {
-        // Obtenemos el código y estado de la URL
-        const query = new URLSearchParams(location.search);
-        const code = query.get('code');
-        const state = query.get('state');
+        // Obtener parámetros de la URL
+        const params = new URLSearchParams(location.search);
         
-        if (!code || !state) {
-          setError('Parámetros de autenticación inválidos');
-          setLoading(false);
+        // Verificar si hay un token de acceso directamente en la URL (enviado por el servidor)
+        const accessToken = params.get('access_token');
+        const expiresIn = params.get('expires_in');
+        
+        if (accessToken) {
+          console.log("Procesando token de acceso desde URL");
+          
+          // Guardar el token y obtener información de usuario
+          await setUserAndTokens(
+            accessToken, 
+            expiresIn ? parseInt(expiresIn) : undefined
+          );
+          
+          // Redirigir al dashboard
+          navigate('/dashboard', { replace: true });
           return;
         }
         
-        // Hacemos una petición a nuestro backend para finalizar el proceso
-        // Esto es seguro porque el código de autorización solo se puede usar una vez
-        const response = await fetch(`/api/auth/oauth/${provider}/callback${location.search}`);
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Error en la autenticación');
+        // Verificar errores en la URL
+        const errorCode = params.get('error');
+        if (errorCode) {
+          const errorMessage = params.get('error_description') || 'Error de autenticación';
+          throw new Error(decodeURIComponent(errorMessage));
         }
         
-        const data = await response.json();
-        
-        // Verificamos si se requiere 2FA
-        if (data.requires_2fa) {
-          // Redirigir a la página de verificación 2FA
-          navigate('/2fa', { 
-            state: { 
-              tempToken: data.temp_token,
-              provider 
-            } 
-          });
-          return;
-        }
-        
-        // Guardamos los tokens en localStorage
-        localStorage.setItem('auth_token', data.access_token);
-        localStorage.setItem('refresh_token', data.refresh_token);
-        
-        // Actualizamos el contexto de autenticación
-        await setUserAndTokens(data.access_token, data.refresh_token);
-        
-        // Redirigimos al dashboard
-        navigate('/dashboard');
+        // Si llegamos aquí y no tenemos un token, algo salió mal
+        // Intentamos navegar al dashboard para ver si la cookie está presente
+        navigate('/dashboard', { replace: true });
       } catch (err) {
         console.error('Error en callback OAuth:', err);
         setError((err as Error).message || 'Error en la autenticación');

@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import OAuthCallback from './pages/OAuthCallback';
+import TwoFactorAuth from './pages/TwoFactorAuth';
 import ServerStatusPage from './pages/ServerStatusPage';
 import Spinner from './components/ui/Spinner';
 import ConnectionChecker from './components/ConnectionChecker';
@@ -30,7 +31,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App: React.FC = () => {
   return (
-    <ConnectionChecker healthEndpoint="/api">
+    <ConnectionChecker healthEndpoint="/api/health">
       <Router>
         <AuthProvider>
           <Routes>
@@ -38,8 +39,10 @@ const App: React.FC = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/status" element={<ServerStatusPage />} />
+            <Route path="/2fa" element={<TwoFactorAuth />} />
             
             {/* OAuth callback routes */}
+            <Route path="/oauth/callback/:provider" element={<OAuthCallback />} />
             <Route path="/api/auth/oauth/:provider/callback" element={<OAuthCallback />} />
             
             {/* Protected routes */}

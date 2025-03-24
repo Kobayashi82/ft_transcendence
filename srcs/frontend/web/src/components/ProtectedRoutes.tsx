@@ -7,24 +7,23 @@ interface ProtectedRouteProps {
   redirectPath?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  redirectPath = '/login'
-}) => {
-  const { isAuthenticated, loading } = useAuth();
-  
-  if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-  
-  if (!isAuthenticated) {
-    return <Navigate to={redirectPath} replace />;
-  }
-  
-  return <Outlet />;
-};
+const ProtectedRoute = ({ children }) => {
+	const { user, loading } = useAuth();
+	const token = localStorage.getItem('auth_token');
+	
+	console.log("ProtectedRoute - token:", token ? "✓" : "✗", "user:", user ? "✓" : "✗", "loading:", loading);
+	
+	if (loading) {
+	  return <div className="flex h-screen items-center justify-center"><Spinner /></div>;
+	}
+	
+	// Verificar si hay un token en localStorage, sin importar el estado de user
+	if (!token) {
+	  console.log("No hay token, redirigiendo a login");
+	  return <Navigate to="/login" replace />;
+	}
+	
+	return <>{children}</>;
+  };
 
 export default ProtectedRoute;

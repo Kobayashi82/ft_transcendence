@@ -65,6 +65,12 @@ const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '15m',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
   },
+
+  // Cookies
+  cookie: {
+    secret: process.env.COOKIE_SECRET || process.env.JWT_SECRET || 'secure-cookie-secret',
+    maxAge: parseInt(process.env.COOKIE_MAX_AGE) || 604800 // 7 días en segundos por defecto
+  },
  
   // OAuth
   oauth: {

@@ -11,6 +11,15 @@ app.decorate('config', config)
 app.register(require('./plugins/logger'))
 app.register(require('./plugins/metrics'))
 app.register(require('./plugins/redis'))
+app.register(require('@fastify/cookie'), {
+  secret: config.cookie?.secret || config.jwt.secret, // Usar el mismo secreto que JWT o uno específico
+  parseOptions: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Solo https en producción
+    sameSite: 'lax',  // Protección contra CSRF
+    path: '/'
+  }
+})
 app.register(require('./plugins/security'))
 app.register(require('./plugins/jwt'))
 app.register(require('./plugins/auth'))

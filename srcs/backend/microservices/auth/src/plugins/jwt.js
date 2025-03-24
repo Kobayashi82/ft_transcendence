@@ -135,9 +135,20 @@ async function jwtPlugin(fastify, options) {
       '/'  // Ruta raíz (info del servicio)
     ]
     
+    // Extraer la ruta de la solicitud sin los parámetros de consulta
+    const requestPath = request.url.split('?')[0]
+    
     // Si la ruta es pública, continuar
-    if (publicRoutes.some(route => request.routeOptions?.url?.startsWith(route) || request.url.startsWith(route))) {
-      return
+    let isPublic = false;
+    for (const route of publicRoutes) {
+      if (requestPath.startsWith(route)) {
+        isPublic = true;
+        break;
+      }
+    }
+    
+    if (isPublic) {
+      return;
     }
     
     // Verificar JWT
@@ -157,7 +168,10 @@ async function jwtPlugin(fastify, options) {
         ip: request.ip
       })
       
-      reply.code(401).send({ error: 'No autorizado', message: err.message })
+      reply.code(401).send({ 
+        error: 'No autorizado', 
+        message: err.message 
+      })
       return reply
     }
   })
