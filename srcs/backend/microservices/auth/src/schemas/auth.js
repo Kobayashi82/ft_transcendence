@@ -173,9 +173,10 @@ const registerSchema = {
 const refreshTokenSchema = {
   body: {
     type: 'object',
-    required: ['refresh_token'],
+    required: [],
     properties: {
-      refresh_token: { type: 'string' }
+      refresh_token: { type: 'string' },
+      device_id: { type: 'string' }
     }
   },
   response: {

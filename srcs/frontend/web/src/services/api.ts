@@ -211,9 +211,10 @@ const refreshAccessToken = async (): Promise<string> => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ 
+        refresh_token: localStorage.getItem('refresh_token') || '', // Add this
         device_id: getDeviceId() 
       }),
-      credentials: 'include', // Importante para enviar cookies
+      credentials: 'include',
     });
     
     if (!response.ok) {

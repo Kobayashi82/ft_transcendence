@@ -123,49 +123,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check if user is already logged in (session is active)
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      console.log('Checking auth status');
-      
-      const storedToken = null;
-      
-      // Check if we have a session cookie
-      const hasActiveCookie = isSessionActive();
-      
-      console.log('Auth status check:', { 
-        hasActiveCookie 
-      });
-      
-      if (!hasActiveCookie) {
-        console.log('No active session or token found');
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        // Try to get current user info
-        const userData = await authApi.getCurrentUser();
-        console.log('User data retrieved successfully:', userData?.id);
-        setUser(userData);
-        
-        // Setup refresh timer - we'll need to get a fresh token first
-        try {
-          console.log('Refreshing token during init...');
-          const tokenData = await authApi.refreshToken();
-          console.log('Token refreshed successfully during init');
-          setupRefreshTimer(tokenData.expires_in);
-        } catch (refreshErr) {
-          console.error('Failed to refresh token during init:', refreshErr);
-          // Don't clear session here - user might still be able to use the app
-        }
-      } catch (err) {
-        console.error('Failed to get user data:', err);
-        
-		setError('Session expired. Please login again.');
-		setLoading(false);
-      } finally {
-        setLoading(false);
-      }
-    };
+	const checkAuthStatus = async () => {
+	  console.log('Checking auth status');
+	  
+	  // Check if we have a session cookie
+	  const hasActiveCookie = document.cookie.includes('session_active=true');
+	  
+	  console.log('Auth status check:', { 
+	    hasActiveCookie 
+	  });
+	  
+	  if (!hasActiveCookie) {
+	    console.log('No active session found');
+	    setLoading(false);
+	    return;
+	  }
+	  
+	  try {
+	    // Try to refresh the token first since we rely entirely on cookies
+	    try {
+	  	console.log('Refreshing token during init...');
+	  	const tokenData = await authApi.refreshToken();
+	  	console.log('Token refreshed successfully during init');
+	  	
+	  	// Now get user data using the refreshed token state
+	  	const userData = await authApi.getCurrentUser();
+	  	console.log('User data retrieved successfully:', userData?.id);
+	  	setUser(userData);
+	    } catch (refreshErr) {
+	  	console.error('Failed to refresh token during init:', refreshErr);
+	  	
+	  	// Try to get user data anyway - it might work if the original token is still valid
+	  	try {
+	  	  const userData = await authApi.getCurrentUser();
+	  	  console.log('User data retrieved successfully:', userData?.id);
+	  	  setUser(userData);
+	  	} catch (userErr) {
+	  	  console.error('Failed to get user data:', userErr);
+	  	  setError('Session expired. Please login again.');
+	  	}
+	    }
+	  } catch (err) {
+	    console.error('Failed to complete auth checking:', err);
+	    setError('Session expired. Please login again.');
+	  } finally {
+	    setLoading(false);
+	  }
+	};
     
     checkAuthStatus();
   }, [setupRefreshTimer]);

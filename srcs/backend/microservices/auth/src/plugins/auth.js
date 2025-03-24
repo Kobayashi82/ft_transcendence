@@ -181,26 +181,21 @@ async function authToolsPlugin(fastify, options) {
       );
       
       // Establecer cookies
-      reply
-        .setCookie('refresh_token', newRefreshToken, {
-          path: '/api/auth',
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: refreshExpiresIn
-        })
-        .setCookie('session_active', 'true', {
-          path: '/',
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: refreshExpiresIn
-        });
+      reply.setCookie('session_active', 'true', {
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: refreshExpiresIn, // in seconds
+        httpOnly: false // Allow JavaScript to access this cookie
+      });
       
-      return {
-        access_token: accessToken,
-        expires_in: accessExpiresIn,
-        user: this.createUserInfo(user)
-      };
+      reply.setCookie('refresh_token', refreshToken, {
+        path: '/api/auth',
+        httpOnly: true, // Keep this secure
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: refreshExpiresIn
+      });
     }
   })
   

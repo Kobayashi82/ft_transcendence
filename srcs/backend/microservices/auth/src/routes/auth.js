@@ -14,6 +14,79 @@ const {
 
 // Rutas para la API de autenticación
 async function authRoutes(fastify, options) {
+
+  // GET /auth/validate - Validar token
+  fastify.get('/validate', {
+    schema: validateTokenSchema,
+  }, async (request, reply) => {
+    try {
+      const authHeader = request.headers.authorization
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        reply.code(401).send({ 
+          valid: false,
+          error: 'No autorizado', 
+          message: 'Token no proporcionado' 
+        })
+        return
+      }
+  
+      const token = authHeader.split(' ')[1]
+  
+      // Verificar si el token está en la lista negra
+      if (await fastify.isBlacklisted(token)) {
+        reply.code(401).send({ 
+          valid: false,
+          error: 'No autorizado', 
+          message: 'Token revocado' 
+        })
+        return
+      }
+  
+      // Verificar token
+      let decoded
+      try {
+        decoded = fastify.jwt.verify(token)
+      } catch (err) {
+        reply.code(401).send({ 
+          valid: false,
+          error: 'No autorizado', 
+          message: err.message 
+        })
+        return
+      }
+  
+      // Verificar usuario
+      const user = await fastify.authDB.getUserById(decoded.sub)
+      if (!user || !user.is_active) {
+        reply.code(401).send({ 
+          valid: false,
+          error: 'No autorizado', 
+          message: 'Usuario no encontrado o inactivo' 
+        })
+        return
+      }
+  
+      // Crear información de usuario para Redis
+      const userInfo = fastify.authTools.createUserInfo(user)
+  
+      // Almacenar en Redis
+      const cacheKey = `user:${user.id}:info`
+      await fastify.cache.set(cacheKey, userInfo, 1800) // 30 minutos
+  
+      reply.send({
+        valid: true,
+        user_info: userInfo
+      })
+    } catch (err) {
+      fastify.logger.error(err)
+      reply.code(500).send({ 
+        valid: false,
+        error: 'Error interno', 
+        message: 'Error al validar token' 
+      })
+    }
+  })
+
   // POST /auth/register - Registrar un nuevo usuario
   fastify.post('/register', {
     schema: registerSchema,
