@@ -5,29 +5,21 @@ const helmet = require('@fastify/helmet')
 
 async function helmetPlugin(fastify, options) {
   await fastify.register(helmet, {
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:"],
-        connectSrc: ["'self'"],
-        frameSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        upgradeInsecureRequests: []
-      }
-    },
-    // Configuración para permitir iframes con el mismo origen
-    frameguard: { 
-      action: 'sameorigin' 
-    },
-    // Habilitar XSS Protection
+    // Disable CSP and FrameGuard since it's managed in the gateway
+    contentSecurityPolicy: false,
+    frameguard: false,
+    
+    // Protects against cross-site scripting (XSS) attacks
     xssFilter: true,
-    // No exponer la versión del servidor
-    hidePoweredBy: true
+
+    // Hides the "X-Powered-By" header to reduce information exposure
+    hidePoweredBy: true,
+    
+    // Prevent caching of sensitive responses
+    noCache: true
   })
   
-  fastify.logger.info('Security headers configurados correctamente')
+  fastify.logger.info('Security headers configured correctly')
 }
 
 module.exports = fp(helmetPlugin, { name: 'helmet' })

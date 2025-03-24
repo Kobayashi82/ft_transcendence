@@ -19,7 +19,17 @@ async function jwtPlugin(fastify, options) {
       // Verificar si el token está en la lista negra
       const token = request.headers.authorization?.split(' ')[1]
       if (token && await fastify.isBlacklisted(token)) {
+        // Registrar operación de token rechazado
+        if (fastify.metrics && fastify.metrics.auth) {
+          fastify.metrics.auth.recordTokenOperation('rejected', 'jwt')
+          fastify.metrics.auth.recordSecurityEvent('blacklisted_token', 'blocked')
+        }
         throw new Error('Token revocado')
+      }
+      
+      // Registrar validación exitosa de token
+      if (fastify.metrics && fastify.metrics.auth) {
+        fastify.metrics.auth.recordTokenOperation('validated', 'jwt')
       }
       
       // Verificar si el usuario está activo
@@ -61,6 +71,11 @@ async function jwtPlugin(fastify, options) {
       })
       
     } catch (err) {
+      // Registrar fallo de validación de token
+      if (fastify.metrics && fastify.metrics.auth) {
+        fastify.metrics.auth.recordTokenOperation('validation_failed', 'jwt')
+      }
+      
       // Si falla la verificación JWT, intentar refrescar el token usando la cookie
       if (!request.headers.authorization && request.cookies.refresh_token) {
         try {
@@ -76,6 +91,10 @@ async function jwtPlugin(fastify, options) {
             if (user && user.is_active) {
               // Generar un nuevo token de acceso
               const newAccessToken = fastify.authTools.generateJWT(user);
+              // Registrar emisión de nuevo token JWT
+              if (fastify.metrics && fastify.metrics.auth) {
+                fastify.metrics.auth.recordTokenOperation('issued', 'jwt')
+              }
               
               // Generar un nuevo token de refresco
               const newRefreshToken = fastify.authTools.generateRefreshToken();
@@ -91,8 +110,18 @@ async function jwtPlugin(fastify, options) {
                 tokenData.device_type
               );
               
+              // Registrar emisión de nuevo token de refresco
+              if (fastify.metrics && fastify.metrics.auth) {
+                fastify.metrics.auth.recordTokenOperation('issued', 'refresh')
+              }
+              
               // Revocar el token antiguo
               await fastify.authDB.revokeRefreshToken(refreshToken);
+              
+              // Registrar revocación del token de refresco
+              if (fastify.metrics && fastify.metrics.auth) {
+                fastify.metrics.auth.recordTokenOperation('revoked', 'refresh')
+              }
               
               // Establecer cookies
               reply
@@ -173,6 +202,11 @@ async function jwtPlugin(fastify, options) {
       // Añadir a la lista negra
       await fastify.cache.set(`blacklist:${token}`, '1', ttl)
       
+      // Registrar revocación de token
+      if (fastify.metrics && fastify.metrics.auth) {
+        fastify.metrics.auth.recordTokenOperation('revoked', 'jwt')
+      }
+      
       fastify.logger.info(`Token revocado exitosamente`, {
         jti: decoded?.jti,
         userId: decoded?.sub,
@@ -181,6 +215,11 @@ async function jwtPlugin(fastify, options) {
       
       return true
     } catch (err) {
+      // Registrar fallo de revocación
+      if (fastify.metrics && fastify.metrics.auth) {
+        fastify.metrics.auth.recordTokenOperation('revoke_failed', 'jwt')
+      }
+      
       fastify.logger.error(`Error al revocar token: ${err.message}`, {
         error: err.message
       })
@@ -225,9 +264,24 @@ async function jwtPlugin(fastify, options) {
       // Verificar si el token está en la lista negra
       const token = request.headers.authorization?.split(' ')[1]
       if (token && await fastify.isBlacklisted(token)) {
+        // Registrar token bloqueado
+        if (fastify.metrics && fastify.metrics.auth) {
+          fastify.metrics.auth.recordTokenOperation('rejected', 'jwt')
+          fastify.metrics.auth.recordSecurityEvent('blacklisted_token', 'blocked')
+        }
         throw new Error('Token revocado')
       }
+      
+      // Registrar validación exitosa
+      if (fastify.metrics && fastify.metrics.auth) {
+        fastify.metrics.auth.recordTokenOperation('validated', 'jwt')
+      }
     } catch (err) {
+      // Registrar fallo de validación
+      if (fastify.metrics && fastify.metrics.auth) {
+        fastify.metrics.auth.recordTokenOperation('validation_failed', 'jwt')
+      }
+      
       fastify.logger.warn(`Acceso denegado a ruta protegida: ${request.url}`, {
         error: err.message,
         path: request.url,

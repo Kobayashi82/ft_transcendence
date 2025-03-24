@@ -29,28 +29,28 @@ async function metricsPlugin(fastify, options) {
   const loginAttemptsTotal = new promClient.Counter({
     name: `${fastify.config.serviceName}_login_attempts_total`,
     help: 'Total login attempts',
-    labelNames: ['status', 'method'], // status: success, failure; method: local, google, 42
+    labelNames: ['status', 'method'],
     registers: [register]
   })
   
   const registrationsTotal = new promClient.Counter({
     name: `${fastify.config.serviceName}_registrations_total`,
     help: 'Total user registrations',
-    labelNames: ['status', 'method'], // method: local, google, 42
+    labelNames: ['status', 'method'],
     registers: [register]
   })
   
   const tokenValidationsTotal = new promClient.Counter({
     name: `${fastify.config.serviceName}_token_validations_total`,
     help: 'Total token validations',
-    labelNames: ['status'], // status: success, failure
+    labelNames: ['status'],
     registers: [register]
   })
   
   const twoFactorAuthTotal = new promClient.Counter({
     name: `${fastify.config.serviceName}_2fa_attempts_total`,
     help: 'Total 2FA verification attempts',
-    labelNames: ['status', 'type'], // type: app, email, sms
+    labelNames: ['status', 'type'],
     registers: [register]
   })
   
@@ -76,7 +76,26 @@ async function metricsPlugin(fastify, options) {
     registers: [register]
   })
   
-  // Decorate fastify instance with metrics
+  const activeSessionsGauge = new promClient.Gauge({
+    name: `${fastify.config.serviceName}_active_sessions`,
+    help: 'Number of active user sessions',
+    registers: [register]
+  })
+  
+  const tokenOperationsTotal = new promClient.Counter({
+    name: `${fastify.config.serviceName}_token_operations_total`,
+    help: 'Total token operations',
+    labelNames: ['operation', 'type'],
+    registers: [register]
+  })
+
+  const securityEventsTotal = new promClient.Counter({
+    name: `${fastify.config.serviceName}_security_events_total`,
+    help: 'Total security events',
+    labelNames: ['type', 'status'],
+    registers: [register]
+  })
+
   fastify.decorate('metrics', { 
     register,
     http: {
@@ -84,29 +103,18 @@ async function metricsPlugin(fastify, options) {
       requestDuration: httpRequestDuration
     },
     auth: {
-      loginAttempts: (status, method = 'local') => {
-        loginAttemptsTotal.inc({ status, method })
-      },
-      registrations: (status, method = 'local') => {
-        registrationsTotal.inc({ status, method })
-      },
-      tokenValidations: (status) => {
-        tokenValidationsTotal.inc({ status })
-      },
-      twoFactorAuth: (status, type = 'app') => {
-        twoFactorAuthTotal.inc({ status, type })
-      },
-      setActiveUsers: (count) => {
-        activeUsersGauge.set(count)
-      }
+      loginAttempts: (status, method = 'local') => { loginAttemptsTotal.inc({ status, method })},
+      registrations: (status, method = 'local') => { registrationsTotal.inc({ status, method })},
+      tokenValidations: (status) => { tokenValidationsTotal.inc({ status })},
+      twoFactorAuth: (status, type = 'app') => { twoFactorAuthTotal.inc({ status, type })},
+      setActiveUsers: (count) => { activeUsersGauge.set(count)},
+      setActiveSessions: (count) => { activeSessionsGauge.set(count)},
+      recordTokenOperation: (operation, type) => { tokenOperationsTotal.inc({ operation, type })},
+      recordSecurityEvent: (type, status) => { securityEventsTotal.inc({ type, status })}  
     },
     db: {
-      recordOperation: (operation, entity, status) => {
-        dbOperationsTotal.inc({ operation, entity, status })
-      },
-      recordDuration: (operation, entity, seconds) => {
-        dbOperationDuration.observe({ operation, entity }, seconds)
-      }
+      recordOperation: (operation, entity, status) => { dbOperationsTotal.inc({ operation, entity, status })},
+      recordDuration: (operation, entity, seconds) => { dbOperationDuration.observe({ operation, entity }, seconds)}
     }
   })
   
@@ -131,19 +139,27 @@ async function metricsPlugin(fastify, options) {
     done()
   })
   
-  // Expose endpoint for Prometheus metrics
-  fastify.get('/metrics', async (request, reply) => {
-    // Actualizar métricas en tiempo real
+  // Configure periodic metrics update (every 1 minute)
+  setInterval(async () => {
     try {
-      // Contar usuarios activos
+      // Actived users
       const activeUsers = await fastify.db.get('SELECT COUNT(*) as count FROM users WHERE is_active = true AND is_deleted = false')
       if (activeUsers && activeUsers.count) {
         fastify.metrics.auth.setActiveUsers(activeUsers.count)
       }
+      
+      // Actived sessions
+      const activeSessions = await fastify.db.get('SELECT COUNT(*) as count FROM sessions WHERE revoked = false AND expires_at > CURRENT_TIMESTAMP')
+      if (activeSessions && activeSessions.count) {
+        fastify.metrics.auth.setActiveSessions(activeSessions.count)
+      }
     } catch (err) {
       fastify.logger.error(`Error updating metrics: ${err.message}`)
     }
-    
+  }, 60000);
+  
+  // Expose endpoint for Prometheus metrics
+  fastify.get('/metrics', async (request, reply) => {
     return reply
       .header('Content-Type', register.contentType)
       .send(await register.metrics())

@@ -93,6 +93,12 @@ async function securityPlugin(fastify, options) {
   const lockAccount = async (email, durationSeconds = 300) => { // 5 minutos por defecto
     const key = `account:locked:${email}`
     await fastify.cache.set(key, 'locked', durationSeconds)
+    
+    // Registrar evento de seguridad
+    if (fastify.metrics && fastify.metrics.auth) {
+      fastify.metrics.auth.recordSecurityEvent('account_locked', 'enforced')
+    }
+    
     fastify.logger.warn(`Cuenta bloqueada temporalmente: ${email}`, { email, duration: durationSeconds })
     return true
   }
@@ -125,9 +131,20 @@ async function securityPlugin(fastify, options) {
     // Bloquear cuenta después de 5 intentos fallidos
     if (newAttempts >= 5) {
       await lockAccount(email)
+      
+      // Registrar evento de seguridad
+      if (fastify.metrics && fastify.metrics.auth) {
+        fastify.metrics.auth.recordSecurityEvent('brute_force_attempt', 'blocked')
+      }
+      
       fastify.logger.warn(`Cuenta bloqueada por múltiples intentos fallidos: ${email}`, { 
         email, attempts: newAttempts 
       })
+    } else {
+      // Registrar intento fallido
+      if (fastify.metrics && fastify.metrics.auth) {
+        fastify.metrics.auth.recordSecurityEvent('failed_login', 'logged')
+      }
     }
     
     return newAttempts
