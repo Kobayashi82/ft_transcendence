@@ -41,7 +41,6 @@ const loginSchema = {
   }
 }
 
-
 // Schema for OAuth
 const oauthCallbackSchema = {
   querystring: {

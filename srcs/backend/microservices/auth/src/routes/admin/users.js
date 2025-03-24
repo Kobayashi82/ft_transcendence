@@ -1,31 +1,10 @@
 'use strict'
 
-// Rutas administrativas para el servicio de autenticación
-async function adminRoutes(fastify, options) {
-  
-  // Middleware para verificar que el usuario es administrador
-  async function verifyAdmin(request, reply) {
-    try {
-      await fastify.verifyJWT(request, reply)
-      
-      // Verificar roles en el token JWT
-      if (!request.user.roles || !request.user.roles.includes('admin')) {
-        reply.code(403).send({
-          error: 'Forbidden',
-          message: 'Acceso denegado: se requiere rol de administrador'
-        })
-        return false
-      }
-      
-      return true
-    } catch (err) {
-      return false
-    }
-  }
-  
+// Rutas administrativas para gestión de usuarios
+async function userAdminRoutes(fastify, options) {
   // GET /auth/admin/users - Listar todos los usuarios (solo admin)
   fastify.get('/users', {
-    preValidation: verifyAdmin
+    preValidation: fastify.verifyAdmin
   }, async (request, reply) => {
     try {
       // Obtener parámetros de paginación
@@ -77,7 +56,7 @@ async function adminRoutes(fastify, options) {
   
   // GET /auth/admin/users/:id - Obtener un usuario específico (solo admin)
   fastify.get('/users/:id', {
-    preValidation: verifyAdmin
+    preValidation: fastify.verifyAdmin
   }, async (request, reply) => {
     try {
       const userId = parseInt(request.params.id)
@@ -115,7 +94,7 @@ async function adminRoutes(fastify, options) {
   
   // PUT /auth/admin/users/:id - Actualizar un usuario (solo admin)
   fastify.put('/users/:id', {
-    preValidation: verifyAdmin
+    preValidation: fastify.verifyAdmin
   }, async (request, reply) => {
     try {
       const userId = parseInt(request.params.id)
@@ -163,7 +142,7 @@ async function adminRoutes(fastify, options) {
   
   // DELETE /auth/admin/users/:id - Eliminar un usuario (solo admin)
   fastify.delete('/users/:id', {
-    preValidation: verifyAdmin
+    preValidation: fastify.verifyAdmin
   }, async (request, reply) => {
     try {
       const userId = parseInt(request.params.id)
@@ -210,7 +189,7 @@ async function adminRoutes(fastify, options) {
   
   // POST /auth/admin/users/:id/reset-password - Resetear contraseña de un usuario (solo admin)
   fastify.post('/users/:id/reset-password', {
-    preValidation: verifyAdmin
+    preValidation: fastify.verifyAdmin
   }, async (request, reply) => {
     try {
       const userId = parseInt(request.params.id)
@@ -263,4 +242,4 @@ async function adminRoutes(fastify, options) {
   })
 }
 
-module.exports = adminRoutes
+module.exports = userAdminRoutes
