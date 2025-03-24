@@ -1,16 +1,9 @@
 'use strict'
 
-const { 
-  loginSchema, 
-  registerSchema,
-  refreshTokenSchema,
-  validateTokenSchema,
-  resetPasswordRequestSchema,
-  resetPasswordSchema,
-  changePasswordSchema,
-  verify2FASchema,
-  enable2FASchema
-} = require('../schemas/auth')
+const { loginSchema } = require('../schemas/login')
+const { registerSchema } = require('../schemas/register')
+const { refreshTokenSchema, validateTokenSchema } = require('../schemas/token')
+const { verify2FASchema } = require('../schemas/twoFactor')
 
 // Rutas para la API de autenticación
 async function authRoutes(fastify, options) {

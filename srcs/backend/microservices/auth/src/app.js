@@ -2,35 +2,20 @@
 
 const fastify = require('fastify')
 const config = require('./config')
-
 const app = fastify({ logger: false, trustProxy: true })
 
 app.decorate('config', config)
-
-// Register plugins
 app.register(require('./plugins/logger'))
 app.register(require('./plugins/metrics'))
 app.register(require('./plugins/redis'))
-app.register(require('@fastify/cookie'), {
-  secret: config.cookie?.secret || config.jwt.secret, // Usar el mismo secreto que JWT o uno específico
-  parseOptions: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // Solo https en producción
-    sameSite: 'lax',  // Protección contra CSRF
-    path: '/'
-  }
-})
+app.register(require('@fastify/cookie'), { secret: config.cookie.secret, parseOptions: config.cookie.options });
 app.register(require('./plugins/security'))
 app.register(require('./plugins/jwt'))
 app.register(require('./plugins/auth'))
 app.register(require('./plugins/db'), { database: config.database })
 app.register(require('./plugins/helmet'))
 app.register(require('./plugins/error-handler'))
-
-// Register middlewares
 app.register(require('@fastify/sensible'))
-
-// Register routes
 app.register(require('./routes'), { prefix: '' })
 
 // Shutdown

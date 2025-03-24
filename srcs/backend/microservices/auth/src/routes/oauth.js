@@ -1,18 +1,11 @@
 'use strict'
 
-const axios = require('axios')
-const { oauthCallbackSchema } = require('../schemas/auth')
+const { oauthCallbackSchema } = require('../schemas/login')
 
 // Rutas para OAuth
 async function oauthRoutes(fastify, options) {
   // GET /auth/oauth/google/init - Iniciar flujo OAuth con Google
   fastify.get('/oauth/google/init', {
-    config: {
-      rateLimit: {
-        max: 30,
-        timeWindow: '5 minutes'
-      }
-    }
   }, async (request, reply) => {
     try {
       const config = fastify.config.oauth.google
@@ -309,12 +302,6 @@ async function oauthRoutes(fastify, options) {
 
   // GET /auth/oauth/42/init - Iniciar flujo OAuth con 42
   fastify.get('/oauth/42/init', {
-    config: {
-      rateLimit: {
-        max: 30,
-        timeWindow: '5 minutes'
-      }
-    }
   }, async (request, reply) => {
     try {
       const config = fastify.config.oauth.fortytwo
