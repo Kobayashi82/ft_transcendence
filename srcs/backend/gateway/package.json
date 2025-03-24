@@ -4,10 +4,6 @@
 	"description": "API Gateway",
 	"author": "vzurera-",
 	"main": "src/app.js",
-	"scripts": {
-	  "start": "node src/app.js",
-	  "dev": "nodemon"
-	},
 	"dependencies": {
 	  "@fastify/cors": "^8.5.0",
 	  "@fastify/helmet": "^11.0.0",
@@ -24,8 +20,5 @@
 	  "prom-client": "^14.2.0",
 	  "winston": "^3.8.0",
 	  "winston-logstash-transport": "^2.0.0"
-	},
-	"devDependencies": {
-	  "nodemon": "^3.0.1"
 	}
 }

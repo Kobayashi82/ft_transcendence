@@ -1,17 +1,17 @@
-FROM node:20-alpine AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 COPY . .
 
-FROM node:20-alpine
+FROM node:20
 
 WORKDIR /app
 
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001 -G nodejs
+RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs -s /bin/bash -m nodejs
 
 COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
@@ -20,6 +20,7 @@ COPY --from=builder --chown=nodejs:nodejs /app/src ./src
 USER nodejs
 
 ENV NODE_ENV=production
+ENV LOG_LEVEL=info
 
 EXPOSE 3000
 

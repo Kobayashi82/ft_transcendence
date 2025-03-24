@@ -161,7 +161,7 @@ services:
       context: ./backend/gateway
       dockerfile: Dockerfile.dev
     volumes:
-      - ./backend/gateway:/app
+      - ./backend/gateway/src:/app/src
     environment:
       - SERVICE_NAME=gateway
       - PORT=3000
@@ -199,7 +199,7 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./backend/microservices/auth/src:/app/src
-      - ./backend/microservices/auth/data:/app/data
+      - ms_auth_data:/app/data
     environment:
       - SERVICE_NAME=auth
       - PORT=3000
@@ -234,7 +234,7 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./backend/microservices/user/src:/app/src
-      - ./backend/microservices/user/data:/app/data
+      - ms_user_data:/app/data
     environment:
       - SERVICE_NAME=user
       - PORT=3000
@@ -262,6 +262,8 @@ volumes:
   grafana_data:
   alertmanager_data:
   redis_data:
+  ms_auth_data:
+  ms_user_data:
 
 # ------------------ NETWORK ------------------- #
 

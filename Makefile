@@ -32,7 +32,7 @@ restart:
 build:
 	@$(DC) down || exit 1
 	@$(DC) build || exit 1
-	@printf "\n ✔ Containers\t$(GR)Built$(NC)\n\n"
+	@printf "\n ✔ Containers\t  $(GR)Built$(NC)\n\n"
 
 # Rebuilds containers
 rebuild:
