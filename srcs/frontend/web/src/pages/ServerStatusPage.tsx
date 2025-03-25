@@ -27,23 +27,23 @@ const ServerStatusPage: React.FC = () => {
 
   const checkAdditionalServices = async () => {
     try {
-      // Check Kibana
+      // Check Kibana (timeout 3 seconds)
       const kibanaResponse = await fetch('/kibana', { 
         method: 'HEAD',
-        signal: AbortSignal.timeout(3000) // Timeout after 3 seconds
+        signal: AbortSignal.timeout(3000)
       }).catch(() => null);
       
       setKibanaStatus(kibanaResponse && kibanaResponse.ok ? 'Up' : 'Down');
       
-      // Check Grafana
+      // Check Grafana (timeout 3 seconds)
       const grafanaResponse = await fetch('/grafana', { 
         method: 'HEAD',
-        signal: AbortSignal.timeout(3000) // Timeout after 3 seconds
+        signal: AbortSignal.timeout(3000)
       }).catch(() => null);
       
       setGrafanaStatus(grafanaResponse && grafanaResponse.ok ? 'Up' : 'Down');
+
     } catch (error) {
-      // Silently fail, statuses will remain as Down
       console.error('Error checking monitoring services:', error);
     }
   };
@@ -67,7 +67,7 @@ const ServerStatusPage: React.FC = () => {
       setError(null);
       setLastUpdated(new Date());
       
-      // Also check Kibana and Grafana status
+      // Check Kibana and Grafana
       await checkAdditionalServices();
     } catch (err) {
       console.error('Error fetching server status:', err);
@@ -251,31 +251,38 @@ const ServerStatusPage: React.FC = () => {
         <div className="bg-white shadow overflow-hidden rounded-lg mb-8">
           <div className="px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200">
             <h3 className="text-lg leading-6 font-medium text-gray-900">
-              Gateway Status
+              Gateway
             </h3>
           </div>
-          <div className="px-4 py-5 sm:px-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                {getStatusIcon(status.gateway.status)}
-                <h4 className="ml-2 text-lg font-medium text-gray-900">Gateway</h4>
-              </div>
-              <StatusBadge status={status.gateway.status} />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-4 rounded-md">
-                <p className="text-sm font-medium text-gray-500">Uptime</p>
-                <p className="mt-1 text-lg font-semibold text-gray-900">{formatUptime(status.gateway.uptime)}</p>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-md">
-                <p className="text-sm font-medium text-gray-500">Last Started</p>
-                <p className="mt-1 text-gray-900">
-                  {new Date(Date.now() - (status.gateway.uptime * 1000)).toLocaleString()}
-                </p>
-              </div>
-            </div>
+          <div className="overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
+                    Uptime
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider pl-10 w-1/3">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
+                    Last Started
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {formatUptime(status.gateway.uptime)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <StatusBadge status={status.gateway.status} />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(Date.now() - (status.gateway.uptime * 1000)).toLocaleString()}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -285,9 +292,6 @@ const ServerStatusPage: React.FC = () => {
             <h3 className="text-lg leading-6 font-medium text-gray-900">
               Services
             </h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              Status of all microservices
-            </p>
           </div>
           <div className="overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
@@ -296,7 +300,7 @@ const ServerStatusPage: React.FC = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
                     Service
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider pl-10 w-1/3">
                     Status
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
@@ -309,16 +313,25 @@ const ServerStatusPage: React.FC = () => {
                 {Object.entries(status.services).map(([name, data]) => (
                   <tr key={name}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {getStatusIcon(data.status)}
-                        <span className="ml-2 text-sm font-medium text-gray-900 capitalize">{name}</span>
-                      </div>
+                    <div className="flex items-center">
+                      {getStatusIcon(data.status)}
+                      {data.status.toLowerCase() === 'healthy' || data.status.toLowerCase() === 'degraded' ? (
+                      <Link 
+                        to={`/api-docs/${name.toLowerCase()}`}
+                        className="ml-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        <span className="capitalize">{name}</span>
+                      </Link>
+                      ) : (
+                      <span className="ml-2 text-sm font-medium text-gray-900 capitalize">{name}</span>
+                      )}
+                    </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <StatusBadge status={data.status} />
+                    <StatusBadge status={data.status} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {data.responseTime}
+                    {data.responseTime}
                     </td>
                   </tr>
                 ))}
@@ -335,26 +348,26 @@ const ServerStatusPage: React.FC = () => {
             </table>
           </div>
         </div>
-        
+
         {/* Monitoring Tools */}
         <div className="bg-white shadow overflow-hidden rounded-lg">
           <div className="px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200">
             <h3 className="text-lg leading-6 font-medium text-gray-900">
               Monitoring Tools
             </h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              Status of monitoring and logging tools
-            </p>
           </div>
           <div className="overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/3">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
                     Tool
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider pl-10 w-1/3">
                     Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
+                    {/* Empty column to maintain spacing */}
                   </th>
                 </tr>
               </thead>
@@ -383,6 +396,7 @@ const ServerStatusPage: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <StatusBadge status={kibanaStatus} />
                   </td>
+                  <td></td> {/* Empty cell to maintain the structure */}
                 </tr>
                 
                 <tr>
@@ -409,11 +423,13 @@ const ServerStatusPage: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <StatusBadge status={grafanaStatus} />
                   </td>
+                  <td></td> {/* Empty cell to maintain the structure */}
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
+
       </div>
     </div>
   );

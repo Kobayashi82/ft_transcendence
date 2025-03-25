@@ -14,6 +14,7 @@ import Spinner from './components/ui/Spinner';
 import ConnectionChecker from './components/ConnectionChecker';
 import ProtectedRoute from './components/ProtectedRoutes';
 import ErrorBoundary from './components/ErrorBoundary';
+import APIDocumentation from './pages/APIDocumentation';
 import { isSessionActive } from './services/api';
 
 const App: React.FC = () => {
@@ -62,6 +63,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/status" element={<ServerStatusPage />} />
       <Route path="/2fa" element={<TwoFactorAuth />} />
+	  <Route path="/api-docs/:service" element={<APIDocumentation />} />
       
       {/* OAuth callback routes */}
       <Route path="/oauth/callback/:provider" element={<OAuthCallback />} />

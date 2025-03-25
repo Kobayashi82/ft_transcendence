@@ -2,6 +2,7 @@
 
 require('dotenv').config()
 
+const { REPL_MODE_SLOPPY } = require('repl')
 const services = require('./services')
 const crypto = require('crypto')
 
@@ -102,6 +103,18 @@ const config = {
     saltRounds: parseInt(process.env.PASSWORD_SALT_ROUNDS || '12'),
     maxFailedAttempts: parseInt(process.env.PASSWORD_MAX_FAILED_ATTEMPTS || '5'),
     lockDuration: parseInt(process.env.PASSWORD_LOCK_DURATION || '1800')
+  },
+
+  // Swagger
+  swagger: {
+    info: {
+      title: 'Authentication API',
+      description: 'API for user authentication, including login, registration, token management, and two-factor authentication (2FA)',
+      version: '1.0.0'
+    },
+    schemes: ['http'],
+    consumes: ['application/json'],
+    produces: ['application/json']
   }
 }
 

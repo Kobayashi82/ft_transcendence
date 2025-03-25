@@ -4,6 +4,8 @@ const { errorResponseSchema } = require('./shared');
 
 // Schema for token refresh
 const refreshTokenSchema = {
+  description: 'Refresh the access token using the provided refresh token',
+  tags: ['Tokens'],
   body: {
     type: 'object',
     required: [],
@@ -29,6 +31,8 @@ const refreshTokenSchema = {
 
 // Schema for token validation
 const validateTokenSchema = {
+  description: 'Validate the provided token and return user information',
+  tags: ['Tokens'],
   headers: {
     type: 'object',
     properties: {

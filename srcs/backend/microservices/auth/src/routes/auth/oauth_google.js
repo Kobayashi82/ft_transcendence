@@ -1,11 +1,11 @@
 'use strict'
 
-const { oauthCallbackSchema } = require('../../schemas/login')
+const { oauthInitSchema, oauthCallbackSchema } = require('../../schemas/oauth')
 
 async function googleOauthRoutes(fastify, options) {
 
   // Google OAuth initialization
-  fastify.get('/oauth/google/init', {}, async (request, reply) => {
+  fastify.get('/oauth/google/init', { schema: oauthInitSchema }, async (request, reply) => {
     try {
       const config = fastify.config.oauth.google
       

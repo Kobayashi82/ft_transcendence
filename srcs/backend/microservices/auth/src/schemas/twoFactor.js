@@ -4,6 +4,8 @@ const { errorResponseSchema } = require('./shared');
 
 // Schema for 2FA enabling
 const enable2FASchema = {
+  description: 'Enable two-factor authentication for the user',
+  tags: ['2FA'],
   body: {
     type: 'object',
     required: ['type'],
@@ -31,6 +33,8 @@ const enable2FASchema = {
 
 // Schema for 2FA verification
 const verify2FASchema = {
+  description: 'Verify a two-factor authentication code',
+  tags: ['2FA'],
   body: {
     type: 'object',
     required: ['code', 'token'],

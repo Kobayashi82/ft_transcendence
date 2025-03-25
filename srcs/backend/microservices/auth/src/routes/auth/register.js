@@ -4,9 +4,7 @@ const { registerSchema } = require('../../schemas/register')
 
 async function registerRoutes(fastify, options) {
 
-  fastify.post('/register', {
-    schema: registerSchema,
-  }, async (request, reply) => {
+  fastify.post('/register', { schema: registerSchema }, async (request, reply) => {
     try {
       const { email, username, password, device_info } = request.body
       

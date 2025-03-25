@@ -20,7 +20,8 @@ const services = {
       '/2fa/disable': '/2fa/disable',
       '/password/reset-request': '/password/reset-request',
       '/password/reset': '/password/reset',
-      '/password/change': '/password/change'
+      '/password/change': '/password/change',
+      '/documentation': '/documentation'
     },
     timeout: 5000,
   },

@@ -1,7 +1,10 @@
 'use strict'
 
+const healthSchema = require('../schemas/health')
+
 async function healthRoutes(fastify, options) {
-  fastify.get('/health', async (request, reply) => {
+
+  fastify.get('/health', { schema: healthSchema.schema }, async (request, reply) => {
     const databaseStatus = await checkDatabase(fastify)
     const redisStatus = await checkRedis(fastify)
     const jwtStatus = checkJWT(fastify)
@@ -22,10 +25,9 @@ async function healthRoutes(fastify, options) {
         security: securityStatus
       }
     }
-
     const isHealthy = databaseStatus.status === 'healthy' && redisStatus.status === 'healthy' && jwtStatus.status === 'healthy' && securityStatus.status === 'healthy'
     if (!isHealthy) { serviceStatus.service.status = 'degraded'; reply.status(503) }
-    
+
     return serviceStatus
   })
 }

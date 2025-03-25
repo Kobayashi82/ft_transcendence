@@ -2,25 +2,37 @@
 
 const { errorResponseSchema } = require('./shared');
 
-// Schema for user registration
-const registerSchema = {
-  description: 'Register a new user and return access tokens',
-  tags: ['Register'],
-  body: {
-    type: 'object',
-    required: ['username', 'email', 'password'],
-    properties: {
-      username: { type: 'string', minLength: 3 },
-      email: { type: 'string', format: 'email' },
-      password: { 
-        type: 'string', 
-        minLength: 8,
-        pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\\d!@#$%^&*(),.?":{}|<>]{8,}$'
+// Schema for OAuth Init
+const oauthInitSchema = {
+  description: 'Initialize OAuth authentication',
+  tags: ['OAuth'],
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        url: { 
+          type: 'string',
+        }
       }
+    },
+    500: errorResponseSchema,
+  }
+}
+
+// Schema for OAuth Callback
+const oauthCallbackSchema = {
+  description: 'Handle OAuth provider callback and exchange code for tokens',
+  tags: ['OAuth'],
+  querystring: {
+    type: 'object',
+    properties: {
+      code: { type: 'string' },
+      state: { type: 'string' },
+      error: { type: 'string' }
     }
   },
   response: {
-    201: {
+    200: {
       type: 'object',
       properties: {
         access_token: { type: 'string' },
@@ -36,15 +48,15 @@ const registerSchema = {
             roles: { 
               type: 'array',
               items: { type: 'string' }
-            }
+            },
+            has_2fa: { type: 'boolean' }
           }
         }
       }
     },
     400: errorResponseSchema,
-    409: errorResponseSchema,
     429: errorResponseSchema
   }
 }
 
-module.exports = { registerSchema }
+module.exports = { oauthInitSchema, oauthCallbackSchema }

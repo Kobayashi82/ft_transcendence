@@ -2,20 +2,27 @@
 
 const fastify = require('fastify')
 const config = require('./config')
+
 const app = fastify({ logger: false, trustProxy: true })
 
 app.decorate('config', config)
+
 app.register(require('./plugins/logger'))
 app.register(require('./plugins/metrics'))
+
 app.register(require('./plugins/redis'))
-app.register(require('@fastify/cookie'), { secret: config.cookie.secret, parseOptions: config.cookie.options });
+app.register(require('./plugins/db'), { database: config.database })
+
+app.register(require('@fastify/sensible'))
+app.register(require('./plugins/helmet'))
 app.register(require('./plugins/security'))
+app.register(require('./plugins/error-handler'))
+
+app.register(require('@fastify/cookie'), { secret: config.cookie.secret, parseOptions: config.cookie.options });
 app.register(require('./plugins/jwt'))
 app.register(require('./plugins/auth'))
-app.register(require('./plugins/db'), { database: config.database })
-app.register(require('./plugins/helmet'))
-app.register(require('./plugins/error-handler'))
-app.register(require('@fastify/sensible'))
+
+app.register(require('@fastify/swagger'), { swagger: config.swagger });
 app.register(require('./routes'), { prefix: '' })
 
 // Shutdown

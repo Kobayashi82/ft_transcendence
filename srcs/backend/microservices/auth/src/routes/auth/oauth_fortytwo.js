@@ -1,11 +1,11 @@
 'use strict'
 
-const { oauthCallbackSchema } = require('../../schemas/login')
+const { oauthInitSchema, oauthCallbackSchema } = require('../../schemas/oauth')
 
 async function fortytwoOauthRoutes(fastify, options) {
 
   // 42 OAuth initialization
-  fastify.get('/oauth/42/init', {}, async (request, reply) => {
+  fastify.get('/oauth/42/init', { schema: oauthInitSchema }, async (request, reply) => {
     try {
       const config = fastify.config.oauth.fortytwo
       

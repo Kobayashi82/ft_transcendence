@@ -4,9 +4,7 @@ const { loginSchema } = require('../../schemas/login')
 
 async function loginRoutes(fastify, options) {
 
-  fastify.post('/login', {
-    schema: loginSchema,
-  }, async (request, reply) => {
+  fastify.post('/login', { schema: loginSchema }, async (request, reply) => {
     try {
       const { email, password, device_info } = request.body
 

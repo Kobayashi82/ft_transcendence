@@ -4,9 +4,7 @@ const { refreshTokenSchema, validateTokenSchema } = require('../../schemas/token
 
 async function tokenRoutes(fastify, options) {
 
-  fastify.get('/validate', {
-    schema: validateTokenSchema,
-  }, async (request, reply) => {
+  fastify.get('/validate', { schema: validateTokenSchema }, async (request, reply) => {
     try {
       const authHeader = request.headers.authorization
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -75,9 +73,7 @@ async function tokenRoutes(fastify, options) {
     }
   })
 
-  fastify.post('/refresh', {
-    schema: refreshTokenSchema,
-  }, async (request, reply) => {
+  fastify.post('/refresh', { schema: refreshTokenSchema }, async (request, reply) => {
     try {
       // Intentar obtener el token de refresco primero de las cookies
       let refreshToken = request.cookies.refresh_token;
