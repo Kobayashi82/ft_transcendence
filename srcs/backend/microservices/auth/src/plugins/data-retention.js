@@ -3,130 +3,126 @@
 const fp = require('fastify-plugin')
 
 async function dataRetentionPlugin(fastify, options) {
-  // Tareas periódicas de limpieza de datos
+  // Periodic data cleanup tasks
   const cleanupTasks = {
-    // Limpiar tokens de refresco expirados
+    // Remove expired refresh tokens
     async cleanExpiredRefreshTokens() {
       try {
         const result = await fastify.db.delete(
-          'DELETE FROM refresh_tokens WHERE expires_at < datetime("now") AND revoked = false',
+          'DELETE FROM refresh_tokens WHERE expires_at < datetime(\'now\') AND revoked = false',
           [],
           'refresh_tokens'
         )
         
         if (result.changes > 0) {
-          fastify.logger.info(`Limpieza: ${result.changes} tokens de refresco expirados eliminados`)
+          fastify.logger.info(`Cleanup: ${result.changes} expired refresh tokens removed`)
         }
         
         return result.changes
       } catch (err) {
-        fastify.logger.error(`Error al limpiar tokens de refresco: ${err.message}`)
+        fastify.logger.error(`Error cleaning refresh tokens: ${err.message}`)
         return 0
       }
     },
     
-    // Limpiar tokens de reseteo de contraseña expirados
+    // Remove expired password reset tokens
     async cleanExpiredResetTokens() {
       try {
         const result = await fastify.db.delete(
-          'DELETE FROM password_reset WHERE expires_at < datetime("now")',
+          'DELETE FROM password_reset WHERE expires_at < datetime(\'now\')',
           [],
           'password_reset'
         )
         
         if (result.changes > 0) {
-          fastify.logger.info(`Limpieza: ${result.changes} tokens de reseteo expirados eliminados`)
+          fastify.logger.info(`Cleanup: ${result.changes} expired reset tokens removed`)
         }
         
         return result.changes
       } catch (err) {
-        fastify.logger.error(`Error al limpiar tokens de reseteo: ${err.message}`)
+        fastify.logger.error(`Error cleaning reset tokens: ${err.message}`)
         return 0
       }
     },
     
-    // Limpiar sesiones expiradas
+    // Remove expired sessions
     async cleanExpiredSessions() {
       try {
         const result = await fastify.db.delete(
-          'DELETE FROM sessions WHERE expires_at < datetime("now")',
+          'DELETE FROM sessions WHERE expires_at < datetime(\'now\')',
           [],
           'sessions'
         )
         
         if (result.changes > 0) {
-          fastify.logger.info(`Limpieza: ${result.changes} sesiones expiradas eliminadas`)
+          fastify.logger.info(`Cleanup: ${result.changes} expired sessions removed`)
         }
         
         return result.changes
       } catch (err) {
-        fastify.logger.error(`Error al limpiar sesiones: ${err.message}`)
+        fastify.logger.error(`Error cleaning sessions: ${err.message}`)
         return 0
       }
     },
     
-    // Anonimizar usuarios eliminados (después de un período de retención)
+    // Anonymize deleted users (after a retention period)
     async anonymizeDeletedUsers(retentionDays = 90) {
       try {
-        // Usuarios eliminados hace más de X días
+        // Users deleted more than 90 days ago
         const result = await fastify.db.update(
           `UPDATE users 
-           SET email = 'deleted_' || id || '@example.com', 
-               username = 'deleted_user_' || id,
+           SET email = 'deleted_user_' || id || '_' || substr('000000' || abs(random()), -6) || '@anonymized.local', 
+               username = 'deleted_user_' || id || '_' || substr('000000' || abs(random()), -6),
                password_hash = NULL,
                salt = NULL,
                oauth_id = NULL,
-               is_anonymized = TRUE
+               is_anonymized = TRUE,
+               is_active = FALSE
            WHERE is_deleted = TRUE 
            AND updated_at < datetime('now', '-${retentionDays} days')
-           AND is_anonymized IS NOT TRUE`,
+           AND is_anonymized IS NOT TRUE
+           AND is_active = TRUE`,
           [],
           'users'
         )
         
         if (result.changes > 0) {
-          fastify.logger.info(`Limpieza: ${result.changes} usuarios eliminados anonimizados`)
+          fastify.logger.info(`Cleanup: ${result.changes} deleted users anonymized`)
         }
         
         return result.changes
       } catch (err) {
-        fastify.logger.error(`Error al anonimizar usuarios: ${err.message}`)
+        fastify.logger.error(`Error anonymizing users: ${err.message}`)
         return 0
       }
     }
   }
   
-  // Ejecutar limpieza periódica (cada 24 horas)
+  // Run periodic cleanup (every 24 hours)
   const runCleanupTasks = async () => {
-    fastify.logger.info('Iniciando tareas de limpieza y retención de datos')
+    fastify.logger.info('Starting data retention and cleanup tasks')
     
     await cleanupTasks.cleanExpiredRefreshTokens()
     await cleanupTasks.cleanExpiredResetTokens()
     await cleanupTasks.cleanExpiredSessions()
     await cleanupTasks.anonymizeDeletedUsers()
     
-    fastify.logger.info('Tareas de limpieza completadas')
+    fastify.logger.info('Cleanup tasks completed')
   }
   
-  // Ejecutar inmediatamente al inicio
+  // Execute immediately at startup
   runCleanupTasks()
   
-  // Programar ejecución periódica
-  const interval = setInterval(runCleanupTasks, 24 * 60 * 60 * 1000) // 24 horas
+  // Schedule periodic execution
+  const interval = setInterval(runCleanupTasks, 1000 * 60 * 60 * 24) // 24 hours
   
-  // Decorar fastify con funciones de limpieza (para uso manual o tests)
-  fastify.decorate('dataRetention', {
-    ...cleanupTasks,
-    runCleanup: runCleanupTasks
-  })
+  // Decorate fastify with cleanup functions (for manual use or tests)
+  fastify.decorate('dataRetention', { ...cleanupTasks, runCleanup: runCleanupTasks })
   
-  // Limpiar al cerrar
-  fastify.addHook('onClose', (instance, done) => {
-    clearInterval(interval)
-    done()
-  })
+  // Cleanup on shutdown
+  fastify.addHook('onClose', (instance, done) => { clearInterval(interval); done() })
   
-  fastify.logger.info('Plugin de retención de datos inicializado')
+  fastify.logger.info('Data retention plugin initialized')
 }
 
-module.exports = fp(dataRetentionPlugin, { name: 'dataRetention', dependencies: ['db'] })
+module.exports = fp(dataRetentionPlugin, { name: 'dataRetention', dependencies: ['db', 'logger'] })

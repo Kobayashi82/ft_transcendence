@@ -21,6 +21,7 @@ app.register(require('./plugins/error-handler'))
 app.register(require('@fastify/cookie'), { secret: config.cookie.secret, parseOptions: config.cookie.options });
 app.register(require('./plugins/jwt'))
 app.register(require('./plugins/auth'))
+app.register(require('./plugins/data-retention'))
 
 app.register(require('@fastify/swagger'), { swagger: config.swagger });
 app.register(require('./routes'), { prefix: '' })

@@ -17,26 +17,13 @@ async function securityPlugin(fastify, options) {
   
   // Función para crear un circuit breaker para peticiones HTTP
   const createHttpBreaker = (name) => {
-    const breaker = new CircuitBreaker(async (config) => {
-      return await axios(config)
-    }, breakerOptions)
+    const breaker = new CircuitBreaker(async (config) => { return await axios(config) }, breakerOptions)
     
     // Eventos para logging
-    breaker.on('open', () => {
-      fastify.logger.warn(`Circuit breaker '${name}' abierto - deteniendo peticiones`)
-    })
-    
-    breaker.on('halfOpen', () => {
-      fastify.logger.info(`Circuit breaker '${name}' en estado semi-abierto - probando recuperación`)
-    })
-    
-    breaker.on('close', () => {
-      fastify.logger.info(`Circuit breaker '${name}' cerrado - servicio recuperado`)
-    })
-    
-    breaker.on('fallback', (result) => {
-      fastify.logger.warn(`Fallback para '${name}' ejecutado`)
-    })
+    breaker.on('open', () => { fastify.logger.warn(`Circuit breaker '${name}' abierto - deteniendo peticiones`) })
+    breaker.on('halfOpen', () => { fastify.logger.info(`Circuit breaker '${name}' en estado semi-abierto - probando recuperación`) })
+    breaker.on('close', () => { fastify.logger.info(`Circuit breaker '${name}' cerrado - servicio recuperado`) })
+    breaker.on('fallback', (result) => { fastify.logger.warn(`Fallback para '${name}' ejecutado`) })
     
     return breaker
   }

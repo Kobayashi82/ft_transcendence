@@ -57,3 +57,73 @@ Métricas en formato Prometheus en el endpoint `/metrics`.
 - `user_external_calls_total`				- 
 - `user_external_call_duration_seconds`	- 
 - `user_business_operations_total`			- 
+
+
+
+
+  const testing = async (level, message, meta = {}) => {
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    try { 
+
+      console.log("\nBEGIN TESTS\n")  
+
+      // Example of Logger
+      {
+        fastify.logger_local.info("This log is displayed in the local console")
+        fastify.logger_local.warn("This log is displayed in the local console")
+        fastify.logger_local.error("This log is displayed in the local console")  
+
+        console.log("") // This is displayed in the local console too 
+
+        fastify.logger.info("This log is displayed in the local console, the gateway console, and sent to Logstash")
+        fastify.logger.warn("This log is displayed in the local console, the gateway console, and sent to Logstash")
+        fastify.logger.error("This log is displayed in the local console, the gateway console, and sent to Logstash")
+      } 
+
+      console.log("\n") 
+
+      // Example of Redis usage
+      {
+        if (fastify.cache.isRedisAvailable())
+          fastify.logger.info('Redis available')
+        else
+          fastify.logger_local.warn('Redis not available. Using local memory')
+
+        let value = null; 
+
+        // Store a value in cache (expires in 5 seconds)
+        await fastify.cache.set('key', {
+          message: 'Hello from cache',
+          other_data: 1234,
+          timestamp: new Date().toISOString() 
+        }, 5)
+
+        // Wait 6 seconds and the key must be removed from cache
+        // It may seem like it has not been added to the cache
+        // await sleep(6000);
+
+        if (await fastify.cache.exists('key')) {
+          value = await fastify.cache.get('key')
+          fastify.logger_local.info('Value from cache: ', value)
+          await fastify.cache.del('key')
+          fastify.logger_local.info('Value remove from cache')
+          if (await fastify.cache.exists('key'))
+            fastify.logger_local.error('Value still exists in cache')
+          else
+            fastify.logger_local.info('Value no longer exists in cache')
+        } else {
+          fastify.logger_local.error('Value has not been added to cache')
+        }     
+      } 
+
+      console.log("\nEND TESTS\n")
+    } catch (error) {
+      fastify.logger_local.error('An error occurred')
+    } 
+  }
+  
+  fastify.get('/test', async (request, reply) => {
+    await testing()
+
+    return { message: 'testing' }
+  })
