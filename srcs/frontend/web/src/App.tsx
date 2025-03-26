@@ -16,16 +16,19 @@ import ProtectedRoute from './components/ProtectedRoutes';
 import ErrorBoundary from './components/ErrorBoundary';
 import APIDocumentation from './pages/APIDocumentation';
 import { isSessionActive } from './services/api';
+import Home from './pages/Home';
+import Header from './components/layout/Header';
+import Footer from './components/layout/Footer';
 
 const App: React.FC = () => {
   // Add some debug logs to help troubleshooting
   useEffect(() => {
-	const hasSession = isSessionActive();
-	
-	console.log('App initialization:', {
-	  hasSession,
-	  apiUrl: import.meta.env.VITE_API_URL || 'Not set'
-	});
+    const hasSession = isSessionActive();
+    
+    console.log('App initialization:', {
+      hasSession,
+      apiUrl: import.meta.env.VITE_API_URL || 'Not set'
+    });
   }, []);
 
   return (
@@ -45,7 +48,12 @@ const App: React.FC = () => {
 
 // Separated AppRoutes component for better organization
 const AppRoutes: React.FC = () => {
-  const { loading } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
+  
+  // Add more detailed logging
+  useEffect(() => {
+    console.log('AppRoutes rendered:', { loading, isAuthenticated });
+  }, [loading, isAuthenticated]);
   
   if (loading) {
     return (
@@ -57,62 +65,48 @@ const AppRoutes: React.FC = () => {
   }
   
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/status" element={<ServerStatusPage />} />
-      <Route path="/2fa" element={<TwoFactorAuth />} />
-	  <Route path="/api-docs/:service" element={<APIDocumentation />} />
-      
-      {/* OAuth callback routes */}
-      <Route path="/oauth/callback/:provider" element={<OAuthCallback />} />
-      <Route path="/api/auth/oauth/:provider/callback" element={<OAuthCallback />} />
-      
-      {/* Protected routes */}
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } 
-      />
-      
-      <Route 
-        path="/settings" 
-        element={
-          <ProtectedRoute>
-            <UserSettings />
-          </ProtectedRoute>
-        } 
-      />
-      
-      {/* Redirect root to dashboard or login depending on auth state */}
-      <Route 
-        path="/" 
-        element={<RootRedirect />}
-      />
-
-      {/* Catch all unknown routes */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <div className="flex flex-col min-h-screen">
+      {!isAuthenticated && <Header />}
+      <main className="flex-grow">
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={!isAuthenticated ? <Home /> : <Navigate to="/dashboard" />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/status" element={<ServerStatusPage />} />
+          <Route path="/2fa" element={<TwoFactorAuth />} />
+          <Route path="/api-docs/:service" element={<APIDocumentation />} />
+          
+          {/* OAuth callback routes */}
+          <Route path="/oauth/callback/:provider" element={<OAuthCallback />} />
+          <Route path="/api/auth/oauth/:provider/callback" element={<OAuthCallback />} />
+          
+          {/* Protected routes */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute>
+                <UserSettings />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Catch all unknown routes */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+      {!isAuthenticated && <Footer />}
+    </div>
   );
-};
-
-// Component to handle root path redirects based on auth state
-const RootRedirect: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
-  
-  if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-  
-  return <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />;
 };
 
 export default App;

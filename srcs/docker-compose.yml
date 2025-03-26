@@ -1,6 +1,5 @@
-
 services:
-
+# Expose ports (80, 443)
 
 # ----------------- WEB SERVER ----------------- #
 
@@ -11,20 +10,21 @@ services:
     build:
       context: ./frontend/nginx
     ports:
-      - "80:80"
+      - "80:443"
       - "443:443"
     networks:
       - pong-net
     restart: unless-stopped
 
-  # Web (3000)
+  # Web (80)
   web:
     container_name: web
     build: 
       context: ./frontend/web
       dockerfile: Dockerfile.dev
     volumes:
-      - ./frontend/web:/app
+      - ./frontend/web/src:/app/src
+      - ./frontend/web/public:/app/public
     networks:
       - pong-net
     restart: unless-stopped
@@ -37,7 +37,7 @@ services:
   elasticsearch:
     container_name: elasticsearch
     build:
-      context: ./backend/logging/elasticsearch
+      context: ./monitoring/logs/elasticsearch
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
@@ -61,7 +61,7 @@ services:
   logstash:
     container_name: logstash
     build:
-      context: ./backend/logging/logstash
+      context: ./monitoring/logs/logstash
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
@@ -77,7 +77,7 @@ services:
   kibana:
     container_name: kibana
     build:
-      context: ./backend/logging/kibana
+      context: ./monitoring/logs/kibana
     environment:
       - SERVER_BASEPATH=/kibana
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
@@ -92,6 +92,7 @@ services:
       - pong-net
     restart: unless-stopped
 
+
 # ------------------- METRICS ------------------ #
 
 
@@ -99,7 +100,7 @@ services:
   prometheus:
     container_name: prometheus
     build:
-      context: ./backend/metrics/prometheus
+      context: ./monitoring/metrics/prometheus
     volumes:
       - prometheus_data:/prometheus
     networks:
@@ -110,7 +111,7 @@ services:
   grafana:
     container_name: grafana
     build:
-      context: ./backend/metrics/grafana
+      context: ./monitoring/metrics/grafana
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
@@ -125,7 +126,7 @@ services:
   alertmanager:
     container_name: alertmanager
     build:
-      context: ./backend/metrics/alertmanager
+      context: ./monitoring/metrics/alertmanager
     volumes:
       - alertmanager_data:/alertmanager
     networks:
@@ -133,7 +134,7 @@ services:
     restart: unless-stopped
 
 
-# --------------- MICRO-SERVICES --------------- #
+# --------------- REDIS & GATEWAY --------------- #
 
 
   # Redis (6379)
@@ -154,6 +155,7 @@ services:
       - pong-net
     restart: unless-stopped
 
+
   # Gateway (3000)
   gateway:
     container_name: gateway
@@ -163,49 +165,36 @@ services:
     volumes:
       - ./backend/gateway/src:/app/src
     environment:
-      - SERVICE_NAME=gateway
-      - PORT=3000
-      - RATE_LIMIT_MAX=100
-      - RATE_LIMIT_WINDOW=1m
-      - CORS_ORIGIN=${CORS_ORIGIN-*}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN-15m}
-      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN-7d}
-      - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - SERVICE_URL=gateway:3000
+      - LOGSTASH_URL=logstash:5044
+      - REDIS_URL=redis:6379
       - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
       - AUTH_SERVICE_URL=http://auth:3000
-      - USER_SERVICE_URL=http://user:3000
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:3000/health"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 15s
     depends_on:
       redis:
         condition: service_healthy
     networks:
       - pong-net
 
-  # Microservices
 
+# --------------- MICRO-SERVICES --------------- #
+
+
+  # Auth (3000)
   auth:
     container_name: auth
     build:
-      context: ./backend/microservices/auth
+      context: ./backend/services/auth
       dockerfile: Dockerfile.dev
     volumes:
-      - ./backend/microservices/auth/src:/app/src
+      - ./backend/services/auth/src:/app/src
       - ms_auth_data:/app/data
     environment:
       - SERVICE_URL=auth:3000
       - GATEWAY_URL=http://gateway:3000
       - REDIS_URL=redis:6379
       - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
-
+      
       - CORS_ORIGIN=${CORS_ORIGIN-*}
 
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
@@ -231,34 +220,6 @@ services:
       - PASSWORD_MAX_FAILED_ATTEMPTS=${PASSWORD_MAX_FAILED_ATTEMPTS-5}
       - PASSWORD_LOCK_DURATION=${PASSWORD_LOCK_DURATION-1800}
     depends_on:
-      gateway:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - pong-net
-    restart: unless-stopped
-
-  user:
-    container_name: user
-    build:
-      context: ./backend/microservices/user
-      dockerfile: Dockerfile.dev
-    volumes:
-      - ./backend/microservices/user/src:/app/src
-      - ms_user_data:/app/data
-    environment:
-      - SERVICE_NAME=user
-      - PORT=3000
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
-      - DB_PATH=./data/database.sqlite
-      - GATEWAY_SERVICE_URL=http://gateway:3000
-      - USER_SERVICE_URL=http://user:3000
-    depends_on:
-      gateway:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -275,7 +236,6 @@ volumes:
   alertmanager_data:
   redis_data:
   ms_auth_data:
-  ms_user_data:
 
 # ------------------ NETWORK ------------------- #
 

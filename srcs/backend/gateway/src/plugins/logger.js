@@ -44,7 +44,7 @@ async function loggerPlugin(fastify, options) {
       
       logstashClient.on('connect', () => {
         logstashConnected = true
-        console.log(`Logstash connected on port ${port}`)
+        console.info(`[INFO] Logstash connected on port ${port}`)
       })
             
       logstashClient.on('close', () => {

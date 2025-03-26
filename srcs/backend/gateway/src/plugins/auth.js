@@ -4,12 +4,12 @@ const fp = require('fastify-plugin')
 const jwt = require('jsonwebtoken')
 const axios = require('axios')
 
-// Plugin para autenticación y manejo de tokens en el gateway
+// Plugin for authentication and token management
 async function authPlugin(fastify, options) {
   const config = fastify.config
   
-  // Token cache expiration time (in seconds)
-  const TOKEN_CACHE_TTL = 300 // 5 minutos
+  // Token cache expiration time (5 minutes)
+  const TOKEN_CACHE_TTL = 300
   
   // Prefix for Redis keys
   const CACHE_PREFIX = 'auth:token:'
@@ -65,7 +65,7 @@ async function authPlugin(fastify, options) {
         timeout: 5000
       })
       
-      // Procesamos la respuesta
+      // Process the response
       if (response.data && response.data.valid) {
         authInfo = {
           authenticated: true,
@@ -77,12 +77,12 @@ async function authPlugin(fastify, options) {
           token: token
         }
         
-        // Almacenar en caché
+        // Store in cache
         await fastify.cache.set(cacheKey, authInfo, TOKEN_CACHE_TTL)
         
-        // También almacenar información de usuario para consultas rápidas
+        // Also store user information for quick lookups
         const userKey = `${USER_INFO_PREFIX}${authInfo.userId}`
-        await fastify.cache.set(userKey, response.data.user_info, TOKEN_CACHE_TTL * 2) // TTL más largo para user info
+        await fastify.cache.set(userKey, response.data.user_info, TOKEN_CACHE_TTL * 2) // Longer TTL for user info
         
         return authInfo
       } else {
@@ -94,14 +94,14 @@ async function authPlugin(fastify, options) {
         stack: error.stack
       })
       
-      // En caso de error, intentamos decodificar localmente para mensajes más específicos
+      // In case of error, try to decode locally for more specific messages
       const decoded = fastify.decodeToken(token)
       
       if (!decoded) {
         return { authenticated: false, reason: 'invalid-format' }
       }
       
-      // Verificar la expiración del token si está disponible
+      // Check token expiration if available
       if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
         return { authenticated: false, reason: 'token-expired' }
       }
@@ -132,13 +132,13 @@ async function authPlugin(fastify, options) {
         return
       }
       
-      // Validate token (usando caché o servicio de auth)
+      // Validate token (using cache or auth service)
       const authInfo = await fastify.validateToken(token)
       
       // Attach auth info to request
       request.auth = authInfo
       
-      // Si estamos autenticados, adjuntar la información del usuario al request
+      // If authenticated, attach user information to request
       if (authInfo.authenticated) {
         request.user = authInfo.userInfo
       }
@@ -170,7 +170,7 @@ async function authPlugin(fastify, options) {
   // Middleware for routes that require specific roles
   fastify.decorate('requireRoles', function(rolesRequired = []) {
     return async (request, reply) => {
-      // Primero verificar que está autenticado
+      // First, check if authenticated
       if (!request.auth || !request.auth.authenticated) {
         reply.status(401).send({
           statusCode: 401,
@@ -180,10 +180,10 @@ async function authPlugin(fastify, options) {
         return
       }
       
-      // Si no se requieren roles específicos, ya está autorizado
+      // If no specific roles are required, already authorized
       if (rolesRequired.length === 0) return
       
-      // Verificar que el usuario tiene al menos uno de los roles requeridos
+      // Check if the user has at least one of the required roles
       const hasRequiredRole = request.auth.roles.some(role => rolesRequired.includes(role))
       
       if (!hasRequiredRole) {
@@ -197,17 +197,17 @@ async function authPlugin(fastify, options) {
     }
   })
   
-  // Decorar con el servicio de autenticación
+  // Decorate with authentication service
   fastify.decorate('authService', {
-    // Obtener información de usuario por ID
+    // Get user info by ID
     getUserInfo: async function(userId) {
-      // Intentar obtener de caché primero
+      // Try to get from cache first
       const cacheKey = `${USER_INFO_PREFIX}${userId}`
       const cachedInfo = await fastify.cache.get(cacheKey)
       
       if (cachedInfo) return cachedInfo
       
-      // Si no está en caché, obtener del servicio de auth
+      // If not in cache, get from auth service
       try {
         const authService = fastify.config.services.auth
         const token = request.headers.authorization
@@ -220,7 +220,7 @@ async function authPlugin(fastify, options) {
         })
         
         if (response.data) {
-          // Almacenar en caché
+          // Store in cache
           await fastify.cache.set(cacheKey, response.data, TOKEN_CACHE_TTL * 2)
           return response.data
         }
@@ -235,12 +235,12 @@ async function authPlugin(fastify, options) {
       return null
     },
     
-    // Revocar token
+    // Revoke token
     revokeToken: async function(token) {
-      // Eliminar de caché
+      // Remove from cache
       await fastify.cache.del(`${CACHE_PREFIX}${token}`)
       
-      // Intentar revocar en el servicio de auth
+      // Try to revoke in the auth service
       try {
         const authService = fastify.config.services.auth
         await axios.post(`${authService.url}/logout`, {
@@ -254,13 +254,13 @@ async function authPlugin(fastify, options) {
         fastify.logger.warn(`Error revoking token in auth service: ${error.message}`, {
           error: error.message
         })
-        // Aún consideramos exitoso porque lo eliminamos de caché local
+        // Still consider it successful because it was removed from local cache
         return true
       }
     }
   })
   
-  fastify.logger.info('Auth plugin configurado correctamente')
+  fastify.logger.info('Auth plugin configured correctly')
 }
 
 module.exports = fp(authPlugin, { name: 'auth', dependencies: ['redis', 'logger'] })

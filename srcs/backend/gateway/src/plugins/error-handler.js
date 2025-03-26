@@ -4,7 +4,7 @@ const fp = require('fastify-plugin')
 const createError = require('http-errors')
 
 async function errorHandlerPlugin(fastify, options) {
-  // Decorar Fastify con createError para usarlo en toda la app
+
   fastify.decorate('createError', createError)
   
   // Not found handler
@@ -18,7 +18,7 @@ async function errorHandlerPlugin(fastify, options) {
   
   // Error handler
   fastify.setErrorHandler((error, request, reply) => {
-    // Registrar el error
+    // Log the error
     fastify.logger.error('Request failed', { 
       error: error.message, 
       stack: error.stack,
@@ -27,18 +27,16 @@ async function errorHandlerPlugin(fastify, options) {
       statusCode: error.statusCode || 500
     })
     
-    // Usar el statusCode del error o 500 por defecto
+    // Use the error's statusCode or 500 by default
     const statusCode = error.statusCode || 500
     
-    // Preparar respuesta
     const response = { error: statusCode >= 500 && !fastify.config.isDev ? 'Internal Server Error' : error.message, statusCode }
 
-    // Solo incluir stack en desarrollo
+    // Include stack only in development
     if (fastify.config.isDev && error.stack) { response.stack = error.stack }
 
     reply.status(statusCode).send(response)
   })
 }
 
-// El plugin depende de 'logger'
 module.exports = fp(errorHandlerPlugin, { name: 'errorHandler', dependencies: ['logger'] })

@@ -2,78 +2,110 @@
 
 const fp = require('fastify-plugin')
 
-// Plugin for Redis
-async function redisPlugin(fastify, options) {
+function redisPlugin(fastify, options, done) {
   const config = fastify.config
+  
+  const localCache = new Map()
+  let redisClient = null;
+  
+  fastify.decorate('cache', {
 
-  try {
-    // Register Redis
-    await fastify.register(require('@fastify/redis'), {
-      host: config.redis.host,
-      port: config.redis.port,
-      password: config.redis.password,
-      db: config.redis.db,
-      tls: config.redis.tls,
-      family: 4,
-      connectTimeout: 5000,
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
-      enableOfflineQueue: true,
-      // Add listeners for events
-      ...config.redis,
-    })
+    async get(key) {
+      const item = localCache.get(key)
+      if (!item) return null
+      
+      if (item.expiry && item.expiry < Date.now()) {
+        localCache.delete(key)
+        return null
+      }
+      
+      return item.value
+    },
+
+    async set(key, value, ttl = 3600) {
+      const expiry = ttl ? Date.now() + (ttl * 1000) : null
+      localCache.set(key, { value, expiry })
+      return 'OK'
+    },
+
+    async del(key) { return localCache.delete(key) ? 1 : 0 },
     
-    // Check the connection
-    const ping = await fastify.redis.ping()
-    if (ping !== 'PONG') throw new Error('Did not receive PONG from Redis')
-		
-	console.log(`Redis connected on port ${config.redis.port}`)
+    async exists(key) {
+      if (!localCache.has(key)) return 0
+      
+      const item = localCache.get(key)
+      if (item.expiry && item.expiry < Date.now()) {
+        localCache.delete(key)
+        return 0
+      }
+      
+      return 1
+    },
+    
+    isRedisAvailable() { return redisClient !== null && redisClient.status === 'ready' }
+  })
 
-    // Add utils for cache
-    fastify.decorate('cache', {
-      /**
-       * Get a cached value
-       * @param {string} key		  	Key to retrieve
-       * @returns {Promise<any>}		Stored value or null
-       */
-      async get(key) {
-        const value = await fastify.redis.get(key)
-        return value ? JSON.parse(value) : null
-      },
+  fastify.decorate('redis', {
+    ping: async () => { return 'LOCALCACHE' },
+  })
 
-      /**
-       * Store a value in cache
-       * @param {string} key		    	Key to store
-       * @param {any} value			    	Value to store
-       * @param {number} ttl		     	Time to live in seconds
-       * @returns {Promise<boolean>}	Operation success
-       */
-      async set(key, value, ttl = 3600) {
-        const stringValue = JSON.stringify(value)
+  done()
+  
+  setTimeout(() => {
+    try {
+      const Redis = require('ioredis')
+      redisClient = new Redis({
+        host: config.redis.host,
+        port: config.redis.port,
+        password: config.redis.password,
+        db: config.redis.db,
+        tls: null,
+        family: 4,
+        connectTimeout: 3000,
+        maxRetriesPerRequest: 1,
+        retryStrategy: () => null
+      })
+      
+      let connected = false;
+      
+      redisClient.on('connect', () => {
+        if (connected) return;
+        connected = true;
         
-        if (ttl)	return await fastify.redis.set(key, stringValue, 'EX', ttl)
-        else		return await fastify.redis.set(key, stringValue)
-      },
-
-      /**
-       * Delete a key from the cache
-       * @param {string} key		    	Key to delete
-       * @returns {Promise<number>}		Number of deleted keys
-       */
-      async del(key) { return await fastify.redis.del(key) },
-
-      /**
-       * Check if a key exists
-       * @param {string} key		    	Key to check
-       * @returns {Promise<number>}		1 if exists, 0 if not
-       */
-      async exists(key) { return await fastify.redis.exists(key) }
-    })
-
-  } catch (err) {
-	  console.error(`Error connecting to Redis: ${err}`)
-	  throw err
-  }    
+        fastify.logger.info(`Redis connected on port ${config.redis.port}`)
+        
+        const cache = fastify.cache
+        
+        cache.get = async (key) => {
+          const value = await redisClient.get(key)
+          return value ? JSON.parse(value) : null
+        }
+        
+        cache.set = async (key, value, ttl = 3600) => {
+          const stringValue = JSON.stringify(value)
+          if (ttl)  return await redisClient.set(key, stringValue, 'EX', ttl)
+          else      return await redisClient.set(key, stringValue)
+        }
+        
+        cache.del = async (key) => { return await redisClient.del(key) }
+        
+        cache.exists = async (key) => { return await redisClient.exists(key) }
+        
+        fastify.redis = redisClient;
+      })
+      
+      redisClient.on('error', (err) => {
+        if (!connected) {
+          fastify.logger.warn(`Redis connection error. Using local memory cache`)
+          
+          redisClient.disconnect();
+        }
+      })
+      
+    } catch (err) {
+      fastify.logger.warn(`Redis setup error. Using local memory cache`)
+    }
+  }, 0)
 }
 
 module.exports = fp(redisPlugin, { name: 'redis' })

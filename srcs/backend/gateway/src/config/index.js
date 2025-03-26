@@ -3,21 +3,23 @@
 require('dotenv').config()
 const services = require('./services')
 
+// Get the current mode (development or production)
 const env = process.env.NODE_ENV || 'development'
 const isDev = env === 'development'
 
-// Check that JWT_SECRET exists
-if (env === 'production' && !process.env.JWT_SECRET) {
-  console.error('JWT_SECRET is required in production');
+// Generate encryption keys if not set in the environment (only in development mode)
+let JWTSecret = process.env.JWT_SECRET;
+if (!JWTSecret && env === 'production') {
+  console.error('[ERROR] JWT_SECRET is required in production');
   process.exit(1);
 }
 
 const config = {
+
   // Server
-  port: process.env.PORT || 3000,
-  host: '0.0.0.0',
-  serviceName: process.env.SERVICE_NAME || 'gateway',
-  isDev, env,
+  serviceName: (process.env.SERVICE_URL && process.env.SERVICE_URL.split(':')[0]) || 'gateway',
+  port: (process.env.SERVICE_URL && process.env.SERVICE_URL.split(':')[1]) || 3000,
+  host: '0.0.0.0', isDev, env,
   
   // Log level
   logLevel: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
@@ -28,16 +30,15 @@ const config = {
   
   // Redis
   redis: {
-    host: process.env.REDIS_HOST || 'redis',
-    port: process.env.REDIS_PORT || 6379,
-    password: process.env.REDIS_PASSWORD,
-    db: 0, tls: null,
+    host: (process.env.REDIS_URL && process.env.REDIS_URL.split(':')[0]) || 'redis',
+    port: (process.env.REDIS_URL && process.env.REDIS_URL.split(':')[1]) || 6379,
+    password: process.env.REDIS_PASSWORD, db: 0,
   },
 
   // Logstash
   logstash: {
-    host: process.env.LOGSTASH_HOST || 'logstash',
-    port: process.env.LOGSTASH_PORT || 5044,
+    host: (process.env.LOGSTASH_URL && process.env.LOGSTASH_URL.split(':')[0]) || 'logstash',
+    port: (process.env.LOGSTASH_URL && process.env.LOGSTASH_URL.split(':')[1]) || 5044,
   },
 
   // CORS
@@ -56,7 +57,7 @@ const config = {
 
   // JWT
   jwt: {
-    secret: process.env.JWT_SECRET || 'super-secret-auth-key',
+    secret: JWTSecret || 'your_secret_key',
     expiresIn: process.env.JWT_EXPIRES_IN || '15m',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
   },

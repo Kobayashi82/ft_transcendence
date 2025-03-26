@@ -25,17 +25,10 @@ const services = {
     },
     timeout: 5000,
   },
-
-  user: {
-    url: process.env.USER_SERVICE_URL || 'http://user:3000',
-    prefix: '/user',
-    timeout: 5000,
-  }, 
 };
 
 const routeMap = {
   '/auth': 'auth',
-  '/user': 'user',
 };
 
 module.exports = { services, routeMap }

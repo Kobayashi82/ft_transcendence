@@ -1,19 +1,29 @@
+# Base image for building the application
 FROM node:20-alpine
 
+# Set working directory
 WORKDIR /app
 
+# Install global development tools
 RUN npm install -g vite typescript
 
+# Install project dependencies
 COPY package*.json ./
 RUN npm install
 
+# Copy project files
 COPY . .
 
+# Set development environment
 ENV NODE_ENV=development
+ # Enable file watching
 ENV CHOKIDAR_USEPOLLING=true
+# Enable hot reloading
 ENV WATCHPACK_POLLING=true
+# Configure API endpoint
 ENV VITE_API_URL=http://gateway:3000/api
 
-EXPOSE 3000
+EXPOSE 80
 
+# Start the application
 CMD ["vite"]

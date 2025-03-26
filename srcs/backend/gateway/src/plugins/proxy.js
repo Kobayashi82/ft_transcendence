@@ -32,7 +32,7 @@ async function proxyPlugin(fastify, options) {
             headers['x-user-roles'] = JSON.stringify(req.auth.roles)
             headers['x-user-email'] = req.auth.email
             
-            // Adicionalmente, podrías agregar más información según sea necesario
+            // Additionally, you could add more information as needed
             if (req.user) {
               headers['x-user-info'] = Buffer.from(JSON.stringify(req.user)).toString('base64')
             }
@@ -76,4 +76,4 @@ async function proxyPlugin(fastify, options) {
   })
 }
 
-module.exports = fp(proxyPlugin, { name: 'proxy', dependencies: ['redis', 'metrics', 'auth'] })
+module.exports = fp(proxyPlugin, { name: 'proxy', dependencies: ['redis', 'metrics', 'auth', 'logger'] })

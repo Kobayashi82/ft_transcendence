@@ -14,7 +14,7 @@ async function apiRoutes(fastify, options) {
     }
   })
 
-  // Example endpoint with cache
+  // Cache example
   fastify.get('/cached-example', async (request, reply) => {
     const cacheKey = 'cached-example'
     
@@ -32,7 +32,7 @@ async function apiRoutes(fastify, options) {
       expires: 'in 60 seconds'
     }
     
-    // Guardar en caché por 60 segundos
+    // Store in cache for 60 seconds
     await fastify.cache.set(cacheKey, data, 60)
     
     return data

@@ -19,6 +19,7 @@ const ConnectionChecker: React.FC<ConnectionCheckerProps> = ({
 
   const checkConnection = async () => {
     try {
+      console.log(`Attempting to check connection to ${healthEndpoint}`);
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
       
@@ -36,6 +37,7 @@ const ConnectionChecker: React.FC<ConnectionCheckerProps> = ({
       clearTimeout(timeoutId);
       
       if (response.ok) {
+        console.log('Health check succeeded');
         setIsConnected(true);
       } else {
         console.warn(`Health check failed with status: ${response.status}`);
@@ -69,6 +71,10 @@ const ConnectionChecker: React.FC<ConnectionCheckerProps> = ({
     
     return () => clearTimeout(timer);
   }, [isConnected, initialDelay]);
+
+  // Short-circuit to just render children during development
+  // Comment this out when you need the actual connection check
+  // return <>{children}</>;
 
   if (isConnected === true || !showLoading) {
     return <>{children}</>;

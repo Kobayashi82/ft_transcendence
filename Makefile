@@ -4,7 +4,7 @@ GR = \033[0;32m
 NC = \033[0m
 CU = \033[1A
 CL = \r%50s\r
-DC = COMPOSE_BAKE=true UID=$(shell id -u) docker compose -f srcs/docker-compose.yml
+DC = COMPOSE_BAKE=true docker compose -f srcs/docker-compose.yml
 
 
 # ============================== CONTAINER RULES ==============================
@@ -113,7 +113,6 @@ _remove_images:
 	@docker rmi srcs-gateway > /dev/null 2>&1 || true
 	@docker rmi srcs-auth > /dev/null 2>&1 || true
 	@docker rmi srcs-user > /dev/null 2>&1 || true
-
 
 .PHONY: all up down restart build rebuild iclean vclean clean fclean _remove_images _remove_volumes
 

@@ -3,17 +3,17 @@
 const fp = require('fastify-plugin')
 
 async function rateLimitPlugin(fastify, options) {
-  // Registrar el plugin base de rate-limit
+
   await fastify.register(require('@fastify/rate-limit'), {
     redis: fastify.redis,
     skipOnError: true,
-    global: false, // Deshabilitar el límite global predeterminado
-    // Función para generar logs
+    global: false,
+
     onExceeded: (req) => {
       const route = req.url;
       const ip = req.ip;
       
-      fastify.logger.warn(`Rate limit excedido: ${ip} en ${route}`, {
+      fastify.logger.warn(`Rate limit exceeded: ${ip} en ${route}`, {
         ip: ip,
         url: route,
         method: req.method
@@ -23,12 +23,12 @@ async function rateLimitPlugin(fastify, options) {
       return {
         statusCode: 429,
         error: 'Too Many Requests',
-        message: `Demasiadas solicitudes, intente nuevamente después de ${context.after}`
+        message: `Too many requests, please try again after ${context.after}`
       }
     }
   });
   
-  // Definir límites específicos para diferentes rutas
+  // Define specific limits for different routes
   const authLoginLimit = {
     max: 30,
     timeWindow: '5 minutes',
@@ -76,15 +76,15 @@ async function rateLimitPlugin(fastify, options) {
     timeWindow: '1 minute'
   };
   
-  // Añadir hook para aplicar los límites según la ruta
+  // Add a hook to apply rate limits based on the route
   fastify.addHook('onRequest', async (request, reply) => {
     const url = request.url;
     const method = request.method;
     
-    // Crear objeto para almacenar la configuración del límite
+    // Create an object to store the rate limit configuration
     let rateLimit = null;
     
-    // Determinar qué límite aplicar según la ruta
+    // Determine which rate limit to apply based on the route
     if (url.startsWith('/auth/login') && method === 'POST') {
       rateLimit = authLoginLimit;
     } else if (url.startsWith('/auth/register') && method === 'POST') {
@@ -101,28 +101,26 @@ async function rateLimitPlugin(fastify, options) {
       rateLimit = apiStandardLimit;
     }
     
-    // Si hay una configuración de límite, aplicarla
+    // If there is a rate limit configuration, apply it
     if (rateLimit) {
-      // Añadir la configuración a reply.context.config en lugar de request.routeConfig
       reply.context.config = reply.context.config || {};
       reply.context.config.rateLimit = rateLimit;
     }
   });
   
-  // Función auxiliar para determinar si una ruta es sensible
+  // Helper function to determine if a route is sensitive
   function isSensitiveRoute(url) {
-    // Implementar lógica para identificar rutas sensibles
+    // Implement logic to identify sensitive routes
     const sensitivePatterns = [
       '/api/user',
       '/api/admin',
-      '/api/payment',
-      '/api/sensitive'
+      '/api/auth'
     ];
     
     return sensitivePatterns.some(pattern => url.startsWith(pattern));
   }
   
-  fastify.logger.info('Plugin de rate limiting configurado correctamente');
+  fastify.logger.info('Rate limiting plugin configured successfully');
 }
 
 module.exports = fp(rateLimitPlugin, { name: 'rateLimit', dependencies: ['redis', 'logger'] });
