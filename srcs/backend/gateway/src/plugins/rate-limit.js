@@ -76,49 +76,41 @@ async function rateLimitPlugin(fastify, options) {
     timeWindow: '1 minute'
   };
   
-  // Add a hook to apply rate limits based on the route
-  fastify.addHook('onRequest', async (request, reply) => {
-    const url = request.url;
-    const method = request.method;
-    
-    // Create an object to store the rate limit configuration
-    let rateLimit = null;
-    
-    // Determine which rate limit to apply based on the route
-    if (url.startsWith('/auth/login') && method === 'POST') {
-      rateLimit = authLoginLimit;
-    } else if (url.startsWith('/auth/register') && method === 'POST') {
-      rateLimit = authRegisterLimit;
-    } else if (url.startsWith('/auth/password/reset') && method === 'POST') {
-      rateLimit = authPasswordResetLimit;
-    } else if (url.match(/\/auth\/oauth\/(google|42)\/init/) && method === 'GET') {
-      rateLimit = authOauthLimit;
-    } else if (url.startsWith('/auth/validate') && method === 'GET') {
-      rateLimit = authValidateLimit;
-    } else if (url.startsWith('/api/') && isSensitiveRoute(url)) {
-      rateLimit = apiSensitiveLimit;
-    } else if (url.startsWith('/api/')) {
-      rateLimit = apiStandardLimit;
-    }
-    
-    // If there is a rate limit configuration, apply it
-    if (rateLimit) {
-      reply.context.config = reply.context.config || {};
-      reply.context.config.rateLimit = rateLimit;
-    }
+  // Define routes with their specific rate limits
+  const routeRateLimits = [
+    { pattern: '/auth/login', method: 'POST', limit: authLoginLimit },
+    { pattern: '/auth/register', method: 'POST', limit: authRegisterLimit },
+    { pattern: '/auth/password/reset', method: 'POST', limit: authPasswordResetLimit },
+    { pattern: { regex: /\/auth\/oauth\/(google|42)\/init/ }, method: 'GET', limit: authOauthLimit },
+    { pattern: '/auth/validate', method: 'GET', limit: authValidateLimit }
+  ];
+  
+  // Add sensitive API routes
+  const sensitivePatterns = ['/api/user', '/api/admin', '/api/auth'];
+  sensitivePatterns.forEach(pattern => {
+    routeRateLimits.push({ pattern, method: '*', limit: apiSensitiveLimit });
   });
   
-  // Helper function to determine if a route is sensitive
-  function isSensitiveRoute(url) {
-    // Implement logic to identify sensitive routes
-    const sensitivePatterns = [
-      '/api/user',
-      '/api/admin',
-      '/api/auth'
-    ];
+  // Add standard API rate limit
+  routeRateLimits.push({ pattern: '/api', method: '*', limit: apiStandardLimit });
+  
+  // Register all the rate limits at the plugin level instead of using hooks
+  routeRateLimits.forEach(route => {
+    const routeOptions = {
+      method: route.method,
+      url: route.pattern,
+      config: {
+        rateLimit: route.limit
+      }
+    };
     
-    return sensitivePatterns.some(pattern => url.startsWith(pattern));
-  }
+    // Register the rate limit with the plugin
+    try {
+      fastify.rateLimit(routeOptions);
+    } catch (err) {
+      fastify.logger.error(`Failed to register rate limit for route: ${JSON.stringify(routeOptions)}`, err);
+    }
+  });
   
   fastify.logger.info('Rate limiting plugin configured successfully');
 }

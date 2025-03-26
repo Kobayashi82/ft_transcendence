@@ -34,6 +34,13 @@ build:
 	@$(DC) build || exit 1
 	@printf "\n ✔ Containers\t  $(GR)Built$(NC)\n\n"
 
+# Builds containers
+sbuild:
+	@$(DC) down || exit 1
+	@$(DC) build gateway || exit 1
+	@$(DC) build auth || exit 1
+	@$(DC) build web || exit 1
+
 # Rebuilds containers
 rebuild:
 	@$(DC) down || exit 1

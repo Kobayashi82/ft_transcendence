@@ -7,6 +7,8 @@ const app = fastify({ logger: false })
 
 app.decorate('config', config)
 
+app.decorate('generateId', function() { return require('uuid').v4(); });
+
 // Register plugins
 app.register(require('./plugins/logger'))
 app.register(require('./plugins/metrics'))
