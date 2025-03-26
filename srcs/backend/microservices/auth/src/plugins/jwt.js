@@ -3,7 +3,7 @@
 const fp = require('fastify-plugin')
 
 async function jwtPlugin(fastify, options) {
-  // Registrar plugin JWT
+
   await fastify.register(require('@fastify/jwt'), {
     secret: fastify.config.jwt.secret,
     sign: {
@@ -11,7 +11,6 @@ async function jwtPlugin(fastify, options) {
     }
   })
   
-  // Decorar con middleware de verificación mejorado
   fastify.decorate('verifyJWT', async (request, reply) => {
     try {
       await request.jwtVerify()

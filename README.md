@@ -1,4 +1,4 @@
-# ft_transcendence (Temporal README)
+# ft_transcendence (README temporal)
 
 ## Descripción del Proyecto
 ft_transcendence es el proyecto final del cursus de 42. Consiste en crear una Single Page Application que incluye un juego multijugador de Pong en tiempo real con funcionalidades sociales y de comunidad.
@@ -44,50 +44,46 @@ ft_transcendence es el proyecto final del cursus de 42. Consiste en crear una Si
 
 ## Instalación y Ejecución
 
-### Requisitos Previos
-- Docker
-- Node.js (opcional, para desarrollo)
-
-### Configuración
 1. Clona el repositorio:
 ```bash
-git clone https://github.com/tu-usuario/ft_transcendence.git
+git clone https://github.com/usuario/ft_transcendence.git
 cd ft_transcendence
 ```
 
 2. Configura las variables de entorno:
 ```bash
 cp .env.example .env
-# Edita .env con tus credenciales de Google OAuth y otras configuraciones
+# Edita .env con tus credenciales y otras configuraciones
 ```
 
 3. Inicia la aplicación con Docker:
 ```bash
-docker-compose up --build
+make
 ```
 
-4. Accede a la aplicación en `https://localhost:3000`
+4. Accede a la aplicación en `https://localhost`
 
 ## Estructura del Proyecto
 ```
 ft_transcendence/
-├── backend/                # Servidor Fastify
-│   ├── src/                # Código fuente del backend
-│   │   ├── auth/           # Autenticación y OAuth
-│   │   ├── game/           # Lógica del juego Pong
-│   │   ├── chat/           # Sistema de chat
-│   │   ├── user/           # Gestión de usuarios
-│   │   └── db/             # Interacción con la base de datos
-│   └── package.json        # Dependencias del backend
-├── frontend/               # Cliente web
-│   ├── src/                # Código fuente del frontend
-│   │   ├── components/     # Componentes React
-│   │   ├── pages/          # Páginas principales
-│   │   ├── services/       # Servicios de API
-│   │   └── styles/         # Estilos con Tailwind
-│   └── package.json        # Dependencias del frontend
-├── docker-compose.yml      # Configuración de Docker
-└── README.md               # Este archivo
+├── doc/
+├── srcs/
+│   ├── backend/
+│   │   ├── logging/
+│   │   ├── metrics/
+│   │   ├── gateway/
+│   │   └── services/
+│   │       └── example/
+│   │
+│   ├── frontend/
+│   │   ├── nginx/
+│   │   └── web/
+│   │
+│   ├── docker-compose.yml
+│   └── .env
+│
+├── Makefile
+└── README.md
 ```
 
 ## Módulos Implementados
@@ -113,10 +109,11 @@ La aplicación está configurada para ejecutarse en contenedores Docker, facilit
 
 ## Contribuciones
 Proyecto desarrollado por el equipo:
-- [Tu Nombre](https://github.com/tu-usuario)
 - [Nombre Compañero 1](https://github.com/usuario1)
 - [Nombre Compañero 2](https://github.com/usuario2)
 - [Nombre Compañero 3](https://github.com/usuario3)
+- [Nombre Compañero 4](https://github.com/usuario4)
+- [Nombre Compañero 5](https://github.com/usuario5)
 
 ## Licencia
 Este proyecto es parte del currículum de 42 y está disponible bajo los términos de la licencia MIT.

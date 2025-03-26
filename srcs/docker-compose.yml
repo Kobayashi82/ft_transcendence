@@ -114,7 +114,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
-      - GF_SERVER_ROOT_URL=https://localhost/grafana/
+      - GF_SERVER_ROOT_URL=${HOST_NAME-https://localhost}/grafana
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME-${ADMIN_USERNAME}}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD-${ADMIN_PASSWORD}}
     networks:

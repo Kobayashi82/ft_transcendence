@@ -24,8 +24,6 @@ user/
 │   │   ├── db.js							- Plugin para SQLite
 │   │   ├── error-handler.js				- Plugin para errores
 │   │   └── redis.js						- Plugin para Redis
-│   ├── schemes/							- Define Schemes
-│   │   └── users.js						- Scheme para users
 │   ├── routes/								- Definición de rutas
 │   │   ├── auth.js							- Rutas de auth
 │   │   ├── health.js						- Rutas de health
