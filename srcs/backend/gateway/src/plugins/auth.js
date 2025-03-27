@@ -50,7 +50,7 @@ async function authPlugin(fastify, options) {
     const cacheKey = `${CACHE_PREFIX}${token}`
     
     // Check if token validation result is in cache
-    let authInfo = await fastify.cache.get(cacheKey)
+    let authInfo = await fastify.redis.get(cacheKey)
     if (authInfo) {
       return authInfo
     }
@@ -78,11 +78,11 @@ async function authPlugin(fastify, options) {
         }
         
         // Store in cache
-        await fastify.cache.set(cacheKey, authInfo, TOKEN_CACHE_TTL)
+        await fastify.redis.set(cacheKey, authInfo, TOKEN_CACHE_TTL)
         
         // Also store user information for quick lookups
         const userKey = `${USER_INFO_PREFIX}${authInfo.userId}`
-        await fastify.cache.set(userKey, response.data.user_info, TOKEN_CACHE_TTL * 2) // Longer TTL for user info
+        await fastify.redis.set(userKey, response.data.user_info, TOKEN_CACHE_TTL * 2) // Longer TTL for user info
         
         return authInfo
       } else {
@@ -203,7 +203,7 @@ async function authPlugin(fastify, options) {
     getUserInfo: async function(userId) {
       // Try to get from cache first
       const cacheKey = `${USER_INFO_PREFIX}${userId}`
-      const cachedInfo = await fastify.cache.get(cacheKey)
+      const cachedInfo = await fastify.redis.get(cacheKey)
       
       if (cachedInfo) return cachedInfo
       
@@ -221,7 +221,7 @@ async function authPlugin(fastify, options) {
         
         if (response.data) {
           // Store in cache
-          await fastify.cache.set(cacheKey, response.data, TOKEN_CACHE_TTL * 2)
+          await fastify.redis.set(cacheKey, response.data, TOKEN_CACHE_TTL * 2)
           return response.data
         }
       } catch (error) {
@@ -238,7 +238,7 @@ async function authPlugin(fastify, options) {
     // Revoke token
     revokeToken: async function(token) {
       // Remove from cache
-      await fastify.cache.del(`${CACHE_PREFIX}${token}`)
+      await fastify.redis.del(`${CACHE_PREFIX}${token}`)
       
       // Try to revoke in the auth service
       try {
@@ -263,4 +263,4 @@ async function authPlugin(fastify, options) {
   fastify.logger.info('Auth plugin configured correctly')
 }
 
-module.exports = fp(authPlugin, { name: 'auth', dependencies: ['logger'] })
+module.exports = fp(authPlugin, { name: 'auth', dependencies: ['@fastify/redis', 'logger'] })

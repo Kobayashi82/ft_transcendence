@@ -8,54 +8,54 @@ async function healthRoutes(fastify, options) {
   
   fastify.get('/health', async (request, reply) => {
 
-    const redisStatus = await checkRedis(fastify)
+    //const redisStatus = await checkRedis(fastify)
     const serviceStatus = await checkServices(services)
     
     const gatewayStatus = {
       gateway: {
-        status: redisStatus.status === 'healthy' ? 'healthy' : 'degraded',
+        //status: redisStatus.status == 'healthy', //? 'healthy' : 'degraded',
         uptime: process.uptime(),
         timestamp: new Date().toISOString()
       },
-      dependencies: {
-        redis: redisStatus
-      },
+      //dependencies: {
+        //redis: redisStatus
+      //},
       services: serviceStatus
     }
 
-    const isHealthy = redisStatus.status === 'healthy'   
-    if (!isHealthy) { reply.status(503) }
+    //const isHealthy = redisStatus.status === 'healthy'   
+    //if (!isHealthy) { reply.status(503) }
     
     return gatewayStatus
   })
 }
 
 // Check the status of Redis
-async function checkRedis(fastify) {
-  try {
-    const startTime = Date.now()
-    if (fastify.cache.isRedisAvailable) {
-      const pong = await fastify.redis.ping()
-      const responseTime = Date.now() - startTime
+// async function checkRedis(fastify) {
+//   try {
+//     const startTime = Date.now()
+//     if (fastify.cache.isRedisAvailable) {
+//       const pong = await fastify.redis.ping()
+//       const responseTime = Date.now() - startTime
       
-      return {
-        status: pong === 'PONG' ? 'healthy' : 'degraded',
-        responseTime: `${responseTime}ms`
-      }
-    } else {
-      const responseTime = Date.now() - startTime
-      return {
-        status: 'degraded',
-        responseTime: `${responseTime}ms`
-      }
-    }
-  } catch (error) {
-    return {
-      status: 'down',
-      error: error.message
-    }
-  }
-}
+//       return {
+//         status: pong === 'PONG' ? 'healthy' : 'degraded',
+//         responseTime: `${responseTime}ms`
+//       }
+//     } else {
+//       const responseTime = Date.now() - startTime
+//       return {
+//         status: 'degraded',
+//         responseTime: `${responseTime}ms`
+//       }
+//     }
+//   } catch (error) {
+//     return {
+//       status: 'down',
+//       error: error.message
+//     }
+//   }
+// }
 
 // Check the status of the services
 async function checkServices(services) {

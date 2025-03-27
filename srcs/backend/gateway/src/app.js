@@ -17,8 +17,8 @@ app.register(require('@fastify/sensible'))
 app.register(require('./plugins/logger'))
 app.register(require('./plugins/metrics'))
 
-app.register(require('./plugins/popo'))
-app.register(require('./plugins/rate-limit'))
+// app.register(require('./plugins/popo'))
+// app.register(require('./plugins/rate-limit'))
 
 app.register(require('./plugins/auth'))
 app.register(require('./plugins/proxy'))
