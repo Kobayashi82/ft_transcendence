@@ -30,9 +30,14 @@ const config = {
   
   // Redis
   redis: {
+    connectionName: (process.env.SERVICE_URL && process.env.SERVICE_URL.split(':')[0]) || 'gateway',
     host: (process.env.REDIS_URL && process.env.REDIS_URL.split(':')[0]) || 'redis',
     port: (process.env.REDIS_URL && process.env.REDIS_URL.split(':')[1]) || 6379,
-    password: process.env.REDIS_PASSWORD, family: 4, database: 0
+    password: process.env.REDIS_PASSWORD, db: 0,
+    maxRetriesPerRequest: 3,
+    connectTimeout: 5000,
+    enableReadyCheck: true,
+    enableOfflineQueue: true,
   },
 
   // Logstash
@@ -77,7 +82,19 @@ const config = {
     
     // Disable unnecessary policies for API
     crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false
+    crossOriginOpenerPolicy: false,
+
+    // Add HSTS (even though behind nginx)
+    strictTransportSecurity: {
+      maxAge: 15552000, // 180 days
+      includeSubDomains: true,
+      preload: true
+    },
+  
+    // Prevent DNS prefetching
+    dnsPrefetchControl: {
+      allow: false
+    }
   },
 
   // Rate limiting

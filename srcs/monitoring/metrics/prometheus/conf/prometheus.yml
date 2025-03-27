@@ -19,11 +19,13 @@ scrape_configs:
 
   - job_name: 'gateway'
     scrape_interval: 30s
+    metrics_path: '/internal/metrics'
     static_configs:
       - targets: ['gateway:3000']
 
   - job_name: 'auth'
     scrape_interval: 30s
+    metrics_path: '/internal/metrics'
     static_configs:
       - targets: ['auth:3000']
 

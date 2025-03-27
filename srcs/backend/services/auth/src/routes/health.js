@@ -4,7 +4,7 @@ const healthSchema = require('../schemas/health')
 
 async function healthRoutes(fastify, options) {
 
-  fastify.get('/health', { schema: healthSchema.schema }, async (request, reply) => {
+  fastify.get('/internal/health', { schema: healthSchema.schema }, async (request, reply) => {
     const databaseStatus = await checkDatabase(fastify)
     const redisStatus = await checkRedis(fastify)
     const jwtStatus = checkJWT(fastify)

@@ -46,16 +46,8 @@ async function loggerPlugin(fastify, options) {
     try {
       logstashClient = new net.Socket()
       
-      logstashClient.on('connect', () => {
-        logstashConnected = true
-        console.info(new Date().toISOString(), `[gateway] \x1b[32minfo\x1b[0m: Logstash connected on port ${port}`)
-      })
-            
-      logstashClient.on('close', () => {
-        logstashConnected = false
-        setTimeout(() => { logstashClient.connect(port, host) }, 5000)
-      })
-      
+      logstashClient.on('connect', () =>  { logstashConnected = true })           
+      logstashClient.on('close', () =>    { logstashConnected = false; setTimeout(() => { logstashClient.connect(port, host) }, 5000) })
       logstashClient.on('error', (err) => { logstashConnected = false })
 
       logstashClient.connect(port, host)
@@ -117,21 +109,21 @@ async function loggerPlugin(fastify, options) {
   
   // Logger for local
   const logger_local = {
-    info:  (message, meta = {}) => log('info',  message, meta),
-    error: (message, meta = {}) => log('error', message, meta),
-    warn:  (message, meta = {}) => log('warn',  message, meta),
-    debug: (message, meta = {}) => log('debug', message, meta),
-    trace: (message, meta = {}) => log('trace', message, meta),
+    info:  (message, meta = {}) => winstonLogger.log('info', message, meta),
+    error: (message, meta = {}) => winstonLogger.log('error', message, meta),
+    warn:  (message, meta = {}) => winstonLogger.log('warn',  message, meta),
+    debug: (message, meta = {}) => winstonLogger.log('debug', message, meta),
+    trace: (message, meta = {}) => winstonLogger.log('trace', message, meta),
   }
 
-  // Register endpoints to receive logs from microservices
-  fastify.post('/logs', async (request, reply) => {
+  // Register endpoints to receive logs from sservices
+  fastify.post('/internal/logs', async (request, reply) => {
     const { level, message, meta = {}, service, timestamp } = request.body
     log(level, message, { ...meta, service, timestamp })
     return { success: true }
   })
   
-  fastify.post('/logs/batch', async (request, reply) => {
+  fastify.post('/internal/logs/batch', async (request, reply) => {
     const { logs, service } = request.body
     
     if (Array.isArray(logs)) {

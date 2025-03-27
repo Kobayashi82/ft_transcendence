@@ -9,7 +9,7 @@ interface ConnectionCheckerProps {
 
 const ConnectionChecker: React.FC<ConnectionCheckerProps> = ({ 
   children, 
-  healthEndpoint = '/api/health', // Relative URL to current host
+  healthEndpoint = '/api/internal/health', // Relative URL to current host
   retryInterval = 5000,
   initialDelay = 500
 }) => {

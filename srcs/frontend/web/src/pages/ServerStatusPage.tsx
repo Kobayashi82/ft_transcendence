@@ -56,7 +56,7 @@ const ServerStatusPage: React.FC = () => {
         setLoading(true);
       }
       
-      const response = await fetch('/api/health');
+      const response = await fetch('/api/internal/health');
       
       if (!response.ok) {
         throw new Error(`Error: ${response.status} ${response.statusText}`);

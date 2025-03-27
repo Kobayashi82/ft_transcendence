@@ -90,7 +90,7 @@ async function metricsPlugin(fastify, options) {
   })
   
   // Endpoint for metrics
-  fastify.get('/metrics', async (request, reply) => {
+  fastify.get('/internal/metrics', async (request, reply) => {
     return reply
       .header('Content-Type', register.contentType)
       .send(await register.metrics())

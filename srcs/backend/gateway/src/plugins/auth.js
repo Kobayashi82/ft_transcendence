@@ -1,7 +1,6 @@
 'use strict'
 
 const fp = require('fastify-plugin')
-const jwt = require('jsonwebtoken')
 const axios = require('axios')
 
 // Plugin for authentication and token management
@@ -34,7 +33,7 @@ async function authPlugin(fastify, options) {
     try {
       // Basic decoding without verifying the signature
       // IMPORTANT: This only extracts data, it does not validate the token
-      return jwt.decode(token)
+      return fastify.jwt.decode(token)
     } catch (error) {
       fastify.logger.error(`Error decoding token: ${error.message}`, {
         error: error.message,
@@ -50,9 +49,14 @@ async function authPlugin(fastify, options) {
     const cacheKey = `${CACHE_PREFIX}${token}`
     
     // Check if token validation result is in cache
-    let authInfo = await fastify.redis.get(cacheKey)
-    if (authInfo) {
-      return authInfo
+    let cachedAuthInfo = await fastify.redis.get(cacheKey)
+    if (cachedAuthInfo) {
+      try {
+        return JSON.parse(cachedAuthInfo)
+      } catch (e) {
+        fastify.logger.warn(`Error parsing cached auth info: ${e.message}`)
+        // Continue to fetch from auth service if parsing fails
+      }
     }
     
     // If not in cache, verify token with auth service
@@ -67,7 +71,7 @@ async function authPlugin(fastify, options) {
       
       // Process the response
       if (response.data && response.data.valid) {
-        authInfo = {
+        const authInfo = {
           authenticated: true,
           userId: response.data.user_info.user_id,
           roles: response.data.user_info.roles || [],
@@ -77,12 +81,12 @@ async function authPlugin(fastify, options) {
           token: token
         }
         
-        // Store in cache
-        await fastify.redis.set(cacheKey, authInfo, TOKEN_CACHE_TTL)
+        // Store in cache as JSON string
+        await fastify.redis.set(cacheKey, JSON.stringify(authInfo), TOKEN_CACHE_TTL)
         
         // Also store user information for quick lookups
         const userKey = `${USER_INFO_PREFIX}${authInfo.userId}`
-        await fastify.redis.set(userKey, response.data.user_info, TOKEN_CACHE_TTL * 2) // Longer TTL for user info
+        await fastify.redis.set(userKey, JSON.stringify(response.data.user_info), TOKEN_CACHE_TTL * 2) // Longer TTL for user info
         
         return authInfo
       } else {
@@ -203,9 +207,16 @@ async function authPlugin(fastify, options) {
     getUserInfo: async function(userId) {
       // Try to get from cache first
       const cacheKey = `${USER_INFO_PREFIX}${userId}`
-      const cachedInfo = await fastify.redis.get(cacheKey)
+      const cachedInfoString = await fastify.redis.get(cacheKey)
       
-      if (cachedInfo) return cachedInfo
+      if (cachedInfoString) {
+        try {
+          return JSON.parse(cachedInfoString)
+        } catch (e) {
+          fastify.logger.warn(`Error parsing cached user info: ${e.message}`)
+          // Continue to fetch from auth service if parsing fails
+        }
+      }
       
       // If not in cache, get from auth service
       try {
@@ -220,8 +231,8 @@ async function authPlugin(fastify, options) {
         })
         
         if (response.data) {
-          // Store in cache
-          await fastify.redis.set(cacheKey, response.data, TOKEN_CACHE_TTL * 2)
+          // Store in cache as JSON string
+          await fastify.redis.set(cacheKey, JSON.stringify(response.data), TOKEN_CACHE_TTL * 2)
           return response.data
         }
       } catch (error) {
@@ -263,4 +274,7 @@ async function authPlugin(fastify, options) {
   fastify.logger.info('Auth plugin configured correctly')
 }
 
-module.exports = fp(authPlugin, { name: 'auth', dependencies: ['@fastify/redis', 'logger'] })
+module.exports = fp(authPlugin, { 
+  name: 'auth', 
+  dependencies: ['@fastify/jwt', 'logger']
+})

@@ -5,26 +5,37 @@ function getRateLimits(fastify) {
   
   const apiSensitiveLimit = {
     max: 30,
-    timeWindow: '1 minute',
+    timeWindow: 10,
     keyGenerator: kg.byIP
   };
   
   const apiStandardLimit = {
-    max: 10,
-    timeWindow: '1 minute',
+    max: 30,
+    timeWindow: 10,
+    keyGenerator: kg.byIP
+  };
+
+  const monitoringLimit = {
+    max: 300,
+    timeWindow: 10,
     keyGenerator: kg.byIP
   };
   
   const rateLimits = []
   
   // Add sensitive routes
-  const sensitivePatterns = ['/api/user', '/api/admin', '/api/auth']
-  sensitivePatterns.forEach(pattern => {
-    rateLimits.push({ pattern, method: '*', limit: apiSensitiveLimit })
-  });
-  
-  // Add standard limit for API
-  rateLimits.push({ pattern: '/api', method: '*', limit: apiStandardLimit })
+  rateLimits.push({ pattern: '/auth',   method: '*', limit: apiSensitiveLimit })
+  rateLimits.push({ pattern: '/admin',  method: '*', limit: apiSensitiveLimit })
+  rateLimits.push({ pattern: '/user',   method: '*', limit: apiSensitiveLimit })
+
+  // Add monitoring routes
+  rateLimits.push({ pattern: '/internal/health',     method: '*', limit: monitoringLimit })
+  rateLimits.push({ pattern: '/internal/metrics',    method: '*', limit: monitoringLimit })
+  rateLimits.push({ pattern: '/internal/logs',       method: '*', limit: monitoringLimit })
+  rateLimits.push({ pattern: '/internal/logs/batch', method: '*', limit: monitoringLimit })
+
+  // Add standard routes
+  rateLimits.push({ pattern: '/', method: '*', limit: apiStandardLimit })
   
   return rateLimits
 }

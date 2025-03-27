@@ -6,58 +6,23 @@ const axios = require('axios')
 async function healthRoutes(fastify, options) {
   const services = fastify.config.services
   
-  fastify.get('/health', async (request, reply) => {
-
-    //const redisStatus = await checkRedis(fastify)
+  fastify.get('/internal/health', async (request, reply) => {
     const serviceStatus = await checkServices(services)
     
     const gatewayStatus = {
       gateway: {
-        //status: redisStatus.status == 'healthy', //? 'healthy' : 'degraded',
+        status: 'healthy',
         uptime: process.uptime(),
         timestamp: new Date().toISOString()
       },
-      //dependencies: {
-        //redis: redisStatus
-      //},
       services: serviceStatus
     }
-
-    //const isHealthy = redisStatus.status === 'healthy'   
-    //if (!isHealthy) { reply.status(503) }
-    
+ 
     return gatewayStatus
   })
 }
 
-// Check the status of Redis
-// async function checkRedis(fastify) {
-//   try {
-//     const startTime = Date.now()
-//     if (fastify.cache.isRedisAvailable) {
-//       const pong = await fastify.redis.ping()
-//       const responseTime = Date.now() - startTime
-      
-//       return {
-//         status: pong === 'PONG' ? 'healthy' : 'degraded',
-//         responseTime: `${responseTime}ms`
-//       }
-//     } else {
-//       const responseTime = Date.now() - startTime
-//       return {
-//         status: 'degraded',
-//         responseTime: `${responseTime}ms`
-//       }
-//     }
-//   } catch (error) {
-//     return {
-//       status: 'down',
-//       error: error.message
-//     }
-//   }
-// }
-
-// Check the status of the services
+// Check the status of services
 async function checkServices(services) {
   const serviceStatus = {}
   
@@ -67,8 +32,8 @@ async function checkServices(services) {
         
         const startTime = Date.now()
         
-        // Try making a request to the /health of the service
-        const response = await axios.get(`${url}/health`, {
+        // Try making a request to the /internal/health of the service
+        const response = await axios.get(`${url}/internal/health`, {
           timeout: 3000, validateStatus: () => true
         })
         

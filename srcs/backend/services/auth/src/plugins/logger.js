@@ -37,7 +37,7 @@ async function loggerPlugin(fastify, options) {
     if (!config.services.gateway.url) return   
 
     try {
-      await axios.post(`${config.services.gateway.url}/logs`, 
+      await axios.post(`${config.services.gateway.url}/internal/logs`, 
         { level, message, meta, service: config.serviceName, timestamp: new Date().toISOString() },
         { timeout: config.services.gateway.timeout }
       )
@@ -47,7 +47,7 @@ async function loggerPlugin(fastify, options) {
         const logs = [...logBuffer]
         logBuffer = []
         
-        await axios.post(`${config.services.gateway.url}/logs/batch`,
+        await axios.post(`${config.services.gateway.url}/internal/logs/batch`,
           { logs, service: config.serviceName },
           { timeout: config.services.gateway.timeout }
         )
@@ -82,7 +82,7 @@ async function loggerPlugin(fastify, options) {
   fastify.addHook('onClose', async (instance, done) => {
     if (logBuffer.length > 0 && gatewayUrl) {
       try {
-        await axios.post(`${gatewayUrl}/logs/batch`, { logs: logBuffer, service: config.serviceName })
+        await axios.post(`${gatewayUrl}/internal/logs/batch`, { logs: logBuffer, service: config.serviceName })
       } catch (error) {
         logger_local.error(`Could not send ${logBuffer.length} pending logs when closing`)
       }

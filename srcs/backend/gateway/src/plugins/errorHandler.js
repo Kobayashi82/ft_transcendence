@@ -1,11 +1,10 @@
 'use strict'
 
 const fp = require('fastify-plugin')
-const createError = require('http-errors')
 
 async function errorHandlerPlugin(fastify, options) {
 
-  fastify.decorate('createError', createError)
+  await fastify.register(require('@fastify/sensible'))
   
   // Not found handler
   fastify.setNotFoundHandler((request, reply) => {
@@ -29,7 +28,6 @@ async function errorHandlerPlugin(fastify, options) {
     
     // Use the error's statusCode or 500 by default
     const statusCode = error.statusCode || 500
-    
     const response = { error: statusCode >= 500 && !fastify.config.isDev ? 'Internal Server Error' : error.message, statusCode }
 
     // Include stack only in development

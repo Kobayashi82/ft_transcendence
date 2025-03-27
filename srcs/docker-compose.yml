@@ -9,11 +9,21 @@ services:
     container_name: nginx
     build:
       context: ./frontend/nginx
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
     ports:
       - "80:443"
       - "443:443"
     networks:
-      - pong-net
+      - public-net
+      - monitoring-net
+      - logging-net
     restart: unless-stopped
 
   # Web (80)
@@ -22,11 +32,19 @@ services:
     build: 
       context: ./frontend/web
       dockerfile: Dockerfile.dev
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
     volumes:
       - ./frontend/web/src:/app/src
       - ./frontend/web/public:/app/public
     networks:
-      - pong-net
+      - public-net
     restart: unless-stopped
 
 
@@ -38,6 +56,14 @@ services:
     container_name: elasticsearch
     build:
       context: ./monitoring/logs/elasticsearch
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 10246M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
@@ -54,7 +80,9 @@ services:
       retries: 5
       start_period: 30s
     networks:
-      - pong-net
+      - logging-net
+      - monitoring-net
+      - db-net
     restart: unless-stopped
 
   # LogStash (5044)
@@ -62,6 +90,14 @@ services:
     container_name: logstash
     build:
       context: ./monitoring/logs/logstash
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
@@ -70,7 +106,7 @@ services:
       elasticsearch:
         condition: service_healthy
     networks:
-      - pong-net
+      - logging-net
     restart: unless-stopped
 
   # Kibana (5601)
@@ -78,6 +114,14 @@ services:
     container_name: kibana
     build:
       context: ./monitoring/logs/kibana
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
     environment:
       - SERVER_BASEPATH=/kibana
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
@@ -89,7 +133,8 @@ services:
       elasticsearch:
         condition: service_healthy
     networks:
-      - pong-net
+      - public-net
+      - logging-net
     restart: unless-stopped
 
 
@@ -101,10 +146,18 @@ services:
     container_name: prometheus
     build:
       context: ./monitoring/metrics/prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
     volumes:
       - prometheus_data:/prometheus
     networks:
-      - pong-net
+      - monitoring-net
     restart: unless-stopped
 
   # Grafana (3000)
@@ -112,6 +165,14 @@ services:
     container_name: grafana
     build:
       context: ./monitoring/metrics/grafana
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
@@ -119,7 +180,8 @@ services:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME-${ADMIN_USERNAME}}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD-${ADMIN_PASSWORD}}
     networks:
-      - pong-net
+      - public-net
+      - monitoring-net
     restart: unless-stopped
 
   # AlertManager (9093)
@@ -127,10 +189,18 @@ services:
     container_name: alertmanager
     build:
       context: ./monitoring/metrics/alertmanager
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
     volumes:
       - alertmanager_data:/alertmanager
     networks:
-      - pong-net
+      - monitoring-net
     restart: unless-stopped
 
 
@@ -142,6 +212,14 @@ services:
   redis:
     container_name: redis
     image: redis:7.4.2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
     volumes:
       - redis_data:/data
     command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD-${ADMIN_PASSWORD}}
@@ -152,7 +230,7 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - pong-net
+      - db-net
     restart: unless-stopped
 
 
@@ -162,6 +240,14 @@ services:
     build:
       context: ./backend/gateway
       dockerfile: Dockerfile.dev
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     volumes:
       - ./backend/gateway/src:/app/src
     environment:
@@ -169,12 +255,20 @@ services:
       - LOGSTASH_URL=logstash:5044
       - REDIS_URL=redis:6379
       - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN-15m}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN-7d}
       - AUTH_SERVICE_URL=http://auth:3000
     depends_on:
       redis:
         condition: service_healthy
     networks:
-      - pong-net
+      - public-net
+      - service-net
+      - monitoring-net
+      - logging-net
+      - db-net
+    restart: unless-stopped
 
 
 # --------------- MICRO-SERVICES --------------- #
@@ -186,6 +280,14 @@ services:
     build:
       context: ./backend/services/auth
       dockerfile: Dockerfile.dev
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
+        reservations:
+          cpus: '0.2'
+          memory: 192M
     volumes:
       - ./backend/services/auth/src:/app/src
       - ms_auth_data:/app/data
@@ -223,7 +325,10 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - pong-net
+      - public-net
+      - service-net
+      - monitoring-net
+      - db-net
     restart: unless-stopped
 
 
@@ -240,5 +345,18 @@ volumes:
 # ------------------ NETWORK ------------------- #
 
 networks:
-  pong-net:
-    name: pong-net
+  public-net:
+    name: public-net
+    driver: bridge
+  monitoring-net:
+    name: monitoring-net
+    driver: bridge
+  logging-net:
+    name: logging-net
+    driver: bridge
+  db-net:
+    name: db-net
+    driver: bridge
+  service-net:
+    name: service-net
+    driver: bridge

@@ -11,19 +11,16 @@ app.decorate('generateId', function() { return require('uuid').v4(); });
 // Register plugins
 app.register(require('@fastify/cors'), config.cors)
 app.register(require('@fastify/helmet'), config.helmet)
+app.register(require('@fastify/jwt'), config.jwt)
 app.register(require('@fastify/redis'), config.redis)
-app.register(require('@fastify/sensible'))
-
 app.register(require('./plugins/logger'))
 app.register(require('./plugins/metrics'))
+app.register(require('./plugins/rate-limit'))
 
-// app.register(require('./plugins/popo'))
-// app.register(require('./plugins/rate-limit'))
-
+app.register(require('./plugins/hooks'))
 app.register(require('./plugins/auth'))
 app.register(require('./plugins/proxy'))
-app.register(require('./plugins/error-handler'))
-
+app.register(require('./plugins/errorHandler'))
 app.register(require('./routes'))
 
 // Shutdown

@@ -33,7 +33,7 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <ConnectionChecker healthEndpoint="/api/health">
+      <ConnectionChecker healthEndpoint="/api/internal/health">
         <Router>
           <AuthProvider>
             <ToastProvider>

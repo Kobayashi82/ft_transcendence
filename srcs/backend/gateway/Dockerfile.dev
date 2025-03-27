@@ -1,5 +1,5 @@
 # Base image for building the application
-FROM node:20
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
@@ -17,6 +17,14 @@ COPY . .
 # Set development environment and log level
 ENV NODE_ENV=development
 ENV LOG_LEVEL=debug
+
+# Add metadata labels
+LABEL org.opencontainers.image.vendor="Kobayashi Corp."
+LABEL org.opencontainers.image.source="https://github.com/Kobayashi82/ft_transcendence"
+LABEL org.opencontainers.image.description="API Gateway"
+LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.created="2025-03-27"
+LABEL maintainer="Kobayashi82@outlook.com"
 
 # Nodemon
 EXPOSE 3000

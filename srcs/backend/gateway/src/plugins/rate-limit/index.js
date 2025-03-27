@@ -9,69 +9,91 @@ const keyGenerators = {
   byIP: (req) => req.ip,
   
   byEmailAndIP: (req) => {
-    const email = req.body && req.body.email ? req.body.email : 'anonymous';
-    return `${req.ip}:login:${email}`;
+    const email = req.body && req.body.email ? req.body.email : 'anonymous'
+    return `${req.ip}:login:${email}`
   },
   
   byUserId: (req) => {
-    const userId = req.auth && req.auth.userId ? req.auth.userId : 'anonymous';
-    return `user:${userId}`;
+    const userId = req.auth && req.auth.userId ? req.auth.userId : 'anonymous'
+    return `user:${userId}`
   },
   
   byIPAndRoute: (req) => `${req.ip}:${req.url}`
-};
+}
 
 async function rateLimitPlugin(fastify, options) {
-
-  await fastify.register(require('@fastify/rate-limit'), {
-    redis: fastify.redis,
-    skipOnError: true,
-    global: false,
-    
-    onExceeded: (req) => {
-      const route = req.url;
-      const ip = req.ip;
-      
-      fastify.logger.warn(`Rate limit exceeded: ${ip} on ${route}`, {
-        ip: ip,
-        url: route,
-        method: req.method
-      });
-    },
-    
-    errorResponseBuilder: (req, context) => {
-      return {
-        statusCode: 429,
-        error: 'Too Many Requests',
-        message: `Too many requests, please try again after ${context.after}`
-      }
-    }
-  });
+  fastify.decorate('keyGenerators', keyGenerators)
   
-  fastify.decorate('keyGenerators', keyGenerators);
-  
-  // Gather all limits
+  // Get specific rate limits for routes
   const routeRateLimits = [
     ...authLimits.getRateLimits(fastify),
     ...apiLimits.getRateLimits(fastify)
-  ];
-  
-  // Log all limits
-  routeRateLimits.forEach(route => {
-    try {
-      fastify.rateLimit({
-        method: route.method,
-        url: route.pattern,
-        config: {
-          rateLimit: route.limit
+  ]
+
+  // Configure global rate-limit
+  await fastify.register(require('@fastify/rate-limit'), {
+    trustProxy: true,
+    global: true,
+    max: 100,
+    timeWindow: 60 * 1000,
+    redis: fastify.redis,
+    
+    // Add standard headers
+    addHeaders: {
+      'x-ratelimit-limit': true,
+      'x-ratelimit-remaining': true,
+      'x-ratelimit-reset': true,
+      'retry-after': true
+    },
+    
+    // Generate keys per request
+    keyGenerator: (req) => {
+      for (const route of routeRateLimits) {       
+        if ((route.method === '*' || route.method === req.method) && req.url.startsWith(route.pattern))
+          return route.limit.keyGenerator(req)
+      } 
+      return req.ip
+    },
+
+    // Determine max requests per request
+    max: (req, key) => {
+      for (const route of routeRateLimits) {       
+        if ((route.method === '*' || route.method === req.method) && req.url.startsWith(route.pattern))
+          return route.limit.max
+      } 
+      return 100
+    },
+
+    // Determine time window per request
+    timeWindow: async (req, key) => {
+      for (const route of routeRateLimits) {
+        if ((route.method === '*' || route.method === req.method) && req.url.startsWith(route.pattern))
+          return route.limit.timeWindow * 1000
+      } 
+      return 60 * 1000
+    },
+    
+    // Log when limit is exceeded
+    onExceeded: (req) => {     
+      for (const route of routeRateLimits) {       
+        if ((route.method === '*' || route.method === req.method) && req.url.startsWith(route.pattern)) {
+          fastify.logger.warn(`Rate-Limit: Request from ${req.ip} to ${req.method} ${req.url} blocked. Limit of ${route.limit.max} requests in ${route.limit.timeWindow} seconds exceeded.`)
+          return
         }
-      });
-    } catch (err) {
-      fastify.logger.error(`Failed to register rate limit for route: ${JSON.stringify(route)}`, err);
+      }
+      fastify.logger.warn(`Rate-Limit: Request from ${req.ip} to ${req.method} ${req.url} blocked. Limit of 100 requests in 60 seconds exceeded.`)
+      return
+    },
+    
+    // Response for rate limit exceeded
+    errorResponseBuilder: (req, context) => {     
+      for (const route of routeRateLimits) {        
+        if ((route.method === '*' || route.method === req.method) && req.url.startsWith(route.pattern))
+          return fastify.httpErrors.tooManyRequests(`Rate limit exceeded for ${route.pattern}. Please try again in ${context.after} seconds.`);
+      }
+      return fastify.httpErrors.tooManyRequests(`Too many requests. Please try again in ${context.after} seconds.`);
     }
-  });
-  
-  fastify.logger.info('Rate limiting plugin configured successfully');
+  })
 }
 
 module.exports = fp(rateLimitPlugin, { name: 'rate-limit', dependencies: ['@fastify/redis', 'logger'] })

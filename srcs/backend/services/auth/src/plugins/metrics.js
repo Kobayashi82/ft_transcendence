@@ -159,7 +159,7 @@ async function metricsPlugin(fastify, options) {
   }, 60000);
   
   // Expose endpoint for Prometheus metrics
-  fastify.get('/metrics', async (request, reply) => {
+  fastify.get('/internal/metrics', async (request, reply) => {
     return reply
       .header('Content-Type', register.contentType)
       .send(await register.metrics())
