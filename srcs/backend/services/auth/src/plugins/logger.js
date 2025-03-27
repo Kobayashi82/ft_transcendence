@@ -14,7 +14,7 @@ async function loggerPlugin(fastify, options) {
   
   // Get gateway configuration
   if (!config.services.gateway.url) {
-    console.warn('[WARN] No gateway configuration found. Logs will only be displayed in console')
+    console.warn(new Date().toISOString(), '[WARN] No gateway configuration found. Logs will only be displayed in console')
   }
     
   // Buffer to store logs if gateway is unavailable
@@ -24,9 +24,9 @@ async function loggerPlugin(fastify, options) {
   // Send logs to console
   const sendToConsole = async (level, message, meta = {}) => {
     if (Object.keys(meta).length > 0) {
-      console.log(`[${level.toUpperCase()}] ${message}`, meta)
+      console.log(new Date().toISOString(), `${level.toUpperCase()}] ${message}`, meta)
     } else {
-      console.log(`[${level.toUpperCase()}] ${message}`)
+      console.log(new Date().toISOString(), `${level.toUpperCase()} ${message}`)
     }
   }
 

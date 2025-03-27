@@ -5,7 +5,7 @@ const promClient = require('prom-client')
 
 async function metricsPlugin(fastify, options) {
   const register = new promClient.Registry()
-  
+
   // Default metrics
   promClient.collectDefaultMetrics({ register, prefix: `${fastify.config.serviceName}_` })
   
@@ -55,13 +55,13 @@ async function metricsPlugin(fastify, options) {
     recordError: (service, method, errorCode) => { proxyErrors.inc({ service, method, error_code: errorCode }) }
   })
   
-  // Hook to register metrics for each request
+  // Register requests
   fastify.addHook('onRequest', (request, reply, done) => {
     request.metrics = { startTime: process.hrtime() }
     done()
   })
   
-  // Hook to register response metrics
+  // Register responses
   fastify.addHook('onResponse', (request, reply, done) => {
     const route = request.routeOptions?.url || request.raw.url
     const method = request.raw.method
@@ -81,13 +81,15 @@ async function metricsPlugin(fastify, options) {
       fastify.proxyMetrics.recordLatency(service, method, responseTimeInSeconds)
       
       // If it's an error, register it as well
-      if (reply.statusCode >= 400) { fastify.proxyMetrics.recordError(service, method, statusCode) }
+      if (reply.statusCode >= 400) {
+        fastify.proxyMetrics.recordError(service, method, statusCode)
+      }
     }
     
     done()
   })
   
-  // Expose endpoint for Prometheus metrics
+  // Endpoint for metrics
   fastify.get('/metrics', async (request, reply) => {
     return reply
       .header('Content-Type', register.contentType)

@@ -32,7 +32,7 @@ const config = {
   redis: {
     host: (process.env.REDIS_URL && process.env.REDIS_URL.split(':')[0]) || 'redis',
     port: (process.env.REDIS_URL && process.env.REDIS_URL.split(':')[1]) || 6379,
-    password: process.env.REDIS_PASSWORD, db: 0,
+    password: process.env.REDIS_PASSWORD, family: 4, database: 0
   },
 
   // Logstash
@@ -49,6 +49,37 @@ const config = {
     credentials: true,
   },
   
+  helmet: {
+    // Disable CSP since we are not serving HTML/CSS/JS content directly
+    contentSecurityPolicy: false,
+    
+    // Disable Frameguard since we are not serving content that can be embedded in iframes
+    frameguard: false,
+   
+    // Protection against XSS
+    xssFilter: true,
+    
+    // Prevent MIME sniffing
+    noSniff: true,
+    
+    // Hide server information
+    hidePoweredBy: true,
+    
+    // Control referrer policy
+    referrerPolicy: {
+      policy: 'no-referrer'
+    },
+    
+    // Cross-origin resource policies
+    crossOriginResourcePolicy: {
+      policy: 'same-site'
+    },
+    
+    // Disable unnecessary policies for API
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false
+  },
+
   // Rate limiting
   rateLimit: {
     max: process.env.RATE_LIMIT_MAX || 100,

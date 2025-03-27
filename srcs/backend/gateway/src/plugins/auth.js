@@ -263,4 +263,4 @@ async function authPlugin(fastify, options) {
   fastify.logger.info('Auth plugin configured correctly')
 }
 
-module.exports = fp(authPlugin, { name: 'auth', dependencies: ['redis', 'logger'] })
+module.exports = fp(authPlugin, { name: 'auth', dependencies: ['logger'] })

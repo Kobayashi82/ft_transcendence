@@ -55,7 +55,7 @@ async function proxyPlugin(fastify, options) {
   }
 
   // Middleware to capture timeout errors and other proxy errors
-  fastify.setErrorHandler(function (error, request, reply) {
+  fastify.setErrorHandler((error, request, reply) => {
     // Specific handling for proxy errors
     if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
       fastify.logger.error('Communication error with the service', {
@@ -77,4 +77,4 @@ async function proxyPlugin(fastify, options) {
   })
 }
 
-module.exports = fp(proxyPlugin, { name: 'proxy', dependencies: ['redis', 'metrics', 'auth', 'logger'] })
+module.exports = fp(proxyPlugin, { name: 'proxy', dependencies: ['metrics', 'auth', 'logger'] })

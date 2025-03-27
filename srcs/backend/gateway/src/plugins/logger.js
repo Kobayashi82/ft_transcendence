@@ -12,7 +12,7 @@ const net = require('net')
  */
 async function loggerPlugin(fastify, options) {
   const config = fastify.config
-  const serviceName = config.serviceName || 'gateway'
+  const serviceName = config.serviceName
   
   // Configure Winston
   const consoleTransport = new winston.transports.Console({
@@ -20,9 +20,13 @@ async function loggerPlugin(fastify, options) {
       winston.format.colorize(),
       winston.format.timestamp(),
       winston.format.printf(({ timestamp, level, message, ...meta }) => {
-        return `${timestamp} [${meta.service || serviceName}] ${level}: ${message} ${
-          Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
-        }`
+        const service = meta.service || serviceName
+        const metaWithoutServiceAndTimestamp = { ...meta }
+        delete metaWithoutServiceAndTimestamp.service
+        delete metaWithoutServiceAndTimestamp.timestamp
+        const metaStr = Object.keys(metaWithoutServiceAndTimestamp).length ? JSON.stringify(metaWithoutServiceAndTimestamp, null, 2) : ''
+        
+        return `${timestamp} [${service}] ${level}: ${message} ${metaStr}`
       })
     )
   })
@@ -44,7 +48,7 @@ async function loggerPlugin(fastify, options) {
       
       logstashClient.on('connect', () => {
         logstashConnected = true
-        console.info(`[INFO] Logstash connected on port ${port}`)
+        console.info(new Date().toISOString(), `[gateway] \x1b[32minfo\x1b[0m: Logstash connected on port ${port}`)
       })
             
       logstashClient.on('close', () => {
@@ -57,7 +61,7 @@ async function loggerPlugin(fastify, options) {
       logstashClient.connect(port, host)
     } catch (err) {}
   }
-  
+
   // Function to send logs to Logstash
   const sendToLogstash = (level, message, meta = {}) => {
     if (!logstashConnected || !logstashClient) return
@@ -79,7 +83,7 @@ async function loggerPlugin(fastify, options) {
   
   // Unified logging function (console & Logstash)
   const log = (level, message, meta = {}) => {
-    winstonLogger.log(level, message, meta)
+    winstonLogger.log(level, message, meta);
     if (config.isDev && logstashConnected) { sendToLogstash(level, message, meta) }
   }
   
@@ -111,6 +115,15 @@ async function loggerPlugin(fastify, options) {
     }
   }
   
+  // Logger for local
+  const logger_local = {
+    info:  (message, meta = {}) => log('info',  message, meta),
+    error: (message, meta = {}) => log('error', message, meta),
+    warn:  (message, meta = {}) => log('warn',  message, meta),
+    debug: (message, meta = {}) => log('debug', message, meta),
+    trace: (message, meta = {}) => log('trace', message, meta),
+  }
+
   // Register endpoints to receive logs from microservices
   fastify.post('/logs', async (request, reply) => {
     const { level, message, meta = {}, service, timestamp } = request.body
