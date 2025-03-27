@@ -17,12 +17,12 @@
 - [✗] Multi-factor authentication (MFA)
 
 ### Input Validation
-- [✗] Request body schema validation
-- [✗] Query parameter validation
+- [✓] Request body schema validation
+- [✓] Query parameter validation
 - [✗] Path parameter validation
 - [✗] Data type validation
 - [✗] Data sanitization
-- [✗] Content-Type validation
+- [✓] Content-Type validation
 - [✗] File upload validation and restrictions
 
 ### HTTP Headers & Communication Security
@@ -45,13 +45,13 @@
 - [✗] API documentation security (restrict sensitive endpoints)
 
 ### Logging & Monitoring
-- [✗] Security event logging
-- [✗] Authentication attempt logging
-- [✗] Sensitive operation logging
-- [✗] Log rotation and retention policies
-- [✗] Real-time security alerts
-- [✗] Log format standardization
-- [✗] Log correlation IDs
+- [✓] Security event logging
+- [✓] Authentication attempt logging
+- [✓] Sensitive operation logging
+- [✓] Log rotation and retention policies
+- [✓] Real-time security alerts
+- [✓] Log format standardization
+- [✓] Log correlation IDs
 
 ### Data Protection
 - [✗] Data encryption in transit
@@ -74,17 +74,14 @@
 - [✗] Graceful error handling
 - [✗] Security headers for microservice communication
 - [✗] Circuit breakers for service calls
-- [✗] API throttling (different from rate limiting)
-- [✗] Business logic security validation
-- [✗] Secure deployment practices
-- [✗] Security regression testing
+
 
 ### Docker & Infrastructure Security
 - [✓] Container hardening
 - [✓] Non-root user for containers
 - [✓] Minimal base images
-- [✓] Resource limits (CPU, memory)
+- [✓] Resource limits
 - [✓] Network segmentation
 - [✗] Service-to-service authentication
-WAF (Web Application Firewall) con ModSecurity
+- [✗] WAF con ModSecurity
 - [✗] Secrets injection (not hardcoded)

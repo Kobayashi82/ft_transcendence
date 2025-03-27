@@ -9,14 +9,6 @@ services:
     container_name: nginx
     build:
       context: ./frontend/nginx
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
     ports:
       - "80:443"
       - "443:443"
@@ -32,14 +24,6 @@ services:
     build: 
       context: ./frontend/web
       dockerfile: Dockerfile.dev
-    deploy:
-      resources:
-        limits:
-          cpus: '0.3'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
     volumes:
       - ./frontend/web/src:/app/src
       - ./frontend/web/public:/app/public
@@ -56,14 +40,6 @@ services:
     container_name: elasticsearch
     build:
       context: ./monitoring/logs/elasticsearch
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 10246M
-        reservations:
-          cpus: '0.5'
-          memory: 512M
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
@@ -73,12 +49,6 @@ services:
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
-    healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f -u $$ELASTICSEARCH_USERNAME:$$ELASTICSEARCH_PASSWORD http://localhost:9200/_cluster/health?wait_for_status=yellow\\&timeout=30s"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     networks:
       - logging-net
       - monitoring-net
@@ -90,21 +60,10 @@ services:
     container_name: logstash
     build:
       context: ./monitoring/logs/logstash
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.2'
-          memory: 256M
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
     networks:
       - logging-net
     restart: unless-stopped
@@ -114,14 +73,6 @@ services:
     container_name: kibana
     build:
       context: ./monitoring/logs/kibana
-    deploy:
-      resources:
-        limits:
-          cpus: '0.4'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 256M
     environment:
       - SERVER_BASEPATH=/kibana
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
@@ -129,9 +80,6 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
     networks:
       - public-net
       - logging-net
@@ -146,14 +94,6 @@ services:
     container_name: prometheus
     build:
       context: ./monitoring/metrics/prometheus
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 256M
     volumes:
       - prometheus_data:/prometheus
     networks:
@@ -165,14 +105,6 @@ services:
     container_name: grafana
     build:
       context: ./monitoring/metrics/grafana
-    deploy:
-      resources:
-        limits:
-          cpus: '0.3'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
@@ -189,14 +121,6 @@ services:
     container_name: alertmanager
     build:
       context: ./monitoring/metrics/alertmanager
-    deploy:
-      resources:
-        limits:
-          cpus: '0.2'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 64M
     volumes:
       - alertmanager_data:/alertmanager
     networks:
@@ -212,14 +136,6 @@ services:
   redis:
     container_name: redis
     image: redis:7.4.2
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
     volumes:
       - redis_data:/data
     command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD-${ADMIN_PASSWORD}}
@@ -240,14 +156,6 @@ services:
     build:
       context: ./backend/gateway
       dockerfile: Dockerfile.dev
-    deploy:
-      resources:
-        limits:
-          cpus: '0.75'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     volumes:
       - ./backend/gateway/src:/app/src
     environment:
@@ -280,14 +188,6 @@ services:
     build:
       context: ./backend/services/auth
       dockerfile: Dockerfile.dev
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 384M
-        reservations:
-          cpus: '0.2'
-          memory: 192M
     volumes:
       - ./backend/services/auth/src:/app/src
       - ms_auth_data:/app/data

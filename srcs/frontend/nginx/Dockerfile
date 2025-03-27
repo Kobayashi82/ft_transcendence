@@ -22,13 +22,8 @@ RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -out /etc/ssl/certs/server.crt \
     -subj "/C=ES/ST=Andalucia/L=Malaga/O=42 Malaga/OU=Formacion/CN=localhost"
 
-# Generate Diffie-Hellman parameters for improved key exchange security
-# Using 2048 bits for a good balance of security and generation time
-RUN openssl dhparam -out /etc/nginx/dhparam.pem 2048
-
 # Copy configuration
 COPY conf/nginx.conf /etc/nginx/nginx.conf
-COPY conf/configs /etc/nginx/configs
 
 # HTTP, HTTPS and Exporter
 EXPOSE 80 443 9113
