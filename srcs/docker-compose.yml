@@ -1,5 +1,6 @@
 services:
-# Expose ports (80, 443)
+
+# Ports (80, 443)
 
 # ----------------- WEB SERVER ----------------- #
 
