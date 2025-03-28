@@ -77,10 +77,20 @@ async function rateLimitPlugin(fastify, options) {
     onExceeded: (req) => {     
       for (const route of routeRateLimits) {       
         if ((route.method === '*' || route.method === req.method) && req.url.startsWith(route.pattern)) {
+          // Record rate limit blocked metric
+          if (fastify.metrics && fastify.metrics.rateLimit) {
+            fastify.metrics.rateLimit.recordBlocked(req.ip, route.pattern)
+          }
+
           fastify.logger.warn(`Rate-Limit: Request from ${req.ip} to ${req.method} ${req.url} blocked. Limit of ${route.limit.max} requests in ${route.limit.timeWindow} seconds exceeded.`)
           return
         }
       }
+      // Record rate limit blocked metric for global limit
+      if (fastify.metrics && fastify.metrics.rateLimit) {
+        fastify.metrics.rateLimit.recordBlocked(req.ip, req.url)
+      }
+
       fastify.logger.warn(`Rate-Limit: Request from ${req.ip} to ${req.method} ${req.url} blocked. Limit of 100 requests in 60 seconds exceeded.`)
       return
     },
@@ -92,8 +102,40 @@ async function rateLimitPlugin(fastify, options) {
           return fastify.httpErrors.tooManyRequests(`Rate limit exceeded for ${route.pattern}. Please try again in ${context.after} seconds.`);
       }
       return fastify.httpErrors.tooManyRequests(`Too many requests. Please try again in ${context.after} seconds.`);
+    },
+
+    // Hook that fires on each request to track rate limit state
+    onHit: (req, key, value, next) => {
+      let route = null;
+      let limit = 100;
+      let pattern = req.url;
+      
+      for (const r of routeRateLimits) {
+        if ((r.method === '*' || r.method === req.method) && req.url.startsWith(r.pattern)) {
+          route = r;
+          limit = r.limit.max;
+          pattern = r.pattern;
+          break;
+        }
+      }
+      
+      // Record hit metric
+      if (fastify.metrics && fastify.metrics.rateLimit) {
+        fastify.metrics.rateLimit.recordHit(req.ip, pattern)
+        
+        // Also update current state
+        if (typeof value === 'number') {
+          const remaining = limit - value;
+          if (remaining >= 0) {
+            fastify.metrics.rateLimit.updateState(req.ip, pattern, value)
+          }
+        }
+      }
+      
+      next()
     }
   })
+
 }
 
-module.exports = fp(rateLimitPlugin, { name: 'rate-limit', dependencies: ['@fastify/redis', 'logger'] })
+module.exports = fp(rateLimitPlugin, { name: 'rate-limit', dependencies: ['@fastify/redis', 'metrics', 'logger'] })

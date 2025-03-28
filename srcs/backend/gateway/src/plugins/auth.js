@@ -1,280 +1,106 @@
 'use strict'
 
 const fp = require('fastify-plugin')
-const axios = require('axios')
 
-// Plugin for authentication and token management
+// Authentication plugin that verifies JWTs and adds auth info to requests
 async function authPlugin(fastify, options) {
-  const config = fastify.config
   
-  // Token cache expiration time (5 minutes)
-  const TOKEN_CACHE_TTL = 300
+  // Add auth information decorator
+  fastify.decorateRequest('auth', null)
   
-  // Prefix for Redis keys
-  const CACHE_PREFIX = 'auth:token:'
-  const USER_INFO_PREFIX = 'auth:user:'
-  
-  // Function to extract and minimally verify the token
-  fastify.decorate('extractToken', function(request) {
-    // Check if the authorization header exists
-    const authHeader = request.headers.authorization
-    if (!authHeader) return null
+  // Add an onRequest hook to verify JWT tokens
+  fastify.addHook('onRequest', async (request, reply) => {
+    // Default auth state
+    request.auth = { authenticated: false, roles: [] }
     
-    // Verify correct format (Bearer token)
-    const parts = authHeader.split(' ')
-    if (parts.length !== 2 || parts[0] !== 'Bearer') return null
+    // Extract token from Authorization header
+    let token = null
     
-    // Return the token
-    return parts[1]
-  })
-  
-  // Function to decode a JWT token without cryptographic validation
-  fastify.decorate('decodeToken', function(token) {
-    try {
-      // Basic decoding without verifying the signature
-      // IMPORTANT: This only extracts data, it does not validate the token
-      return fastify.jwt.decode(token)
-    } catch (error) {
-      fastify.logger.error(`Error decoding token: ${error.message}`, {
-        error: error.message,
-        stack: error.stack
-      })
-      return null
-    }
-  })
-  
-  // Function to validate token against auth service
-  fastify.decorate('validateToken', async function(token) {
-    // Create Redis key
-    const cacheKey = `${CACHE_PREFIX}${token}`
-    
-    // Check if token validation result is in cache
-    let cachedAuthInfo = await fastify.redis.get(cacheKey)
-    if (cachedAuthInfo) {
-      try {
-        return JSON.parse(cachedAuthInfo)
-      } catch (e) {
-        fastify.logger.warn(`Error parsing cached auth info: ${e.message}`)
-        // Continue to fetch from auth service if parsing fails
-      }
+    if (request.headers.authorization && request.headers.authorization.split(' ')[0] === 'Bearer') {
+      token = request.headers.authorization.split(' ')[1]
     }
     
-    // If not in cache, verify token with auth service
+    if (!token) return
+    
+    // Check if token is blacklisted in Redis
     try {
-      const authService = fastify.config.services.auth
-      const response = await axios.get(`${authService.url}/validate`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        timeout: 5000
-      })
-      
-      // Process the response
-      if (response.data && response.data.valid) {
-        const authInfo = {
-          authenticated: true,
-          userId: response.data.user_info.user_id,
-          roles: response.data.user_info.roles || [],
-          email: response.data.user_info.email,
-          username: response.data.user_info.username,
-          userInfo: response.data.user_info,
-          token: token
+      const isBlacklisted = await fastify.redis.get(`blacklist:${token}`)
+      if (isBlacklisted) {
+        // Token has been logged out
+        if (fastify.metrics && fastify.metrics.security) {
+          fastify.metrics.security.recordAuthError('blacklisted_token')
         }
         
-        // Store in cache as JSON string
-        await fastify.redis.set(cacheKey, JSON.stringify(authInfo), TOKEN_CACHE_TTL)
+        fastify.logger.debug('Blacklisted token used', {
+          ip: request.ip,
+          url: request.url
+        })
         
-        // Also store user information for quick lookups
-        const userKey = `${USER_INFO_PREFIX}${authInfo.userId}`
-        await fastify.redis.set(userKey, JSON.stringify(response.data.user_info), TOKEN_CACHE_TTL * 2) // Longer TTL for user info
-        
-        return authInfo
-      } else {
-        return { authenticated: false, reason: 'invalid-token' }
-      }
-    } catch (error) {
-      fastify.logger.error(`Error validating token with auth service: ${error.message}`, {
-        error: error.message,
-        stack: error.stack
-      })
-      
-      // In case of error, try to decode locally for more specific messages
-      const decoded = fastify.decodeToken(token)
-      
-      if (!decoded) {
-        return { authenticated: false, reason: 'invalid-format' }
-      }
-      
-      // Check token expiration if available
-      if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
-        return { authenticated: false, reason: 'token-expired' }
-      }
-      
-      return { authenticated: false, reason: 'service-unavailable' }
-    }
-  })
-  
-  // Middleware to process tokens on all routes
-  fastify.addHook('onRequest', async (request, reply) => {
-    try {
-      // Routes that do not require authentication
-      const publicPaths = ['/auth/login', '/auth/register', '/auth/password/reset-request', 
-                          '/auth/password/reset', '/auth/oauth', '/health', '/metrics']
-      
-      // Check if route matches any public path
-      const isPublicRoute = publicPaths.some(path => request.url.startsWith(path))
-      
-      if (isPublicRoute) {
-        request.auth = { authenticated: false, reason: 'public-route' }
-        return
-      }
-      
-      // Extract token
-      const token = fastify.extractToken(request)
-      if (!token) {
-        request.auth = { authenticated: false, reason: 'no-token' }
-        return
-      }
-      
-      // Validate token (using cache or auth service)
-      const authInfo = await fastify.validateToken(token)
-      
-      // Attach auth info to request
-      request.auth = authInfo
-      
-      // If authenticated, attach user information to request
-      if (authInfo.authenticated) {
-        request.user = authInfo.userInfo
-      }
-      
-    } catch (error) {
-      fastify.logger.error(`Error in authentication middleware: ${error.message}`, {
-        error: error.message,
-        stack: error.stack,
-        path: request.url
-      })
-      
-      // Do not block the request, just mark it as unauthenticated
-      request.auth = { authenticated: false, reason: 'error', message: error.message }
-    }
-  })
-  
-  // Middleware for routes that require authentication
-  fastify.decorate('authenticate', async (request, reply) => {
-    if (!request.auth || !request.auth.authenticated) {
-      reply.status(401).send({
-        statusCode: 401,
-        error: 'Unauthorized',
-        message: 'Authentication required'
-      })
-      return
-    }
-  })
-  
-  // Middleware for routes that require specific roles
-  fastify.decorate('requireRoles', function(rolesRequired = []) {
-    return async (request, reply) => {
-      // First, check if authenticated
-      if (!request.auth || !request.auth.authenticated) {
-        reply.status(401).send({
+        return reply.code(401).send({
           statusCode: 401,
           error: 'Unauthorized',
-          message: 'Authentication required'
+          message: 'Token has been invalidated'
         })
-        return
+      }
+    } catch (redisError) {
+      fastify.logger.error('Redis blacklist check failed', { 
+        error: redisError.message 
+      })
+    }
+
+    try {
+      // Verify the token
+      const decoded = await request.jwtVerify()
+      
+      // Set up authentication info
+      request.auth = {
+        authenticated: true,
+        userId: decoded.sub || decoded.userId,
+        roles: decoded.roles || [],
+        email: decoded.email
       }
       
-      // If no specific roles are required, already authorized
-      if (rolesRequired.length === 0) return
+      // Record successful authentication
+      if (fastify.metrics && fastify.metrics.security) {
+        fastify.metrics.security.recordAuthSuccess(request.url)
+      }
       
-      // Check if the user has at least one of the required roles
-      const hasRequiredRole = request.auth.roles.some(role => rolesRequired.includes(role))
+    } catch (err) {
+      // JWT verification errors
+      let errorType = 'unknown'
       
-      if (!hasRequiredRole) {
-        reply.status(403).send({
-          statusCode: 403,
-          error: 'Forbidden',
-          message: 'You do not have permission to access this resource'
+      if      (err.code === 'FAST_JWT_EXPIRED')           { errorType = 'expired_token' }
+      else if (err.code === 'FAST_JWT_MALFORMED')         { errorType = 'malformed_token' }
+      else if (err.code === 'FAST_JWT_INVALID_SIGNATURE') { errorType = 'invalid_signature' }
+      
+      // Record authentication error
+      if (fastify.metrics && fastify.metrics.security) {
+        fastify.metrics.security.recordAuthError(errorType)
+      }
+      
+      fastify.logger.debug(`Token validation failed: ${err.message}`, {
+        error: err.message,
+        code: err.code,
+        ip: request.ip,
+        url: request.url
+      })
+      
+      // Return appropriate error based on JWT failure
+      if (err.code === 'FAST_JWT_EXPIRED') {
+        return reply.code(401).send({
+          statusCode: 401,
+          error: 'Unauthorized',
+          message: 'Token has expired'
         })
-        return
+      } else {
+        return reply.code(401).send({
+          statusCode: 401,
+          error: 'Unauthorized',
+          message: 'Invalid authentication token'
+        })
       }
     }
   })
-  
-  // Decorate with authentication service
-  fastify.decorate('authService', {
-    // Get user info by ID
-    getUserInfo: async function(userId) {
-      // Try to get from cache first
-      const cacheKey = `${USER_INFO_PREFIX}${userId}`
-      const cachedInfoString = await fastify.redis.get(cacheKey)
-      
-      if (cachedInfoString) {
-        try {
-          return JSON.parse(cachedInfoString)
-        } catch (e) {
-          fastify.logger.warn(`Error parsing cached user info: ${e.message}`)
-          // Continue to fetch from auth service if parsing fails
-        }
-      }
-      
-      // If not in cache, get from auth service
-      try {
-        const authService = fastify.config.services.auth
-        const token = request.headers.authorization
-        
-        const response = await axios.get(`${authService.url}/me`, {
-          headers: {
-            'Authorization': token
-          },
-          timeout: 5000
-        })
-        
-        if (response.data) {
-          // Store in cache as JSON string
-          await fastify.redis.set(cacheKey, JSON.stringify(response.data), TOKEN_CACHE_TTL * 2)
-          return response.data
-        }
-      } catch (error) {
-        fastify.logger.error(`Error getting user info: ${error.message}`, {
-          error: error.message,
-          stack: error.stack,
-          userId
-        })
-      }
-      
-      return null
-    },
-    
-    // Revoke token
-    revokeToken: async function(token) {
-      // Remove from cache
-      await fastify.redis.del(`${CACHE_PREFIX}${token}`)
-      
-      // Try to revoke in the auth service
-      try {
-        const authService = fastify.config.services.auth
-        await axios.post(`${authService.url}/logout`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          timeout: 5000
-        })
-        return true
-      } catch (error) {
-        fastify.logger.warn(`Error revoking token in auth service: ${error.message}`, {
-          error: error.message
-        })
-        // Still consider it successful because it was removed from local cache
-        return true
-      }
-    }
-  })
-  
-  fastify.logger.info('Auth plugin configured correctly')
 }
 
-module.exports = fp(authPlugin, { 
-  name: 'auth', 
-  dependencies: ['@fastify/jwt', 'logger']
-})
+module.exports = fp(authPlugin, { name: 'auth', dependencies: ['@fastify/jwt', '@fastify/redis', 'metrics', 'logger'] })
