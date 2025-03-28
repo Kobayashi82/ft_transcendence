@@ -125,3 +125,32 @@ Métricas en formato Prometheus en el endpoint `/metrics`.
 
     return { message: 'testing' }
   })
+
+
+
+
+
+
+
+
+// Generar token CSRF al iniciar sesión
+const csrfToken = crypto.randomBytes(64).toString('hex');
+// Almacenar hash del token en la cookie
+reply.setCookie('csrf_hash', crypto.createHash('sha256').update(csrfToken).digest('hex'), {
+  httpOnly: true,
+  secure: true
+});
+// Enviar token al cliente
+return { accessToken, csrfToken };
+
+// Validar en /refresh
+fastify.post('/refresh', (request, reply) => {
+  const csrfToken = request.headers['x-csrf-token'];
+  const storedHash = request.cookies.csrf_hash;
+  const calculatedHash = crypto.createHash('sha256').update(csrfToken).digest('hex');
+  
+  if (calculatedHash !== storedHash) {
+    return reply.code(403).send({ error: 'Invalid CSRF token' });
+  }
+  // Continuar con el refresco
+});

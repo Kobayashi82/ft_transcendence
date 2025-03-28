@@ -20,7 +20,7 @@ app.register(require('./plugins/rate-limit'))
 app.register(require('./plugins/hooks'))
 app.register(require('./plugins/auth'))
 app.register(require('./plugins/proxy'))
-app.register(require('./plugins/errorHandler'))
+app.register(require('./plugins/error_handler'))
 app.register(require('./routes'))
 
 // Shutdown
