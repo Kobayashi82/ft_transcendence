@@ -46,13 +46,19 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=true
       - logger.level=ERROR
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
     networks:
       - logging-net
       - monitoring-net
       - db-net
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -f -u $$ELASTICSEARCH_USERNAME:$$ELASTICSEARCH_PASSWORD http://localhost:9200/_cluster/health?wait_for_status=yellow\\&timeout=30s"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   # LogStash (5044)
@@ -80,6 +86,9 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
     networks:
       - public-net
       - logging-net
