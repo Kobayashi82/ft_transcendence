@@ -96,12 +96,22 @@ async function rateLimitPlugin(fastify, options) {
     },
     
     // Response for rate limit exceeded
-    errorResponseBuilder: (req, context) => {     
-      for (const route of routeRateLimits) {        
-        if ((route.method === '*' || route.method === req.method) && req.url.startsWith(route.pattern))
-          return fastify.httpErrors.tooManyRequests(`Rate limit exceeded for ${route.pattern}. Please try again in ${context.after} seconds.`);
+    errorResponseBuilder: (req, context) => {
+      let message = `Too many requests. Please try again in ${context.after} seconds.`;
+      
+      // Check for specific route rate limits
+      for (const route of routeRateLimits) {
+        if ((route.method === '*' || route.method === req.method) && req.url.startsWith(route.pattern)) {
+          message = `Rate limit exceeded for ${route.pattern}. Please try again in ${context.after} seconds.`;
+          break;
+        }
       }
-      return fastify.httpErrors.tooManyRequests(`Too many requests. Please try again in ${context.after} seconds.`);
+      
+      return {
+        statusCode: 429,
+        error: 'Too Many Requests',
+        message: message
+      };
     },
 
     // Hook that fires on each request to track rate limit state
