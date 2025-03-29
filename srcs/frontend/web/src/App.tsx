@@ -1,9 +1,11 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import ServerStatusPage from './pages/ServerStatusPage';
-import APIDocumentation from './pages/APIDocumentation';
-import Header from './components/layout/Header';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import ServerStatusPage from "./pages/ServerStatusPage";
+import APIDocumentation from "./pages/APIDocumentation";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Header from "./components/layout/Header";
 
 const App: React.FC = () => {
   return (
@@ -14,7 +16,9 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/status" element={<ServerStatusPage />} />
-			<Route path="/api-docs/:service" element={<APIDocumentation />} /> 
+            <Route path="/api-docs/:service" element={<APIDocumentation />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route path="*" element={<Home />} />
           </Routes>
         </main>
