@@ -1,8 +1,8 @@
 # Base image for building the application
-FROM nginx:latest
+FROM nginx:1.25.5-alpine
 
 # Install OpenSSL and wget
-RUN apt-get update && apt-get install -y openssl wget
+RUN apk add --no-cache openssl wget
 
 # Download and extract the exporter
 RUN wget https://github.com/nginxinc/nginx-prometheus-exporter/releases/download/v1.3.0/nginx-prometheus-exporter_1.3.0_linux_amd64.tar.gz \
@@ -10,9 +10,6 @@ RUN wget https://github.com/nginxinc/nginx-prometheus-exporter/releases/download
     tar -zxvf /tmp/nginx-prometheus-exporter.tar.gz -C /tmp && \
     mv /tmp/nginx-prometheus-exporter /usr/local/bin/nginx-prometheus-exporter && \
     rm /tmp/nginx-prometheus-exporter.tar.gz
-
-# Clean up
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN chmod +x /usr/local/bin/nginx-prometheus-exporter
 
@@ -24,6 +21,12 @@ RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 
 # Copy configuration
 COPY conf/nginx.conf /etc/nginx/nginx.conf
+COPY conf/index.html /var/www/html/index.html
+
+ARG HOST_NAME
+
+# Replace [hostname] with the value of HOST_NAME
+RUN sed -i "s|\[hostname\]|${HOST_NAME}|g" /etc/nginx/nginx.conf
 
 # HTTP, HTTPS and Exporter
 EXPOSE 80 443 9113
