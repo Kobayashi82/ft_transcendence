@@ -9,7 +9,7 @@ services:
   nginx:
     container_name: nginx
     build:
-      context: ./frontend/nginx
+      context: ./infrastructure/nginx
       args:
           - HOST_NAME=${HOST_NAME-localhost}
     ports:
@@ -42,7 +42,7 @@ services:
   elasticsearch:
     container_name: elasticsearch
     build:
-      context: ./monitoring/logs/elasticsearch
+      context: ./infrastructure/monitoring/logging/elasticsearch
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
@@ -68,7 +68,7 @@ services:
   logstash:
     container_name: logstash
     build:
-      context: ./monitoring/logs/logstash
+      context: ./infrastructure/monitoring/logging/logstash
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
@@ -81,7 +81,7 @@ services:
   kibana:
     container_name: kibana
     build:
-      context: ./monitoring/logs/kibana
+      context: ./infrastructure/monitoring/logging/kibana
     environment:
       - SERVER_BASEPATH=/kibana
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
@@ -105,7 +105,7 @@ services:
   prometheus:
     container_name: prometheus
     build:
-      context: ./monitoring/metrics/prometheus
+      context: ./infrastructure/monitoring/metrics/prometheus
     volumes:
       - prometheus_data:/prometheus
     networks:
@@ -116,7 +116,7 @@ services:
   grafana:
     container_name: grafana
     build:
-      context: ./monitoring/metrics/grafana
+      context: ./infrastructure/monitoring/metrics/grafana
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
@@ -132,7 +132,7 @@ services:
   alertmanager:
     container_name: alertmanager
     build:
-      context: ./monitoring/metrics/alertmanager
+      context: ./infrastructure/monitoring/metrics/alertmanager
     volumes:
       - alertmanager_data:/alertmanager
     networks:
