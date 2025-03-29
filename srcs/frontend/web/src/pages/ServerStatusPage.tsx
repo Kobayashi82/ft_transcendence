@@ -523,13 +523,13 @@ const ServerStatusPage: React.FC = () => {
   if (!displayStatus) return null;
 
   return (
-    <div className="flex flex-col">
-      {/* Hero Section */}
-      <section className="relative py-16 flex items-center overflow-hidden bg-gradient-to-b from-gray-900 to-gray-950">
+    // Aquí aplicamos el gradiente al contenedor principal y aseguramos que tome toda la altura con min-h-screen
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-900 to-gray-950">
+      {/* Hero Section - Ya no necesita su propio fondo */}
+      <section className="relative py-16 flex items-center overflow-hidden">
         {/* Decorative Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute w-40 h-40 bg-indigo-500 rounded-full opacity-10 blur-3xl -top-10 -left-10"></div>
-          <div className="absolute w-60 h-60 bg-blue-500 rounded-full opacity-10 blur-3xl top-1/4 right-1/4"></div>
         </div>
 
         <div className="container-custom relative z-10">
@@ -567,7 +567,8 @@ const ServerStatusPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="py-12 bg-gray-950">
+      {/* Sección de contenido - Quitamos bg-gray-950 porque ya tenemos el gradiente en el contenedor principal */}
+      <section className="py-12 flex-grow">
         <div className="container-custom">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             {/* Gateway Status Card */}
