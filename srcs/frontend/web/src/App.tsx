@@ -5,6 +5,7 @@ import ServerStatusPage from "./pages/ServerStatusPage";
 import APIDocumentation from "./pages/APIDocumentation";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard/Dashboard";
 import Header from "./components/layout/Header";
 
 const App: React.FC = () => {
@@ -19,6 +20,7 @@ const App: React.FC = () => {
             <Route path="/api-docs/:service" element={<APIDocumentation />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="*" element={<Home />} />
           </Routes>
         </main>
