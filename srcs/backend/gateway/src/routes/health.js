@@ -11,7 +11,7 @@ async function healthRoutes(fastify, options) {
     
     const gatewayStatus = {
       gateway: {
-        status: 'healthy',
+        status: 'up',
         uptime: process.uptime(),
         timestamp: new Date().toISOString()
       },
@@ -45,7 +45,7 @@ async function checkServices(services, fastify) {
         const elapsedSeconds = (Date.now() - startTime) / 1000
         const responseTime = Date.now() - startTime
         const isHealthy = response.status >= 200 && response.status < 300
-        const status = isHealthy ? 'healthy' : 'degraded'
+        const status = isHealthy ? 'up' : 'degraded'
 
         serviceStatus[name] = {
           status,

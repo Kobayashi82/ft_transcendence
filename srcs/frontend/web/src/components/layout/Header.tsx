@@ -84,8 +84,8 @@ const NavLinks = () => {
       <Link to="/leaderboard" className="text-gray-300 hover:text-white transition-colors">
         Leaderboard
       </Link>
-      <Link to="/about" className="text-gray-300 hover:text-white transition-colors">
-        About
+      <Link to="/status" className="text-gray-300 hover:text-white transition-colors">
+        Status
       </Link>
     </>
   );
@@ -116,11 +116,11 @@ const MobileNavLinks = ({ closeMenu }: { closeMenu: () => void }) => {
         Leaderboard
       </Link>
       <Link 
-        to="/about" 
+        to="/status" 
         className="block text-gray-300 hover:text-white transition-colors py-2"
         onClick={closeMenu}
       >
-        About
+        Status
       </Link>
     </>
   );

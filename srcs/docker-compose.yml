@@ -1,9 +1,7 @@
 services:
+  # Ports (80, 443)
 
-# Ports (80, 443)
-
-# ----------------- WEB SERVER ----------------- #
-
+  # ----------------- WEB SERVER ----------------- #
 
   # Nginx (80, 443 & 9113)
   nginx:
@@ -11,7 +9,7 @@ services:
     build:
       context: ./infrastructure/nginx
       args:
-          - HOST_NAME=${HOST_NAME-localhost}
+        - HOST_NAME=${HOST_NAME-localhost}
     ports:
       - "80:443"
       - "443:443"
@@ -24,19 +22,17 @@ services:
   # Web (80)
   web:
     container_name: web
-    build: 
+    build:
       context: ./frontend/web
       dockerfile: Dockerfile.dev
     volumes:
-      - ./frontend/web/src:/app/src
-      - ./frontend/web/public:/app/public
+      - ./frontend/web:/app
+      # - ./frontend/web/public:/app/public
     networks:
       - public-net
     restart: unless-stopped
 
-
-# ------------------- LOGGING ------------------ #
-
+  # ------------------- LOGGING ------------------ #
 
   # ElasticSearch (9200 & 9114)
   elasticsearch:
@@ -57,7 +53,13 @@ services:
       - monitoring-net
       - db-net
     healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f -u $$ELASTICSEARCH_USERNAME:$$ELASTICSEARCH_PASSWORD http://localhost:9200/_cluster/health?wait_for_status=yellow\\&timeout=30s"]
+      test:
+        [
+          "CMD",
+          "bash",
+          "-c",
+          "curl -f -u $$ELASTICSEARCH_USERNAME:$$ELASTICSEARCH_PASSWORD http://localhost:9200/_cluster/health?wait_for_status=yellow\\&timeout=30s",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -97,9 +99,7 @@ services:
       - logging-net
     restart: unless-stopped
 
-
-# ------------------- METRICS ------------------ #
-
+  # ------------------- METRICS ------------------ #
 
   # Prometheus (9090)
   prometheus:
@@ -139,12 +139,10 @@ services:
       - monitoring-net
     restart: unless-stopped
 
-
-# --------------- REDIS & GATEWAY --------------- #
-
+  # --------------- REDIS & GATEWAY --------------- #
 
   # Redis (6379)
-   
+
   redis:
     container_name: redis
     image: redis:7.4.2
@@ -152,7 +150,14 @@ services:
       - redis_data:/data
     command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD-${ADMIN_PASSWORD}}
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD-${ADMIN_PASSWORD}}", "ping"]
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "-a",
+          "${REDIS_PASSWORD-${ADMIN_PASSWORD}}",
+          "ping",
+        ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -160,7 +165,6 @@ services:
     networks:
       - db-net
     restart: unless-stopped
-
 
   # Gateway (3000)
   gateway:
@@ -191,9 +195,7 @@ services:
       - db-net
     restart: unless-stopped
 
-
-# --------------- MICRO-SERVICES --------------- #
-
+  # --------------- MICRO-SERVICES --------------- #
 
   # Auth (3000)
   auth:
@@ -209,7 +211,7 @@ services:
       - GATEWAY_URL=http://gateway:3000
       - REDIS_URL=redis:6379
       - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
-      
+
       - CORS_ORIGIN=${CORS_ORIGIN-*}
 
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
@@ -243,7 +245,6 @@ services:
       - monitoring-net
       - db-net
     restart: unless-stopped
-
 
 # ------------------ VOLUMES ------------------- #
 

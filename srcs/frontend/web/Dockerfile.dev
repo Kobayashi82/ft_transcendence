@@ -9,10 +9,10 @@ RUN npm install -g vite typescript
 
 # Install project dependencies
 COPY package*.json ./
-RUN npm install
+# RUN npm install
 
 # Copy project files
-COPY . .
+# COPY . .
 
 # Set development environment
 ENV NODE_ENV=development
