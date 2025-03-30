@@ -15,8 +15,6 @@ app.register(require("@fastify/cors"), config.cors);
 app.register(require("@fastify/helmet"), config.helmet);
 app.register(require("@fastify/jwt"), config.jwt);
 app.register(require("@fastify/redis"), config.redis);
-
-app.register(require("./plugins/metrics"));
 app.register(require("./plugins/logger"));
 app.register(require("./plugins/rate-limit"));
 app.register(require("./plugins/hooks"));

@@ -1,13 +1,10 @@
 services:
-  # Ports (80, 443)
+  # ----------------- WEB SERVER (80, 443) ----------------- #
 
-  # ----------------- WEB SERVER ----------------- #
-
-  # Nginx (80, 443 & 9113)
   nginx:
     container_name: nginx
     build:
-      context: ./infrastructure/nginx
+      context: ./frontend/nginx
       args:
         - HOST_NAME=${HOST_NAME-localhost}
     ports:
@@ -15,11 +12,13 @@ services:
       - "443:443"
     networks:
       - public-net
-      - monitoring-net
-      - logging-net
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
-  # Web (80)
+  # --------------------- WEB PAGE (80) -------------------- #
+
   web:
     container_name: web
     build:
@@ -27,146 +26,30 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./frontend/web:/app
-      # - ./frontend/web/public:/app/public
     networks:
       - public-net
     restart: unless-stopped
 
-  # ------------------- LOGGING ------------------ #
-
-  # ElasticSearch (9200 & 9114)
-  # elasticsearch:
-  #   container_name: elasticsearch
-  #   build:
-  #     context: ./infrastructure/monitoring/logging/elasticsearch
-  #   volumes:
-  #     - elasticsearch_data:/usr/share/elasticsearch/data
-  #   environment:
-  #     - discovery.type=single-node
-  #     - xpack.security.enabled=true
-  #     - logger.level=ERROR
-  #     - ES_JAVA_OPTS=-Xms1g -Xmx1g
-  #     - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
-  #     - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
-  #   networks:
-  #     - logging-net
-  #     - monitoring-net
-  #     - db-net
-  #   healthcheck:
-  #     test:
-  #       [
-  #         "CMD",
-  #         "bash",
-  #         "-c",
-  #         "curl -f -u $$ELASTICSEARCH_USERNAME:$$ELASTICSEARCH_PASSWORD http://localhost:9200/_cluster/health?wait_for_status=yellow\\&timeout=30s",
-  #       ]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #     start_period: 30s
-  #   restart: unless-stopped
-
-  # LogStash (5044)
-  # logstash:
-  #   container_name: logstash
-  #   build:
-  #     context: ./infrastructure/monitoring/logging/logstash
-  #   environment:
-  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-  #     - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
-  #     - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
-  #   networks:
-  #     - logging-net
-  #   restart: unless-stopped
-
-  # Kibana (5601)
-  # kibana:
-  #   container_name: kibana
-  #   build:
-  #     context: ./infrastructure/monitoring/logging/kibana
-  #   environment:
-  #     - SERVER_BASEPATH=/kibana
-  #     - ES_JAVA_OPTS=-Xms512m -Xmx512m
-  #     - SERVER_PUBLICBASEURL=${HOST_NAME-https://localhost}/kibana
-  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-  #     - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
-  #     - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
-  #   depends_on:
-  #     elasticsearch:
-  #       condition: service_healthy
-  #   networks:
-  #     - public-net
-  #     - logging-net
-  #   restart: unless-stopped
-
-  # ------------------- METRICS ------------------ #
-
-  # Prometheus (9090)
-  # prometheus:
-  #   container_name: prometheus
-  #   build:
-  #     context: ./infrastructure/monitoring/metrics/prometheus
-  #   volumes:
-  #     - prometheus_data:/prometheus
-  #   networks:
-  #     - monitoring-net
-  #   restart: unless-stopped
-
-  # # Grafana (3000)
-  # grafana:
-  #   container_name: grafana
-  #   build:
-  #     context: ./infrastructure/monitoring/metrics/grafana
-  #   volumes:
-  #     - grafana_data:/var/lib/grafana
-  #   environment:
-  #     - GF_SERVER_ROOT_URL=${HOST_NAME-https://localhost}/grafana
-  #     - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME-${ADMIN_USERNAME}}
-  #     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD-${ADMIN_PASSWORD}}
-  #   networks:
-  #     - public-net
-  #     - monitoring-net
-  #   restart: unless-stopped
-
-  # # AlertManager (9093)
-  # alertmanager:
-  #   container_name: alertmanager
-  #   build:
-  #     context: ./infrastructure/monitoring/metrics/alertmanager
-  #   volumes:
-  #     - alertmanager_data:/alertmanager
-  #   networks:
-  #     - monitoring-net
-  #   restart: unless-stopped
-
-  # --------------- REDIS & GATEWAY --------------- #
-
-  # Redis (6379)
+  # --------------------- REDIS (6379) --------------------- #
 
   redis:
     container_name: redis
     image: redis:7.4.2
     volumes:
       - redis_data:/data
-    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD-${ADMIN_PASSWORD}}
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
     healthcheck:
-      test:
-        [
-          "CMD",
-          "redis-cli",
-          "-a",
-          "${REDIS_PASSWORD-${ADMIN_PASSWORD}}",
-          "ping",
-        ]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
       start_period: 10s
     networks:
-      - db-net
+      - service-net
     restart: unless-stopped
 
-  # Gateway (3000)
+  # -------------------- GATEWAY (3000) -------------------- #
+
   gateway:
     container_name: gateway
     build:
@@ -176,10 +59,9 @@ services:
       - ./backend/gateway/src:/app/src
     environment:
       - SERVICE_URL=gateway:3000
-      - LOGSTASH_URL=logstash:5044
 
       - REDIS_URL=redis:6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
 
       - CORS_ORIGIN=${CORS_ORIGIN-*}
 
@@ -194,14 +76,10 @@ services:
     networks:
       - public-net
       - service-net
-      - monitoring-net
-      - logging-net
-      - db-net
     restart: unless-stopped
 
-  # --------------- MICRO-SERVICES --------------- #
+  # -------------------- SERVICES (3000) ------------------- #
 
-  # Auth (3000)
   auth:
     container_name: auth
     build:
@@ -215,7 +93,7 @@ services:
       - GATEWAY_URL=http://gateway:3000
 
       - REDIS_URL=redis:6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
 
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN-15m}
@@ -243,36 +121,20 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - public-net
       - service-net
-      - monitoring-net
-      - db-net
     restart: unless-stopped
 
-# ------------------ VOLUMES ------------------- #
+# ------------------------- VOLUMES ------------------------ #
 
 volumes:
-  elasticsearch_data:
-  prometheus_data:
-  grafana_data:
-  alertmanager_data:
   redis_data:
   ms_auth_data:
 
-# ------------------ NETWORK ------------------- #
+# ------------------------- NETWORK ------------------------ #
 
 networks:
   public-net:
     name: public-net
-    driver: bridge
-  monitoring-net:
-    name: monitoring-net
-    driver: bridge
-  logging-net:
-    name: logging-net
-    driver: bridge
-  db-net:
-    name: db-net
     driver: bridge
   service-net:
     name: service-net

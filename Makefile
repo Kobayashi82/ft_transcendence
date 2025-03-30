@@ -105,7 +105,7 @@ _remove_volumes:
 	@docker volume rm srcs_grafana_data > /dev/null 2>&1 || true
 	@docker volume rm srcs_alertmanager_data > /dev/null 2>&1 || true
 	@docker volume rm srcs_redis_data > /dev/null 2>&1 || true
-	@docker volume rm srcs_auth_data > /dev/null 2>&1 || true
+	@docker volume rm srcs_ms_auth_data > /dev/null 2>&1 || true
 
 # Remove images (private rule)
 _remove_images:

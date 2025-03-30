@@ -11,7 +11,10 @@ const isDev = env === "development";
 // JWT secret mandatory
 let JWTSecret = process.env.JWT_SECRET;
 if (!JWTSecret) {
-  console.error("[ERROR] JWT_SECRET is required in production");
+  console.error(
+    new Date().toISOString(),
+    "\x1b[31merror\x1b[0m JWT_SECRET is required in production"
+  );
   process.exit(1);
 }
 
@@ -70,7 +73,9 @@ const config = {
   // Cookies
   cookie: {
     secret: process.env.COOKIE_SECRET || JWTSecret,
-    options: {
+    parseOptions: {},
+    hook: false,
+    cookieOptions: {
       httpOnly: true,
       secure: true,
       sameSite: "lax",

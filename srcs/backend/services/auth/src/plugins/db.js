@@ -102,22 +102,10 @@ async function dbPlugin(fastify, options) {
       const [seconds, nanoseconds] = process.hrtime(startTime);
       const duration = seconds + nanoseconds / 1e9;
 
-      // Registrar operación exitosa
-      if (fastify.metrics && fastify.metrics.db) {
-        fastify.metrics.db.recordOperation(operation, entity, "success");
-        fastify.metrics.db.recordDuration(operation, entity, duration);
-      }
-
       return result;
     } catch (error) {
       const [seconds, nanoseconds] = process.hrtime(startTime);
       const duration = seconds + nanoseconds / 1e9;
-
-      // Registrar operación con error
-      if (fastify.metrics && fastify.metrics.db) {
-        fastify.metrics.db.recordOperation(operation, entity, "error");
-        fastify.metrics.db.recordDuration(operation, entity, duration);
-      }
 
       fastify.logger.error(
         `Error en operación de base de datos ${operation} en ${entity}: ${error.message}`,
@@ -1168,5 +1156,5 @@ async function dbPlugin(fastify, options) {
 
 module.exports = fp(dbPlugin, {
   name: "db",
-  dependencies: ["metrics", "logger"],
+  dependencies: ["logger"],
 });

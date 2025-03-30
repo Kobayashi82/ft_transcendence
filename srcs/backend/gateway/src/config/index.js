@@ -11,7 +11,10 @@ const isDev = env === "development";
 // JWT secret mandatory
 let JWTSecret = process.env.JWT_SECRET;
 if (!JWTSecret) {
-  console.error("[ERROR] JWT_SECRET is required in production");
+  console.error(
+    new Date().toISOString(),
+    "\x1b[31merror\x1b[0m JWT_SECRET is required in production"
+  );
   process.exit(1);
 }
 
@@ -49,16 +52,6 @@ const config = {
     connectTimeout: 5000,
     enableReadyCheck: true,
     enableOfflineQueue: true,
-  },
-
-  // Logstash
-  logstash: {
-    host:
-      (process.env.LOGSTASH_URL && process.env.LOGSTASH_URL.split(":")[0]) ||
-      "logstash",
-    port:
-      (process.env.LOGSTASH_URL && process.env.LOGSTASH_URL.split(":")[1]) ||
-      5044,
   },
 
   // CORS

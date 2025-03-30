@@ -7,15 +7,10 @@ const app = fastify({ logger: false, trustProxy: true });
 
 app.decorate("config", config);
 
-app.register(require("@fastify/swagger"), { swagger: config.swagger });
-app.register(require("@fastify/cookie"), {
-  secret: config.cookie.secret,
-  parseOptions: config.cookie.options,
-});
 app.register(require("@fastify/jwt"), config.jwt);
+app.register(require("@fastify/cookie"), config.cookie);
+app.register(require("@fastify/swagger"), { swagger: config.swagger });
 app.register(require("@fastify/redis"), config.redis);
-
-app.register(require("./plugins/metrics"));
 app.register(require("./plugins/logger"));
 app.register(require("./plugins/db"), { database: config.database });
 
