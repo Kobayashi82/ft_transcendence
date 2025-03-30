@@ -240,7 +240,7 @@ const Register: React.FC = () => {
                   id="username"
                   name="username"
                   type="text"
-                  autoComplete="username"
+                  autoComplete="new-username"
                   value={formData.username}
                   onChange={handleChange}
                   className={`appearance-none block w-full pl-10 pr-3 py-2 border ${
