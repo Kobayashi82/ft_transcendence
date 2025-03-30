@@ -35,109 +35,109 @@ services:
   # ------------------- LOGGING ------------------ #
 
   # ElasticSearch (9200 & 9114)
-  elasticsearch:
-    container_name: elasticsearch
-    build:
-      context: ./infrastructure/monitoring/logging/elasticsearch
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=true
-      - logger.level=ERROR
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g
-      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
-      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
-    networks:
-      - logging-net
-      - monitoring-net
-      - db-net
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "bash",
-          "-c",
-          "curl -f -u $$ELASTICSEARCH_USERNAME:$$ELASTICSEARCH_PASSWORD http://localhost:9200/_cluster/health?wait_for_status=yellow\\&timeout=30s",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
+  # elasticsearch:
+  #   container_name: elasticsearch
+  #   build:
+  #     context: ./infrastructure/monitoring/logging/elasticsearch
+  #   volumes:
+  #     - elasticsearch_data:/usr/share/elasticsearch/data
+  #   environment:
+  #     - discovery.type=single-node
+  #     - xpack.security.enabled=true
+  #     - logger.level=ERROR
+  #     - ES_JAVA_OPTS=-Xms1g -Xmx1g
+  #     - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
+  #     - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
+  #   networks:
+  #     - logging-net
+  #     - monitoring-net
+  #     - db-net
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "bash",
+  #         "-c",
+  #         "curl -f -u $$ELASTICSEARCH_USERNAME:$$ELASTICSEARCH_PASSWORD http://localhost:9200/_cluster/health?wait_for_status=yellow\\&timeout=30s",
+  #       ]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 30s
+  #   restart: unless-stopped
 
   # LogStash (5044)
-  logstash:
-    container_name: logstash
-    build:
-      context: ./infrastructure/monitoring/logging/logstash
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
-      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
-    networks:
-      - logging-net
-    restart: unless-stopped
+  # logstash:
+  #   container_name: logstash
+  #   build:
+  #     context: ./infrastructure/monitoring/logging/logstash
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #     - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
+  #     - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
+  #   networks:
+  #     - logging-net
+  #   restart: unless-stopped
 
   # Kibana (5601)
-  kibana:
-    container_name: kibana
-    build:
-      context: ./infrastructure/monitoring/logging/kibana
-    environment:
-      - SERVER_BASEPATH=/kibana
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - SERVER_PUBLICBASEURL=${HOST_NAME-https://localhost}/kibana
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
-      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-    networks:
-      - public-net
-      - logging-net
-    restart: unless-stopped
+  # kibana:
+  #   container_name: kibana
+  #   build:
+  #     context: ./infrastructure/monitoring/logging/kibana
+  #   environment:
+  #     - SERVER_BASEPATH=/kibana
+  #     - ES_JAVA_OPTS=-Xms512m -Xmx512m
+  #     - SERVER_PUBLICBASEURL=${HOST_NAME-https://localhost}/kibana
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #     - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME-${ADMIN_USERNAME}}
+  #     - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD-${ADMIN_PASSWORD}}
+  #   depends_on:
+  #     elasticsearch:
+  #       condition: service_healthy
+  #   networks:
+  #     - public-net
+  #     - logging-net
+  #   restart: unless-stopped
 
   # ------------------- METRICS ------------------ #
 
   # Prometheus (9090)
-  prometheus:
-    container_name: prometheus
-    build:
-      context: ./infrastructure/monitoring/metrics/prometheus
-    volumes:
-      - prometheus_data:/prometheus
-    networks:
-      - monitoring-net
-    restart: unless-stopped
+  # prometheus:
+  #   container_name: prometheus
+  #   build:
+  #     context: ./infrastructure/monitoring/metrics/prometheus
+  #   volumes:
+  #     - prometheus_data:/prometheus
+  #   networks:
+  #     - monitoring-net
+  #   restart: unless-stopped
 
-  # Grafana (3000)
-  grafana:
-    container_name: grafana
-    build:
-      context: ./infrastructure/monitoring/metrics/grafana
-    volumes:
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SERVER_ROOT_URL=${HOST_NAME-https://localhost}/grafana
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME-${ADMIN_USERNAME}}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD-${ADMIN_PASSWORD}}
-    networks:
-      - public-net
-      - monitoring-net
-    restart: unless-stopped
+  # # Grafana (3000)
+  # grafana:
+  #   container_name: grafana
+  #   build:
+  #     context: ./infrastructure/monitoring/metrics/grafana
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #   environment:
+  #     - GF_SERVER_ROOT_URL=${HOST_NAME-https://localhost}/grafana
+  #     - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME-${ADMIN_USERNAME}}
+  #     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD-${ADMIN_PASSWORD}}
+  #   networks:
+  #     - public-net
+  #     - monitoring-net
+  #   restart: unless-stopped
 
-  # AlertManager (9093)
-  alertmanager:
-    container_name: alertmanager
-    build:
-      context: ./infrastructure/monitoring/metrics/alertmanager
-    volumes:
-      - alertmanager_data:/alertmanager
-    networks:
-      - monitoring-net
-    restart: unless-stopped
+  # # AlertManager (9093)
+  # alertmanager:
+  #   container_name: alertmanager
+  #   build:
+  #     context: ./infrastructure/monitoring/metrics/alertmanager
+  #   volumes:
+  #     - alertmanager_data:/alertmanager
+  #   networks:
+  #     - monitoring-net
+  #   restart: unless-stopped
 
   # --------------- REDIS & GATEWAY --------------- #
 
@@ -177,12 +177,16 @@ services:
     environment:
       - SERVICE_URL=gateway:3000
       - LOGSTASH_URL=logstash:5044
+
       - REDIS_URL=redis:6379
       - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
+
       - CORS_ORIGIN=${CORS_ORIGIN-*}
+
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN-15m}
       - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN-7d}
+
       - AUTH_SERVICE_URL=http://auth:3000
     depends_on:
       redis:
@@ -209,17 +213,16 @@ services:
     environment:
       - SERVICE_URL=auth:3000
       - GATEWAY_URL=http://gateway:3000
+
       - REDIS_URL=redis:6379
       - REDIS_PASSWORD=${REDIS_PASSWORD-${ADMIN_PASSWORD}}
 
-      - CORS_ORIGIN=${CORS_ORIGIN-*}
-
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN-15m}
       - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN-7d}
-      - COOKIE_SECRET=${COOKIE_SECRET}
+      - COOKIE_SECRET=${COOKIE_SECRET-${JWT_SECRET}}
       - COOKIE_MAX_AGE=${COOKIE_MAX_AGE-604800}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY-${JWT_SECRET}}
 
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}

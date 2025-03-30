@@ -3,11 +3,7 @@
 const fp = require("fastify-plugin");
 const promClient = require("prom-client");
 
-const proxyMetrics = require("./proxy");
-const securityMetrics = require("./security");
-const rateLimitMetrics = require("./rate-limit");
-const loggingMetrics = require("./logging");
-const healthMetrics = require("./health");
+const dbMetrics = require("./db");
 
 async function metricsPlugin(fastify, options) {
   const register = new promClient.Registry();
@@ -17,42 +13,14 @@ async function metricsPlugin(fastify, options) {
   promClient.collectDefaultMetrics({ register, prefix: `${serviceName}_` });
 
   // Initialize metric modules
-  const proxy = proxyMetrics(promClient, serviceName);
-  const security = securityMetrics(promClient, serviceName);
-  const rateLimit = rateLimitMetrics(promClient, serviceName);
-  const logging = loggingMetrics(promClient, serviceName);
-  const health = healthMetrics(promClient, serviceName);
+  // const db = dbMetrics(promClient, serviceName);
 
   // Register all metrics in the global registry
-  register.registerMetric(proxy.proxyRequestsTotal);
-  register.registerMetric(proxy.proxyLatency);
-  register.registerMetric(proxy.httpErrors);
-  register.registerMetric(proxy.connectionErrors);
-  register.registerMetric(proxy.methodNotAllowed);
-
-  register.registerMetric(security.unauthorizedAccess);
-  register.registerMetric(security.authErrors);
-  register.registerMetric(security.roleChecks);
-
-  register.registerMetric(rateLimit.rateLimitHits);
-  register.registerMetric(rateLimit.rateLimitBlocked);
-  register.registerMetric(rateLimit.rateLimitState);
-
-  register.registerMetric(logging.logsProcessed);
-  register.registerMetric(logging.logsSentToLogstash);
-  register.registerMetric(logging.logSendFailures);
-  register.registerMetric(logging.logBatchSize);
-
-  register.registerMetric(health.healthChecks);
-  register.registerMetric(health.healthCheckDuration);
+  // register.registerMetric(db.dbOperationsTotal);
+  // register.registerMetric(db.dbOperationDuration);
 
   fastify.decorate("metrics", {
-    register,
-    proxy,
-    security,
-    rateLimit,
-    logging,
-    health,
+    // db,
   });
 
   // Add hook for basic request/response metrics
@@ -97,6 +65,29 @@ async function metricsPlugin(fastify, options) {
       .header("Content-Type", register.contentType)
       .send(await register.metrics());
   });
+
+  // Configure periodic metrics update (every 1 minute)
+  setInterval(async () => {
+    try {
+      // Actived users
+      const activeUsers = await fastify.db.get(
+        "SELECT COUNT(*) as count FROM users WHERE is_active = true AND is_deleted = false"
+      );
+      if (activeUsers && activeUsers.count) {
+        fastify.metrics.auth.setActiveUsers(activeUsers.count);
+      }
+
+      // Actived sessions
+      const activeSessions = await fastify.db.get(
+        "SELECT COUNT(*) as count FROM sessions WHERE revoked = false AND expires_at > CURRENT_TIMESTAMP"
+      );
+      if (activeSessions && activeSessions.count) {
+        fastify.metrics.auth.setActiveSessions(activeSessions.count);
+      }
+    } catch (err) {
+      fastify.logger.error(`Error updating metrics: ${err.message}`);
+    }
+  }, 60000);
 }
 
 module.exports = fp(metricsPlugin, { name: "metrics" });

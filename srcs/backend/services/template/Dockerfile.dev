@@ -9,7 +9,7 @@ RUN npm install -g nodemon
 
 # Install project dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm install --loglevel error 
 
 # Copy project files
 COPY . .
