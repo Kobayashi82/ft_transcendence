@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import NotificationsPanel from "../notifications/NotificationsPanel";
@@ -9,13 +9,25 @@ import { useGlobalUIState } from "../../hooks/useGlobalUIState";
 const Header = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   const { user, loading } = useUserProfile();
-  const { closeAllMenus, isLoading } = useGlobalUIState();
+  const { closeAllMenus } = useGlobalUIState();
+
+  // Agregamos un useEffect para controlar cuándo mostrar los componentes
+  useEffect(() => {
+    if (!loading && !isReady) {
+      // Pequeño retraso para asegurar que todo esté listo
+      const timer = setTimeout(() => {
+        setIsReady(true);
+      }, 50);
+
+      return () => clearTimeout(timer);
+    }
+  }, [loading, isReady]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
-    // If opening mobile menu, close other menus
     if (!isMenuOpen) {
       closeAllMenus();
     }
@@ -39,14 +51,30 @@ const Header = () => {
           <nav className="hidden md:flex items-center space-x-8">
             <NavLinks currentPath={location.pathname} />
 
-            {/* Always render profile menu, even for guest users */}
-            <div className="flex items-center space-x-4">
-              {/* Notifications Panel */}
-              <NotificationsPanel />
-
-              {/* Profile Menu */}
-              <ProfileMenu />
-            </div>
+            {!isReady ? (
+              <div className="flex items-center space-x-4">
+                <div className="w-10 h-10 bg-gray-800 rounded-full animate-pulse"></div>
+                <div className="w-10 h-10 bg-gray-800 rounded-full animate-pulse"></div>
+              </div>
+            ) : (
+              <>
+                {user ? (
+                  <div className="flex items-center space-x-4">
+                    <NotificationsPanel />
+                    <ProfileMenu />
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-4">
+                    <Link to="/login" className="btn-secondary">
+                      Login
+                    </Link>
+                    <Link to="/register" className="btn-primary">
+                      Register
+                    </Link>
+                  </div>
+                )}
+              </>
+            )}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -66,17 +94,45 @@ const Header = () => {
               currentPath={location.pathname}
             />
 
-            <div className="pt-4 border-t border-gray-800">
-              {/* Mobile Notifications and Profile */}
-              <ProfileMenu
-                isMobile={true}
-                onClose={() => setIsMenuOpen(false)}
-              />
-              <NotificationsPanel
-                isMobile={true}
-                onClose={() => setIsMenuOpen(false)}
-              />
-            </div>
+            {!isReady ? (
+              <div className="pt-4 border-t border-gray-800">
+                <div className="flex justify-center">
+                  <div className="w-10 h-10 bg-gray-800 rounded-full animate-pulse"></div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {user ? (
+                  <div className="pt-4 border-t border-gray-800">
+                    <ProfileMenu
+                      isMobile={true}
+                      onClose={() => setIsMenuOpen(false)}
+                    />
+                    <NotificationsPanel
+                      isMobile={true}
+                      onClose={() => setIsMenuOpen(false)}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col space-y-3 pt-4 border-t border-gray-800">
+                    <Link
+                      to="/login"
+                      className="btn-secondary w-full text-center"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to="/register"
+                      className="btn-primary w-full text-center"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Register
+                    </Link>
+                  </div>
+                )}
+              </>
+            )}
           </nav>
         )}
       </div>
