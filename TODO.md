@@ -3,16 +3,19 @@
 ### Reverse Proxy Configuration
 
 ### Kibana (dashboards)
+
 - Nginx
 - Gateway
 - Services
 
 ### Grafana (dashboards)
+
 - Nginx
 - Gateway
 - Services
 
 ### Alert Manager (alerts)
+
 - Nginx
 - Gateway
 - Services
@@ -20,13 +23,11 @@
 #
 
 - Define data retention and archiving policies to manage log data storage effectively
-- Create id para mandar a microservicios
 
 ### Gateway
 
-- Request_id
 - Websocket
-- Seguridad
+- Circuit Breakers
 
 ### Auth
 
@@ -38,11 +39,11 @@
 - 2FA (email, app, SMS, QR)
 - Recover Password
 - Cookies ?
-<br><br>
+  <br><br>
 - Frontend, Auth y Gateway deben cumplir con las políticas de seguridad y GDPR.
 - Si falla redis, microservicios deberian funcionar
 - Health, metricas y logs de gateway y auth
-<br><br>
+  <br><br>
 - Implementar /Template
 - Login desde diferentes dispositivos
 - Roles de usuarios y como se determina un admin
@@ -58,8 +59,8 @@
 - Ranking
 - Estadísticas
 - Opciones del juego
-- Notificaciones 
+- Notificaciones
 - Idiomas (ingles y español)
-- Soporte varios navegadores 
+- Soporte varios navegadores
 - Soporte varios dispositivos
 - Oponente IA
