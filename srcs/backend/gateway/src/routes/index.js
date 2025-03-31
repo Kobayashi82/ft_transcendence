@@ -1,13 +1,11 @@
-'use strict'
+"use strict";
 
 async function routes(fastify, options) {
+  fastify.register(require("./health"));
 
-  fastify.register(require('./health'))
-
-  fastify.get('/', (request, reply) => {
+  fastify.get("/", (request, reply) => {
     reply.send({ message: `${new Date().toISOString()} Hello, world!` });
   });
-
 }
 
-module.exports = routes
+module.exports = routes;

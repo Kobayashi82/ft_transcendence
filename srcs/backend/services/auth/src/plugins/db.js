@@ -211,6 +211,25 @@ async function dbPlugin(fastify, options) {
       return null;
     },
 
+    async getUserByUsername(username) {
+      const user = await fastify.db.get(
+        "SELECT * FROM users WHERE username = ? AND is_deleted = false",
+        [username],
+        "users"
+      );
+      if (user) {
+        // Obtener roles del usuario
+        const roles = await fastify.db.all(
+          "SELECT role FROM user_roles WHERE user_id = ?",
+          [user.id],
+          "user_roles"
+        );
+        user.roles = roles.map((role) => role.role);
+        return user;
+      }
+      return null;
+    },
+
     // Obtener usuario por email
     async getUserByEmail(email) {
       const user = await fastify.db.get(

@@ -1,6 +1,6 @@
 "use strict";
 
-const healthSchema = require("../schemas/health");
+const healthSchema = require("../schemas/service");
 
 async function healthRoutes(fastify, options) {
   fastify.get(

@@ -73,6 +73,7 @@ async function proxyPlugin(fastify, options) {
     // Find matching route, required roles and methods
     let requiredRoles = [];
     let allowedMethods = null;
+    let authRequired = true; // Default to requiring auth for security
 
     if (service.routes && service.routes[routePath]) {
       const routeConfig = service.routes[routePath];
@@ -80,6 +81,11 @@ async function proxyPlugin(fastify, options) {
       if (typeof routeConfig === "object") {
         // Get required roles
         requiredRoles = routeConfig.roles || [];
+
+        // Check if authentication is required
+        if (routeConfig.authenticated !== undefined) {
+          authRequired = routeConfig.authenticated;
+        }
 
         // Get required methods
         if (routeConfig.method) {
@@ -93,7 +99,6 @@ async function proxyPlugin(fastify, options) {
     // Check if the method is allowed
     if (allowedMethods && !allowedMethods.includes(method)) {
       // Log attempt of a non-allowed method
-
       fastify.logger.warn("Method not allowed", {
         url: request.url,
         method: request.method,
@@ -111,29 +116,44 @@ async function proxyPlugin(fastify, options) {
       return reply;
     }
 
-    // Get user roles
-    let userRoles = [];
-    if (request.auth && request.auth.authenticated) {
-      userRoles = request.auth.roles || [];
-    }
-
-    // Check if user has required roles
-    if (!hasRequiredRoles(userRoles, requiredRoles)) {
-      // Log failed role verification
-
-      fastify.logger.warn("Insufficient permissions", {
+    // Check if authentication is required
+    if (authRequired && (!request.auth || !request.auth.authenticated)) {
+      fastify.logger.warn("Authentication required", {
         url: request.url,
         method: request.method,
-        requiredRoles: requiredRoles,
         service: serviceName,
       });
 
-      reply.code(403).send({
-        statusCode: 403,
-        error: "Forbidden",
-        message: "Insufficient permissions to access this resource",
+      reply.code(401).send({
+        statusCode: 401,
+        error: "Unauthorized",
+        message: "Authentication required for this resource",
       });
       return reply;
+    }
+
+    // Only check roles if authentication is required
+    if (authRequired) {
+      // Get user roles
+      let userRoles = request.auth?.roles || [];
+
+      // Check if user has required roles
+      if (!hasRequiredRoles(userRoles, requiredRoles)) {
+        // Log failed role verification
+        fastify.logger.warn("Insufficient permissions", {
+          url: request.url,
+          method: request.method,
+          requiredRoles: requiredRoles,
+          service: serviceName,
+        });
+
+        reply.code(403).send({
+          statusCode: 403,
+          error: "Forbidden",
+          message: "Insufficient permissions to access this resource",
+        });
+        return reply;
+      }
     }
   });
 

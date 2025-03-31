@@ -2,6 +2,26 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { EyeIcon, EyeOffIcon, AtSignIcon, UserIcon } from "lucide-react";
 
+// Define types based on the API schema
+interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  token_type: string;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    roles: string[];
+    has_2fa: boolean;
+  };
+}
+
+interface ErrorResponse {
+  error: string;
+  message: string;
+}
+
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +35,12 @@ const Login: React.FC = () => {
     general: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  // Helper function to detect if identifier is an email
+  const isEmail = (value: string): boolean => {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailPattern.test(value);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -38,20 +64,22 @@ const Login: React.FC = () => {
     if (!formData.identifier.trim()) {
       newErrors.identifier = "Email or username is required";
       isValid = false;
+    } else if (isEmail(formData.identifier)) {
+      // If it looks like an email, validate email format
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(formData.identifier)) {
+        newErrors.identifier = "Please enter a valid email address";
+        isValid = false;
+      }
     }
 
     // Validate password
     if (!formData.password) {
       newErrors.password = "Password is required";
       isValid = false;
-    } else {
-      const passwordPattern =
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
-      if (!passwordPattern.test(formData.password)) {
-        newErrors.password =
-          "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
-        isValid = false;
-      }
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters long";
+      isValid = false;
     }
 
     setErrors(newErrors);
@@ -66,19 +94,56 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Prepare the request body based on whether the identifier is an email or username
+      const requestBody: Record<string, string> = {
+        password: formData.password,
+      };
 
-      // Mock successful login
-      console.log("Login successful", formData);
+      // Add either email or username field based on the identifier format
+      if (isEmail(formData.identifier)) {
+        requestBody.email = formData.identifier;
+      } else {
+        requestBody.username = formData.identifier;
+      }
 
-      // Redirect to home or dashboard
-      navigate("/");
+      // Make the API call
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json();
+        throw new Error(errorData.message || "Login failed");
+      }
+
+      const data: LoginResponse = await response.json();
+
+      // Store tokens in localStorage or a secure storage mechanism
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("refresh_token", data.refresh_token);
+
+      // Store user info if needed
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Check if 2FA is enabled and redirect accordingly
+      if (data.user.has_2fa) {
+        navigate("/2fa-verification");
+      } else {
+        // Redirect to dashboard or home
+        navigate("/");
+      }
     } catch (error) {
       console.error("Login error:", error);
       setErrors((prev) => ({
         ...prev,
-        general: "Invalid credentials. Please try again.",
+        general:
+          error instanceof Error
+            ? error.message
+            : "Invalid credentials. Please try again.",
       }));
     } finally {
       setIsLoading(false);
@@ -87,12 +152,12 @@ const Login: React.FC = () => {
 
   const handleGoogleLogin = () => {
     // Implement Google OAuth login
-    console.log("Google login clicked");
+    window.location.href = "/api/auth/oauth/google";
   };
 
   const handle42Login = () => {
     // Implement 42 OAuth login
-    console.log("42 login clicked");
+    window.location.href = "/api/auth/oauth/42";
   };
 
   return (

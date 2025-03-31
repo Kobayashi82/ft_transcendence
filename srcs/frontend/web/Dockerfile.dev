@@ -21,7 +21,7 @@ ENV CHOKIDAR_USEPOLLING=true
 # Enable hot reloading
 ENV WATCHPACK_POLLING=true
 # Configure API endpoint
-ENV VITE_API_URL=http://gateway:3000/api
+ENV VITE_API_URL=http://nginx/api
 
 EXPOSE 80
 

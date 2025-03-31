@@ -13,6 +13,7 @@ app.register(require("@fastify/swagger"), { swagger: config.swagger });
 app.register(require("@fastify/redis"), config.redis);
 app.register(require("./plugins/logger"));
 app.register(require("./plugins/db"), { database: config.database });
+app.register(require("./plugins/security"));
 
 // app.register(require("./plugins/data-retention"));
 // app.register(require("./plugins/auth"));

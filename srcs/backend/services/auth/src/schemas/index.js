@@ -1,17 +1,45 @@
 "use strict";
 
-const { loginSchema } = require("./login");
-const { logoutSchema } = require("./logout");
-const { registerSchema } = require("./register");
+const { loginSchema, logoutSchema } = require("./basic");
+const {
+  registerSchema,
+  verifyCodeSchema,
+  resendCodeSchema,
+} = require("./register");
 const { oauthInitSchema, oauthCallbackSchema } = require("./oauth");
-const { refreshTokenSchema, validateTokenSchema } = require("./token");
-const { healthSchema } = require("./health");
+const {
+  refreshTokenSchema,
+  validateTokenSchema,
+  revokeTokenSchema,
+} = require("./token");
+const {
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+} = require("./password");
+const {
+  verify2faSchema,
+  enable2faSchema,
+  disable2faSchema,
+  regenerateBackupCodesSchema,
+} = require("./twoFactor");
+const {
+  listSessionsSchema,
+  logoutAllSessionsSchema,
+  revokeSessionSchema,
+} = require("./session");
+const { getUserInfoSchema } = require("./user");
+const { healthSchema } = require("./service");
 
 module.exports = {
-  // Auth
+  // Authentication
   loginSchema,
   logoutSchema,
+
+  // Registration
   registerSchema,
+  verifyCodeSchema,
+  resendCodeSchema,
 
   // OAuth
   oauthInitSchema,
@@ -20,7 +48,27 @@ module.exports = {
   // Tokens
   refreshTokenSchema,
   validateTokenSchema,
+  revokeTokenSchema,
 
-  // Helath
+  // Password management
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+
+  // Two-factor authentication
+  verify2faSchema,
+  enable2faSchema,
+  disable2faSchema,
+  regenerateBackupCodesSchema,
+
+  // Session management
+  listSessionsSchema,
+  logoutAllSessionsSchema,
+  revokeSessionSchema,
+
+  // User information
+  getUserInfoSchema,
+
+  // Service routes
   healthSchema,
 };
