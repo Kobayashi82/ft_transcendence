@@ -1,148 +1,40 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
-import NotificationsPanel from "../notifications/NotificationsPanel";
-import ProfileMenu from "../profile/ProfileMenu";
-import useUserProfile from "../../hooks/useUserProfile";
-import { useGlobalUIState } from "../../hooks/useGlobalUIState";
+import React from "react";
+import { Link } from "react-router-dom";
 
-const Header = () => {
-  const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const { user, loading } = useUserProfile();
-  const { closeAllMenus, isLoading } = useGlobalUIState();
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-    // If opening mobile menu, close other menus
-    if (!isMenuOpen) {
-      closeAllMenus();
-    }
-  };
-
+const Header: React.FC = () => {
   return (
-    <header className="sticky top-0 z-50 bg-gray-900 border-b border-gray-800 backdrop-blur-sm bg-opacity-90">
-      <div className="container-custom py-4">
-        <div className="flex items-center justify-between">
+    <header className="bg-gray-800 border-b border-gray-700">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="flex justify-between items-center">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <span className="text-xl font-bold text-white">FT</span>
-            </div>
-            <span className="text-xl font-bold tracking-tight text-gray-100">
-              Transcendence
-            </span>
+          <Link to="/" className="text-2xl font-bold text-white">
+            Transcendence
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <NavLinks currentPath={location.pathname} />
-
-            {/* Always render profile menu, even for guest users */}
-            <div className="flex items-center space-x-4">
-              {/* Notifications Panel */}
-              <NotificationsPanel />
-
-              {/* Profile Menu */}
-              <ProfileMenu />
-            </div>
+          {/* Navegación */}
+          <nav className="flex space-x-4">
+            <Link
+              to="/jugar"
+              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Jugar
+            </Link>
+            <Link
+              to="/ranking"
+              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Ranking
+            </Link>
+			<Link
+              to="/status"
+              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Status
+            </Link>
           </nav>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden text-gray-100 focus:outline-none"
-            onClick={toggleMenu}
-          >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
         </div>
-
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <nav className="md:hidden py-4 space-y-4">
-            <MobileNavLinks
-              closeMenu={() => setIsMenuOpen(false)}
-              currentPath={location.pathname}
-            />
-
-            <div className="pt-4 border-t border-gray-800">
-              {/* Mobile Notifications and Profile */}
-              <ProfileMenu
-                isMobile={true}
-                onClose={() => setIsMenuOpen(false)}
-              />
-              <NotificationsPanel
-                isMobile={true}
-                onClose={() => setIsMenuOpen(false)}
-              />
-            </div>
-          </nav>
-        )}
       </div>
     </header>
-  );
-};
-
-interface NavLinksProps {
-  currentPath: string;
-}
-
-const NavLinks = ({ currentPath }: NavLinksProps) => {
-  const links = [
-    { path: "/", label: "Home" },
-    { path: "/game", label: "Game" },
-    { path: "/leaderboard", label: "Leaderboard" },
-    { path: "/about", label: "About" },
-  ];
-
-  return (
-    <>
-      {links.map((link) => (
-        <Link
-          key={link.path}
-          to={link.path}
-          className={`text-gray-300 hover:text-white transition-colors ${
-            currentPath === link.path ? "text-white font-medium" : ""
-          }`}
-        >
-          {link.label}
-        </Link>
-      ))}
-    </>
-  );
-};
-
-interface MobileNavLinksProps {
-  closeMenu: () => void;
-  currentPath: string;
-}
-
-const MobileNavLinks = ({ closeMenu, currentPath }: MobileNavLinksProps) => {
-  const links = [
-    { path: "/", label: "Home" },
-    { path: "/game", label: "Game" },
-    { path: "/leaderboard", label: "Leaderboard" },
-    { path: "/about", label: "About" },
-  ];
-
-  return (
-    <>
-      {links.map((link) => (
-        <Link
-          key={link.path}
-          to={link.path}
-          className={`block py-2 transition-colors ${
-            currentPath === link.path
-              ? "text-white font-medium bg-gray-800 rounded-lg px-3"
-              : "text-gray-300 hover:text-white"
-          }`}
-          onClick={closeMenu}
-        >
-          {link.label}
-        </Link>
-      ))}
-    </>
   );
 };
 

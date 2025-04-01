@@ -9,7 +9,6 @@ DC = COMPOSE_BAKE=true docker compose -f srcs/docker-compose.yml
 
 # ============================== CONTAINER RULES ==============================
 
-
 all: up
 
 # Create containers
@@ -34,13 +33,6 @@ build:
 	@$(DC) build || exit 1
 	@printf "\n ✔ Containers\t  $(GR)Built$(NC)\n\n"
 
-# Builds containers
-sbuild:
-	@$(DC) down || exit 1
-	@$(DC) build gateway || exit 1
-	@$(DC) build auth || exit 1
-	@$(DC) build web || exit 1
-
 # Rebuilds containers
 rebuild:
 	@$(DC) down || exit 1
@@ -51,9 +43,11 @@ rebuild:
 config:
 	@d$(DC) config
 
+re:
+	make fclean up
+
 
 # ============================== CLEAN RULES ==============================
-
 
 # Removes images
 iclean:
@@ -70,13 +64,20 @@ vclean:
 	@$(MAKE) -s _remove_volumes
 	@printf "$(CU)$(CL) ✔ Volumes\t\t$(GR)Removed$(NC)\n\n"
 
+# Removes volumes
+nclean:
+	@$(DC) down || exit 1
+	@printf "\nplease wait...\n"
+	@$(MAKE) -s _remove_networks
+	@printf "$(CU)$(CL) ✔ Networks\t\t$(GR)Removed$(NC)\n\n"
+
 # Removes images, volumes and network
 clean:
 	@$(DC) down || exit 1
 	@printf "\nplease wait...\n"
 	@$(MAKE) -s _remove_images
 	@$(MAKE) -s _remove_volumes
-	@docker network rm pong-net > /dev/null 2>&1 || true
+	@$(MAKE) -s _remove_networks
 	@printf "$(CU)$(CL) ✔ Images\t\t$(GR)Removed$(NC)\n"
 	@printf " ✔ Volumes\t\t$(GR)Removed$(NC)\n"
 	@printf " ✔ Network\t\t$(GR)Removed$(NC)\n\n"
@@ -87,7 +88,7 @@ fclean:
 	@printf "\nplease wait...\n"
 	@$(MAKE) -s _remove_images
 	@$(MAKE) -s _remove_volumes
-	@docker network rm pong-net > /dev/null 2>&1 || true
+	@$(MAKE) -s _remove_networks
 	@docker builder prune -f > /dev/null 2>&1 || true
 	@printf "$(CU)$(CL) ✔ Images\t\t$(GR)Removed$(NC)\n"
 	@printf " ✔ Volumes\t\t$(GR)Removed$(NC)\n"
@@ -97,30 +98,24 @@ fclean:
 
 # ============================== PRIVATE RULES ==============================
 
+# Remove networks (private rule)
+_remove_networks:
+	@docker network rm public-net > /dev/null 2>&1 || true
+	@docker network rm service-net > /dev/null 2>&1 || true
 
 # Remove volumes (private rule)
 _remove_volumes:
-	@docker volume rm srcs_elasticsearch_data > /dev/null 2>&1 || true
-	@docker volume rm srcs_prometheus_data > /dev/null 2>&1 || true
-	@docker volume rm srcs_grafana_data > /dev/null 2>&1 || true
-	@docker volume rm srcs_alertmanager_data > /dev/null 2>&1 || true
-	@docker volume rm srcs_redis_data > /dev/null 2>&1 || true
+	@docker volume rm srcs_nginx_data > /dev/null 2>&1 || true
+	@docker volume rm srcs_web_data > /dev/null 2>&1 || true
 	@docker volume rm srcs_ms_auth_data > /dev/null 2>&1 || true
+	@docker volume rm srcs_ms_stats_data > /dev/null 2>&1 || true
 
 # Remove images (private rule)
 _remove_images:
 	@docker rmi srcs-nginx > /dev/null 2>&1 || true
 	@docker rmi srcs-web > /dev/null 2>&1 || true
-	@docker rmi srcs-elasticsearch > /dev/null 2>&1 || true
-	@docker rmi srcs-logstash > /dev/null 2>&1 || true
-	@docker rmi srcs-kibana > /dev/null 2>&1 || true
-	@docker rmi srcs-prometheus > /dev/null 2>&1 || true
-	@docker rmi srcs-grafana > /dev/null 2>&1 || true
-	@docker rmi srcs-alertmanager > /dev/null 2>&1 || true
-	@docker rmi redis:7.4.2 > /dev/null 2>&1 || true
 	@docker rmi srcs-gateway > /dev/null 2>&1 || true
 	@docker rmi srcs-auth > /dev/null 2>&1 || true
-	@docker rmi srcs-user > /dev/null 2>&1 || true
+	@docker rmi srcs-stats > /dev/null 2>&1 || true
 
-.PHONY: all up down restart build rebuild iclean vclean clean fclean _remove_images _remove_volumes
-
+.PHONY: all up down restart build rebuild iclean vclean nclean clean fclean _remove_images _remove_volumes _remove_networks

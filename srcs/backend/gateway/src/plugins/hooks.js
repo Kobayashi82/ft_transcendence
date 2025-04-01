@@ -3,21 +3,19 @@
 const fp = require("fastify-plugin");
 
 async function securityHooksPlugin(fastify, options) {
+
   fastify.addHook("onRequest", (request, reply, done) => {
     // HTTPS Enforcement
-    if (
-      !fastify.config.isDev &&
-      request.headers["x-forwarded-proto"] !== "https"
-    ) {
-      fastify.logger.info("HTTPS redirect enforced", {
+    if (request.headers["x-forwarded-proto"] !== "https") {
+      console.info("HTTPS redirect enforced", {
         url: request.url,
         method: request.method,
         ip: request.ip,
         userAgent: request.headers["user-agent"],
       });
-
+  
       reply.redirect(`https://${request.hostname}${request.url}`);
-      return;
+      return done();
     }
     done();
   });
@@ -32,30 +30,29 @@ async function securityHooksPlugin(fastify, options) {
       reply.header("Pragma", "no-cache");
       reply.header("Expires", "0");
     }
-
+  
     // Response size limits (1 MB)
     const maxSize = 1 * 1024 * 1024;
     if (payload && payload.length > maxSize) {
-      fastify.logger.warn("Response size exceeds limit", {
+      console.warn("Response size exceeds limit", {
         url: request.url,
         method: request.method,
         size: payload.length,
         limit: maxSize,
       });
-
-      const payloadTooLargeError = fastify.httpErrors.payloadTooLarge(
-        "Response size exceeds maximum allowed size"
-      );
-      const errorResponse = JSON.stringify(payloadTooLargeError);
+  
+      const errorResponse = JSON.stringify({
+        statusCode: 413,
+        error: "Payload Too Large",
+        message: "Response size exceeds maximum allowed size"
+      });
+      
       reply.code(413);
       return done(null, errorResponse);
     }
-
+  
     done(null, payload);
   });
 }
 
-module.exports = fp(securityHooksPlugin, {
-  name: "hooks",
-  dependencies: ["logger"],
-});
+module.exports = fp(securityHooksPlugin, { name: "hooks" });

@@ -1,21 +1,17 @@
 services:
 
-  # ----------------- WEB SERVER (80, 443) ----------------- #
+  # ----------------- WEB SERVER (443) ----------------- #
 
   nginx:
     container_name: nginx
     build:
-      context: ./frontend/nginx
+      context: ./backend/nginx
       args:
         - HOST_NAME=${HOST_NAME-localhost}
     ports:
-      - "80:443"
       - "443:443"
     networks:
       - public-net
-    depends_on:
-      redis:
-        condition: service_healthy
     restart: unless-stopped
 
   # --------------------- WEB PAGE (80) -------------------- #
@@ -31,24 +27,6 @@ services:
       - public-net
     restart: unless-stopped
 
-  # --------------------- REDIS (6379) --------------------- #
-
-  redis:
-    container_name: redis
-    image: redis:7.4.2
-    volumes:
-      - redis_data:/data
-    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
-    networks:
-      - service-net
-    restart: unless-stopped
-
   # -------------------- GATEWAY (3000) -------------------- #
 
   gateway:
@@ -60,27 +38,17 @@ services:
       - ./backend/gateway/src:/app/src
     environment:
       - SERVICE_URL=gateway:3000
-
-      - REDIS_URL=redis:6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-
-      - CORS_ORIGIN=${CORS_ORIGIN-*}
-
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN-15m}
-      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN-7d}
-
       - AUTH_SERVICE_URL=http://auth:3000
-    depends_on:
-      redis:
-        condition: service_healthy
+      - AUTH_SERVICE_URL=http://stats:3000
+      - CORS_ORIGIN=${CORS_ORIGIN-*}
     networks:
       - public-net
       - service-net
     restart: unless-stopped
 
-  # -------------------- SERVICES (3000) ------------------- #
+  # --------------- MICRO-SERVICES --------------- #
 
+  # Auth (3000)
   auth:
     container_name: auth
     build:
@@ -91,36 +59,21 @@ services:
       - ms_auth_data:/app/data
     environment:
       - SERVICE_URL=auth:3000
-      - GATEWAY_URL=http://gateway:3000
+    networks:
+      - service-net
+    restart: unless-stopped
 
-      - REDIS_URL=redis:6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN-15m}
-      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN-7d}
-      - COOKIE_SECRET=${COOKIE_SECRET-${JWT_SECRET}}
-      - COOKIE_MAX_AGE=${COOKIE_MAX_AGE-604800}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY-${JWT_SECRET}}
-
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_CLIENT_REDIRECT=${GOOGLE_CLIENT_REDIRECT}
-      - FORTYTWO_CLIENT_ID=${FORTYTWO_CLIENT_ID}
-      - FORTYTWO_CLIENT_SECRET=${FORTYTWO_CLIENT_SECRET}
-      - FORTYTWO_CLIENT_REDIRECT=${FORTYTWO_CLIENT_REDIRECT}
-
-      - TOTP_ISSUER=${TOTP_ISSUER-ft_transcendence}
-      - TOTP_WINDOW=${TOTP_WINDOW-1}
-      - TOTP_STEP=${TOTP_STEP-30}
-      - TOTP_DIGITS=${TOTP_DIGITS-6}
-
-      - PASSWORD_SALT_ROUNDS=${PASSWORD_SALT_ROUNDS-12}
-      - PASSWORD_MAX_FAILED_ATTEMPTS=${PASSWORD_MAX_FAILED_ATTEMPTS-5}
-      - PASSWORD_LOCK_DURATION=${PASSWORD_LOCK_DURATION-1800}
-    depends_on:
-      redis:
-        condition: service_healthy
+  # Stats (3000)
+  stats:
+    container_name: stats
+    build:
+      context: ./backend/services/stats
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend/services/stats/src:/app/src
+      - ms_stats_data:/app/data
+    environment:
+      - SERVICE_URL=stats:3000
     networks:
       - service-net
     restart: unless-stopped
@@ -128,8 +81,8 @@ services:
 # ------------------------- VOLUMES ------------------------ #
 
 volumes:
-  redis_data:
   ms_auth_data:
+  ms_stats_data:
 
 # ------------------------- NETWORK ------------------------ #
 

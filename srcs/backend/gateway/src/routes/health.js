@@ -6,7 +6,7 @@ const axios = require("axios");
 async function healthRoutes(fastify, options) {
   const services = fastify.config.services;
 
-  fastify.get("/internal/health", async (request, reply) => {
+  fastify.get("/health", async (request, reply) => {
     const startTime = Date.now();
     const serviceStatus = await checkServices(services, startTime, fastify);
 
@@ -31,8 +31,8 @@ async function checkServices(services, startTime, fastify) {
       try {
         const { url } = config;
 
-        // Try making a request to the /internal/health of the service
-        const response = await axios.get(`${url}/internal/health`, {
+        // Try making a request to the /health of the service
+        const response = await axios.get(`${url}/health`, {
           timeout: 3000,
           validateStatus: () => true,
         });

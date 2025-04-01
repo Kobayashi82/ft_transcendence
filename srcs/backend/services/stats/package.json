@@ -1,8 +1,8 @@
 {
-	"name": "auth",
+	"name": "stats",
 	"version": "1.0.0",
 	"private": true,
-	"description": "Auth microservice",
+	"description": "Stats microservice",
 	"author": "vzurera-",
 	"main": "src/app.js",
 	"dependencies": {

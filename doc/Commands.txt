@@ -39,18 +39,7 @@ npm uninstall package_name						Desinstalar un paquete del proyecto
 npm update										Actualizar todos los paquetes a sus últimas versiones
 npm list										Listar los paquetes instalados en el proyecto
 
-Truffle
--------
+Others
+------
 
-npm install -g truffle							Instalar Truffle globalmente en el sistema
-truffle version									Verificar la versión de Truffle instalada
-truffle init									Crear un nuevo proyecto de Truffle
-truffle compile									Compilar contratos inteligentes
-truffle migrate									Desplegar contratos en la red especificada
-truffle migrate --reset							Desplegar contratos de nuevo, ignorando el estado anterior
-truffle test									Ejecutar pruebas definidas para los contratos
-truffle develop									Iniciar un entorno de desarrollo Truffle
-truffle console									Abrir una consola interactiva de Truffle
-truffle exec script.js							Ejecutar un script de JavaScript dentro del contexto de Truffle
-truffle config									Ver la configuración del proyecto Truffle
-truffle networks								Ver las redes disponibles en el archivo de configuración
+lsof -i:3000                                    Muestra que puertos en escucha que queramos verificar.

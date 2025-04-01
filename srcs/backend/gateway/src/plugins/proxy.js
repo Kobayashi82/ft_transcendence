@@ -3,19 +3,8 @@
 const fp = require("fastify-plugin");
 const httpProxy = require("@fastify/http-proxy");
 
-const hasRequiredRoles = (userRoles, requiredRoles) => {
-  // If no roles are required, allow access
-  if (!requiredRoles || requiredRoles.length === 0) return true;
-
-  // If roles are required but user has no roles, deny access
-  if (!userRoles || userRoles.length === 0) return false;
-
-  // if user has at least one of the required roles
-  return userRoles.some((role) => requiredRoles.includes(role));
-};
-
 const getAllowedHttpMethods = (routes) => {
-  // Default methods to allow if no specific methods defined
+  // Default methods
   const defaultMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
 
   // If no routes defined, use default methods
@@ -26,7 +15,7 @@ const getAllowedHttpMethods = (routes) => {
   // Always include OPTIONS
   methods.add("OPTIONS");
 
-  // Add methods from route configurations
+  // Add methods from service configurations
   for (const routeConfig of Object.values(routes)) {
     if (typeof routeConfig === "object" && routeConfig.method) {
       const methodArray = Array.isArray(routeConfig.method)
@@ -42,11 +31,11 @@ const getAllowedHttpMethods = (routes) => {
   return Array.from(methods);
 };
 
-// Plugin to route requests to the corresponding services
+
 async function proxyPlugin(fastify, options) {
   const { services, routeMap } = fastify.config;
 
-  // Add a preHandler hook to check roles before proxying
+  // Add a preHandler hook to check allowed methods
   fastify.addHook("preHandler", async (request, reply) => {
     const url = request.url;
     const method = request.method;
@@ -68,26 +57,16 @@ async function proxyPlugin(fastify, options) {
 
     // Get service and route configuration
     const service = services[serviceName];
-    const routePath = url.substring(prefix.length).split("?")[0]; // Remove query params
+    const routePath = url.substring(prefix.length).split("?")[0];
 
-    // Find matching route, required roles and methods
-    let requiredRoles = [];
+    // Find matching route and methods
     let allowedMethods = null;
-    let authRequired = true; // Default to requiring auth for security
 
     if (service.routes && service.routes[routePath]) {
       const routeConfig = service.routes[routePath];
 
       if (typeof routeConfig === "object") {
-        // Get required roles
-        requiredRoles = routeConfig.roles || [];
-
-        // Check if authentication is required
-        if (routeConfig.authenticated !== undefined) {
-          authRequired = routeConfig.authenticated;
-        }
-
-        // Get required methods
+         // Get required methods
         if (routeConfig.method) {
           allowedMethods = Array.isArray(routeConfig.method)
             ? routeConfig.method.map((m) => m.toUpperCase())
@@ -99,7 +78,7 @@ async function proxyPlugin(fastify, options) {
     // Check if the method is allowed
     if (allowedMethods && !allowedMethods.includes(method)) {
       // Log attempt of a non-allowed method
-      fastify.logger.warn("Method not allowed", {
+      console.warn("Method not allowed", {
         url: request.url,
         method: request.method,
         allowedMethods: allowedMethods.join(", "),
@@ -109,51 +88,9 @@ async function proxyPlugin(fastify, options) {
       reply.code(405).send({
         statusCode: 405,
         error: "Method Not Allowed",
-        message: `This endpoint only accepts ${allowedMethods.join(
-          ", "
-        )} requests`,
+        message: `This endpoint only accepts ${allowedMethods.join(", ")} requests`,
       });
       return reply;
-    }
-
-    // Check if authentication is required
-    if (authRequired && (!request.auth || !request.auth.authenticated)) {
-      fastify.logger.warn("Authentication required", {
-        url: request.url,
-        method: request.method,
-        service: serviceName,
-      });
-
-      reply.code(401).send({
-        statusCode: 401,
-        error: "Unauthorized",
-        message: "Authentication required for this resource",
-      });
-      return reply;
-    }
-
-    // Only check roles if authentication is required
-    if (authRequired) {
-      // Get user roles
-      let userRoles = request.auth?.roles || [];
-
-      // Check if user has required roles
-      if (!hasRequiredRoles(userRoles, requiredRoles)) {
-        // Log failed role verification
-        fastify.logger.warn("Insufficient permissions", {
-          url: request.url,
-          method: request.method,
-          requiredRoles: requiredRoles,
-          service: serviceName,
-        });
-
-        reply.code(403).send({
-          statusCode: 403,
-          error: "Forbidden",
-          message: "Insufficient permissions to access this resource",
-        });
-        return reply;
-      }
     }
   });
 
@@ -182,7 +119,7 @@ async function proxyPlugin(fastify, options) {
 
         // Check if the route is defined in the service configuration
         if (!routes[routePath]) {
-          fastify.logger.warn("Route not found", {
+          console.warn("Route not found", {
             url: request.url,
             routePath: routePath,
             service: serviceName,
@@ -207,14 +144,8 @@ async function proxyPlugin(fastify, options) {
           // Custom headers to identify requests
           headers["x-source"] = "gateway";
           headers["x-target"] = serviceName;
-          headers["x-request-id"] = fastify.generateId();
+          headers["x-request-id"] = `${req.ip.replace(/[.:]/g, '-')}_${req.url.replace(/[\/?.]/g, '-')}_${Date.now()}`;
           headers["x-gateway-timestamp"] = Date.now().toString();
-
-          // Add user information to the request
-          if (req.auth && req.auth.authenticated) {
-            headers["x-user-id"] = req.auth.userId.toString();
-            headers["x-user-roles"] = JSON.stringify(req.auth.roles);
-          }
 
           // Apply custom header rewrites specific to the service
           if (proxyOptions.rewriteRequestHeaders)
@@ -233,7 +164,7 @@ async function proxyPlugin(fastify, options) {
   fastify.setErrorHandler((error, request, reply) => {
     // Handle timeout errors
     if (error.code === "ETIMEDOUT") {
-      fastify.logger.error("Service timeout", {
+      console.error("Service timeout", {
         error: error.message,
         service: request.headers["x-target"],
       });
@@ -248,7 +179,7 @@ async function proxyPlugin(fastify, options) {
 
     // Handle connection errors
     if (error.code === "ECONNREFUSED" || error.code === "ECONNRESET") {
-      fastify.logger.error("Service Unavailable", {
+      console.error("Service Unavailable", {
         error: error.message,
         service: request.headers["x-target"],
       });
@@ -266,7 +197,4 @@ async function proxyPlugin(fastify, options) {
   });
 }
 
-module.exports = fp(proxyPlugin, {
-  name: "proxy",
-  dependencies: ["logger", "auth"],
-});
+module.exports = fp(proxyPlugin, { name: "proxy" });
