@@ -66,6 +66,41 @@ const translations = {
   // Under construction page
   'construction.title': 'Próximamente',
   'construction.message': 'Esta página está en construcción',
+
+  // About Us page
+  'about.title': 'El Equipo detrás de Transcendence',
+  'about.subtitle': 'Conoce a los desarrolladores ligeramente obsesivos y definitivamente cafeinados que dieron vida a este juego',
+  'about.projectTitle': 'Acerca de Transcendence',
+  'about.projectDescription': 'Transcendence es un juego de Pong multijugador con capacidades de torneo, perfiles de usuario y clasificaciones, todo ejecutándose en un entorno containerizado con microservicios.',
+  'about.projectJoke': '¿Qué sucede cuando tres desarrolladores tienen demasiado café y una fecha límite? Obtienes Transcendence - un juego donde las bolas rebotan, los servidores fallan, y el código de alguna manera sigue funcionando.',
+  'about.techStack': 'Construido con:',
+  'about.meetTeam': 'Conoce a Nuestro Equipo',
+  'about.backToTeam': 'Volver al Equipo',
+  'about.funFacts': 'Datos Curiosos',
+  'about.funFact1': 'Este proyecto contiene aproximadamente 7,429 líneas de código, 127 tazas de café y 42 crisis existenciales.',
+  'about.funFact2': 'Nuestro equipo pasó más tiempo discutiendo sobre tabs vs. espacios que programando la mecánica del juego.',
+  'about.funFact3': 'Cada vez que alguien pierde en Pong, un desarrollador recibe un error de depuración. Por favor, pierde responsablemente.',
+
+  // Developer 1
+  'about.dev1.title': 'vzurera-',
+  'about.dev1.bio': 'bio ...',
+  'about.dev1.detail1': 'detail 1...',
+  'about.dev1.detail2': 'detail 2...',
+  'about.dev1.funFact': 'Dato curioso: ...',
+
+  // Developer 2
+  'about.dev2.title': 'person 2',
+  'about.dev2.bio': 'bio ...',
+  'about.dev2.detail1': 'detail 1...',
+  'about.dev2.detail2': 'detail 2...',
+  'about.dev2.funFact': 'Dato curioso: ...',
+
+  // Developer 3
+  'about.dev3.title': 'person 3',
+  'about.dev3.bio': 'bio ...',
+  'about.dev3.detail1': 'detail 1...',
+  'about.dev3.detail2': 'detail 2...',
+  'about.dev3.funFact': 'Dato curioso: ...',
 };
 
 export default translations;

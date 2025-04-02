@@ -66,6 +66,41 @@ const translations = {
   // Under construction page
   'construction.title': 'Coming Soon',
   'construction.message': 'This page is under construction',
+
+  // About Us page
+  'about.title': 'The Team Behind Transcendence',
+  'about.subtitle': 'Meet the slightly obsessive, definitely caffeinated developers who brought this game to life',
+  'about.projectTitle': 'About Transcendence',
+  'about.projectDescription': 'Transcendence is a multiplayer Pong game with tournament capabilities, user profiles, and rankings - all running in a containerized environment with microservices.',
+  'about.projectJoke': 'What happens when three developers have too much coffee and a deadline? You get Transcendence - a game where balls bounce, servers crash, and code somehow still works.',
+  'about.techStack': 'Built with:',
+  'about.meetTeam': 'Meet Our Team',
+  'about.backToTeam': 'Back to Team',
+  'about.funFacts': 'Fun Facts',
+  'about.funFact1': 'This project contains approximately 7,429 lines of code, 127 cups of coffee, and 42 existential crises.',
+  'about.funFact2': 'Our team spent more time arguing about tab vs. spaces than actually coding the game mechanics.',
+  'about.funFact3': 'Every time someone loses at Pong, a developer gets a debugging error. Please lose responsibly.',
+
+  // Developer 1
+  'about.dev1.title': 'vzurera-',
+  'about.dev1.bio': 'bio ...',
+  'about.dev1.detail1': 'detail 1...',
+  'about.dev1.detail2': 'detail 2...',
+  'about.dev1.funFact': 'Fun fact: ...',
+
+  // Developer 2
+  'about.dev2.title': 'person 1',
+  'about.dev2.bio': 'bio ...',
+  'about.dev2.detail1': 'detail 1...',
+  'about.dev2.detail2': 'detail 2...',
+  'about.dev2.funFact': 'Fun fact: ...',
+
+  // Developer 3
+  'about.dev3.title': 'person 2',
+  'about.dev3.bio': 'bio ...',
+  'about.dev3.detail1': 'detail 1...',
+  'about.dev3.detail2': 'detail 2...',
+  'about.dev3.funFact': 'Fun fact: ...',
 };
 
 export default translations;

@@ -66,6 +66,41 @@ const translations = {
   // Under construction page
   'construction.title': 'Bientôt Disponible',
   'construction.message': 'Cette page est en construction',
+
+  // About Us page
+  'about.title': 'L\'Équipe Derrière Transcendence',
+  'about.subtitle': 'Rencontrez les développeurs légèrement obsessionnels et définitivement caféinés qui ont donné vie à ce jeu',
+  'about.projectTitle': 'À Propos de Transcendence',
+  'about.projectDescription': 'Transcendence est un jeu de Pong multijoueur avec des fonctionnalités de tournoi, des profils utilisateurs et des classements - le tout fonctionnant dans un environnement containerisé avec des microservices.',
+  'about.projectJoke': 'Que se passe-t-il quand trois développeurs ont trop de café et une date limite? Vous obtenez Transcendence - un jeu où les balles rebondissent, les serveurs plantent, et le code fonctionne quand même.',
+  'about.techStack': 'Construit avec:',
+  'about.meetTeam': 'Rencontrez Notre Équipe',
+  'about.backToTeam': 'Retour à l\'Équipe',
+  'about.funFacts': 'Faits Amusants',
+  'about.funFact1': 'Ce projet contient environ 7 429 lignes de code, 127 tasses de café et 42 crises existentielles.',
+  'about.funFact2': 'Notre équipe a passé plus de temps à se disputer sur les tabulations vs. espaces qu\'à coder la mécanique du jeu.',
+  'about.funFact3': 'Chaque fois que quelqu\'un perd au Pong, un développeur reçoit une erreur de débogage. Veuillez perdre de manière responsable.',
+
+  // Developer 1
+  'about.dev1.title': 'vzurera-',
+  'about.dev1.bio': 'bio ...',
+  'about.dev1.detail1': 'detail 1...',
+  'about.dev1.detail2': 'detail 2...',
+  'about.dev1.funFact': 'Anecdote: ...',
+
+  // Developer 2
+  'about.dev2.title': 'person 2',
+  'about.dev2.bio': 'bio ...',
+  'about.dev2.detail1': 'detail 1...',
+  'about.dev2.detail2': 'detail 2...',
+  'about.dev2.funFact': 'Anecdote: ...',
+
+  // Developer 3
+  'about.dev3.title': 'person 3',
+  'about.dev3.bio': 'bio ...',
+  'about.dev3.detail1': 'detail 1...',
+  'about.dev3.detail2': 'detail 2...',
+  'about.dev3.funFact': 'Anecdote: ...',
 };
 
 export default translations;
