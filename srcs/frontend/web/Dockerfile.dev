@@ -5,6 +5,7 @@ WORKDIR /app
 RUN npm install -g vite typescript
 
 COPY package*.json ./
+# RUN npm install
 
 COPY . .
 

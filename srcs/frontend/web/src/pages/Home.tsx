@@ -1,152 +1,217 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { 
+  Trophy, 
+  Gamepad2, 
+  Swords, 
+  ChevronRight, 
+  BarChart3 
+} from "lucide-react";
+import PingPongGame from "../components/PingPongHome";
 
 const Home: React.FC = () => {
+  // State for animation effects
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hoverItem, setHoverItem] = useState<string | null>(null);
+  
+  // Animated background elements
+  const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, size: number, speed: number}>>([]);
+
+  useEffect(() => {
+    // Set loaded state for entrance animations
+    setIsLoaded(true);
+    
+    // Create background particles
+    const newParticles = Array.from({ length: 50 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 4 + 1,
+      speed: Math.random() * 0.5 + 0.1
+    }));
+    setParticles(newParticles);
+    
+    // Animate particles
+    const interval = setInterval(() => {
+      setParticles(prevParticles => 
+        prevParticles.map(particle => ({
+          ...particle,
+          y: particle.y - particle.speed < 0 ? 100 : particle.y - particle.speed
+        }))
+      );
+    }, 50);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Game mode cards data
+  const gameModes = [
+    {
+      id: "quickmatch",
+      title: "Quick Match",
+      description: "Challenge another player in a 1v1 match.",
+      icon: <Swords className="w-8 h-8" />,
+      color: "from-blue-600 to-indigo-700",
+      link: "/quick"
+    },
+    {
+      id: "tournament",
+      title: "Tournament",
+      description: "Join a tournament.",
+      icon: <Trophy className="w-8 h-8" />,
+      color: "from-purple-600 to-pink-700",
+      link: "/tournament"
+    },
+	{
+	  id: "rankings",
+	  title: "Rankings",
+	  description: "Check the server status.",
+	  icon: <BarChart3 className="w-8 h-8" />,
+	  color: "from-amber-500 to-orange-700",
+	  link: "/rankings"
+	},
+    {
+      id: "leaderboard",
+      title: "Leaderboard",
+      description: "Check the top players and their stats.",
+      icon: <BarChart3 className="w-8 h-8" />,
+      color: "from-amber-500 to-orange-700",
+      link: "/leaderboard"
+    },
+    {
+      id: "about",
+      title: "About us",
+      description: "Check the server status.",
+      icon: <BarChart3 className="w-8 h-8" />,
+      color: "from-amber-500 to-orange-700",
+      link: "/about"
+    },
+    {
+      id: "status",
+      title: "Server Status",
+      description: "Check the server status.",
+      icon: <BarChart3 className="w-8 h-8" />,
+      color: "from-amber-500 to-orange-700",
+      link: "/status"
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-blue-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-24">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Contenido Principal */}
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-indigo-950 text-white overflow-hidden">
+      {/* Animated particles */}
+      {particles.map(particle => (
+        <div 
+          key={particle.id}
+          className="absolute rounded-full bg-blue-500 opacity-20"
+          style={{
+            left: `${particle.x}%`,
+            top: `${particle.y}%`,
+            width: `${particle.size}px`,
+            height: `${particle.size}px`,
+            transition: 'top 0.5s linear'
+          }}
+        />
+      ))}
+      
+      {/* Hero Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-20 pb-10 sm:pb-16 relative z-10">
+        <div 
+          className={`grid lg:grid-cols-2 gap-8 sm:gap-12 items-center transform transition-all duration-1000 ${
+            isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+          }`}
+        >
+          {/* Main Content */}
           <div>
-            <h2 className="text-5xl font-extrabold mb-6 leading-tight">
-              Desafía tus Límites en Transcendence
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-2 sm:mb-4 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500">
+              Transcendence
+            </h1>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-8 leading-tight">
+				The Ultimate Gaming Experience
             </h2>
-            <p className="text-xl text-white/80 mb-10">
-              Una plataforma de juegos que va más allá de la competencia.
-              Conéctate, compite y supérate a ti mismo en una experiencia única
-              de desarrollo personal.
+            <p className="text-md sm:text-l text-gray-400 mb-6 sm:mb-12">
+				Okay, maybe not "ultimate," but it's definitely a gaming experience.
             </p>
-            <div className="flex space-x-4">
-              <a
-                href="/login"
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center space-x-2"
+			<p className="text-lg sm:text-xl text-blue-200 mb-6 sm:mb-12">
+  				Challenge opponents, climb the leaderboard, and prove you're slightly better than random strangers online.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link
+                to="/play/quick"
+                className="group bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 flex items-center space-x-2 shadow-lg shadow-blue-900/50 transform hover:scale-105"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 5l4 4-4 4" />
-                  <path d="M4 14h7" />
-                  <path d="M7 10V7l5 3 5-3v3" />
-                </svg>
-                <span>Jugar Ahora</span>
-              </a>
-              <a
-                href="/ranking"
-                className="bg-white/10 text-white px-8 py-3 rounded-lg hover:bg-white/20 transition duration-300 flex items-center space-x-2"
+                <Gamepad2 className="w-5 h-5" />
+                <span className="font-bold">Play Now</span>
+                <ChevronRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                to="/leaderboard"
+                className="group bg-gray-800/50 backdrop-blur-sm border border-gray-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg hover:bg-gray-700/50 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="10" y1="13" x2="14" y2="13" />
-                  <line x1="12" y1="11" x2="12" y2="15" />
-                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H18a2.5 2.5 0 0 1 2.5 2.5v15a2.5 2.5 0 0 1-2.5 2.5H6.5a2.5 2.5 0 0 1-2.5-2.5z" />
-                </svg>
-                <span>Rankings</span>
-              </a>
+                <Trophy className="w-5 h-5" />
+                <span className="font-bold">Leaderboard</span>
+              </Link>
             </div>
           </div>
 
-          {/* Imagen */}
-          <div className="hidden md:flex justify-center items-center">
-            <div className="w-full max-w-md aspect-square bg-blue-900/50 rounded-2xl border border-white/10 flex items-center justify-center">
-              <span className="text-white/50 text-xl">
-                Visualización de Juego
-              </span>
+          {/* Hero Image - Now visible on mobile at smaller size */}
+          <div className="mt-8 lg:mt-0">
+            <div className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[400px]">
+              <PingPongGame className="w-full h-full" />
             </div>
           </div>
-        </div>
-
-        {/* Características */}
-        <div className="mt-24 grid md:grid-cols-3 gap-8">
-          {[
-            {
-              icon: (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-12 h-12 mx-auto mb-4 text-blue-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 5l4 4-4 4" />
-                  <path d="M4 14h7" />
-                  <path d="M7 10V7l5 3 5-3v3" />
-                </svg>
-              ),
-              title: "Juegos Variados",
-              description:
-                "Una amplia selección de desafíos para todos los gustos y niveles.",
-            },
-            {
-              icon: (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-12 h-12 mx-auto mb-4 text-blue-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="10" y1="13" x2="14" y2="13" />
-                  <line x1="12" y1="11" x2="12" y2="15" />
-                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H18a2.5 2.5 0 0 1 2.5 2.5v15a2.5 2.5 0 0 1-2.5 2.5H6.5a2.5 2.5 0 0 1-2.5-2.5z" />
-                </svg>
-              ),
-              title: "Ranking Global",
-              description:
-                "Compite con jugadores de todo el mundo y escala posiciones.",
-            },
-            {
-              icon: (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-12 h-12 mx-auto mb-4 text-blue-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12 2L2 7l10 5 10-5-10-5" />
-                  <path d="M2 17l10 5 10-5" />
-                  <path d="M2 12l10 5 10-5" />
-                </svg>
-              ),
-              title: "Desarrollo Personal",
-              description:
-                "Más que juegos, una plataforma para crecer y superarte.",
-            },
-          ].map((feature, index) => (
-            <div
-              key={index}
-              className="bg-white/5 p-6 rounded-xl border border-white/10 text-center"
-            >
-              {feature.icon}
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-white/70">{feature.description}</p>
-            </div>
-          ))}
         </div>
       </div>
+
+      {/* Game Modes Section */}
+      <div className="relative z-10 py-10 sm:py-16 bg-gray-900/40 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">Make Your Choice</h2>
+            <p className="text-lg sm:text-xl text-blue-300 max-w-3xl mx-auto">
+			Choose your path to glory (or just click something randomly). Will you dominate in Quick Match, rise in Tournament mode, or just check the Leaderboard to see how bad you are? The choice is yours…
+            </p>
+          </div>
+          
+          <div 
+            className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 transform transition-all duration-1000 delay-300"
+          >
+            {gameModes.map((mode, index) => (
+              <Link
+                key={mode.id}
+                to={mode.link}
+                className={`bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-${mode.color.split(' ')[0]}/20 transform hover:-translate-y-2 ${
+                  isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+                }`}
+                style={{ transitionDelay: `${index * 100 + 300}ms` }}
+                onMouseEnter={() => setHoverItem(mode.id)}
+                onMouseLeave={() => setHoverItem(null)}
+              >
+                <div className={`h-2 bg-gradient-to-r ${mode.color}`}></div>
+                <div className="p-6 sm:p-8">
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-r ${mode.color} flex items-center justify-center mb-4 sm:mb-6 transform transition-transform duration-500 ${
+                    hoverItem === mode.id ? 'scale-110 rotate-6' : ''
+                  }`}>
+                    {mode.icon}
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">{mode.title}</h3>
+                  <p className="text-gray-300 mb-4 sm:mb-6">{mode.description}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Custom animations */}
+      <style>{`
+        @keyframes pulse-glow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        .animate-pulse-glow {
+          animation: pulse-glow 4s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 };
