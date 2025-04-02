@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { 
   Trophy, 
   Gamepad2, 
-  Swords, 
+  Users, 
   ChevronRight, 
   BarChart3,
   Info,
@@ -27,7 +27,7 @@ const Home: React.FC = () => {
     setIsLoaded(true);
     
     // Create background particles
-    const newParticles = Array.from({ length: 50 }, (_, i) => ({
+    const newParticles = Array.from({ length: 100 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
@@ -55,9 +55,9 @@ const Home: React.FC = () => {
       id: "quickmatch",
       title: t('gameMode.quickMatch.title'),
       description: t('gameMode.quickMatch.description'),
-      icon: <Swords className="w-8 h-8" />,
+      icon: <Gamepad2 className="w-8 h-8" />,
       color: "from-blue-600 to-indigo-700",
-      link: "/play/quick"
+      link: "/quick"
     },
     {
       id: "tournament",
@@ -65,13 +65,13 @@ const Home: React.FC = () => {
       description: t('gameMode.tournament.description'),
       icon: <Trophy className="w-8 h-8" />,
       color: "from-purple-600 to-pink-700",
-      link: "/play/tournament"
+      link: "/tournament"
     },
     {
       id: "rankings",
       title: t('gameMode.rankings.title'),
       description: t('gameMode.rankings.description'),
-      icon: <BarChart3 className="w-8 h-8" />,
+      icon: <Users className="w-8 h-8" />,
       color: "from-amber-500 to-orange-700",
       link: "/rankings"
     },
@@ -141,7 +141,7 @@ const Home: React.FC = () => {
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
-                to="/play/quick"
+                to="/quick"
                 className="group bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 flex items-center space-x-2 shadow-lg shadow-blue-900/50 transform hover:scale-105"
               >
                 <Gamepad2 className="w-5 h-5" />
@@ -152,7 +152,7 @@ const Home: React.FC = () => {
                 to="/leaderboard"
                 className="group bg-gray-800/50 backdrop-blur-sm border border-gray-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg hover:bg-gray-700/50 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105"
               >
-                <Trophy className="w-5 h-5" />
+                <BarChart3 className="w-5 h-5" />
                 <span className="font-bold">{t('gameMode.leaderboard.title')}</span>
               </Link>
             </div>

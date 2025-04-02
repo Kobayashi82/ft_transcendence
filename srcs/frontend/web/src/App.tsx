@@ -20,8 +20,8 @@ function App() {
               <Route path="/status" element={<Status />} />
               <Route path="/about" element={<AboutPage />} /> {/* Add our new About route */}
               {/* Other routes */}
-              <Route path="/play/quick" element={<UnderConstruction />} />
-              <Route path="/play/tournament" element={<UnderConstruction />} />
+              <Route path="/quick" element={<UnderConstruction />} />
+              <Route path="/tournament" element={<UnderConstruction />} />
               <Route path="/rankings" element={<UnderConstruction />} />
               <Route path="/leaderboard" element={<UnderConstruction />} />
             </Routes>

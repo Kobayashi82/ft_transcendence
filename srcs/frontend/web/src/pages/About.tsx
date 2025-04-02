@@ -2,10 +2,33 @@ import React, { useState, useEffect } from "react";
 import { ArrowLeft, Github, Linkedin, IdCard  } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 
-// Import local developer images
-import vzurera from '../assets/developers/vzurera.jpg';
-import person2 from '../assets/developers/person2.jpg';
-import person3 from '../assets/developers/person3.jpg';
+// Optimization: Import images with webpack's built-in image optimization
+// The ?webp&width=400 helps convert to WebP and resize
+import vzurera from '../assets/developers/vzurera.jpg?webp&width=400';
+import person2 from '../assets/developers/person2.jpg?webp&width=400';
+import person3 from '../assets/developers/person3.jpg?webp&width=400';
+
+// Preload images hook
+const useImagePreloader = (imageUrls: string[]) => {
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  useEffect(() => {
+    const imagePromises = imageUrls.map(url => {
+      return new Promise<void>((resolve, reject) => {
+        const img = new Image();
+        img.src = url;
+        img.onload = () => resolve();
+        img.onerror = reject;
+      });
+    });
+
+    Promise.all(imagePromises)
+      .then(() => setImagesLoaded(true))
+      .catch(error => console.error('Image preloading failed', error));
+  }, [imageUrls]);
+
+  return imagesLoaded;
+};
 
 // Developer information type
 interface Developer {
@@ -65,6 +88,9 @@ const AboutPage: React.FC = () => {
     }
   ];
 
+  // Preload all developer images
+  const imagesLoaded = useImagePreloader(developers.map(dev => dev.imageUrl));
+
   // Get developer by ID
   const getDevById = (id: string): Developer | undefined => {
     return developers.find(dev => dev.id === id);
@@ -72,6 +98,17 @@ const AboutPage: React.FC = () => {
 
   // Selected developer details
   const selectedDeveloper = selectedDev ? getDevById(selectedDev) : null;
+
+  // Optional loading state while images are being preloaded
+  if (!imagesLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-indigo-950 flex items-center justify-center">
+        <div className="animate-pulse text-white text-xl">
+          {t('about.loadingImages')}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-indigo-950 py-12 px-4 sm:px-6 lg:px-8">
@@ -115,11 +152,15 @@ const AboutPage: React.FC = () => {
               <div className="p-6">
               <div className="flex items-center mb-4">
                 <div className="h-20 w-20 rounded-xl overflow-hidden mr-4 border-2 border-blue-600/30">
-                <img 
-                  src={dev.imageUrl} 
-                  alt={dev.name} 
-                  className="w-full h-full object-cover" 
-                />
+                <picture>
+                  <source srcSet={dev.imageUrl} type="image/webp" />
+                  <img 
+                    src={dev.imageUrl} 
+                    alt={dev.name} 
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </picture>
                 </div>
                 <div>
                 <h3 className="text-xl font-bold text-white">{dev.name}</h3>
@@ -158,11 +199,15 @@ const AboutPage: React.FC = () => {
               <div className="md:flex items-start">
                 <div className="md:w-1/3 mb-6 md:mb-0 md:mr-8">
                   <div className="rounded-xl overflow-hidden border-2 border-blue-600/30 mb-4">
-                    <img 
-                      src={selectedDeveloper.imageUrl} 
-                      alt={selectedDeveloper.name} 
-                      className="w-full object-cover" 
-                    />
+                    <picture>
+                      <source srcSet={selectedDeveloper.imageUrl} type="image/webp" />
+                      <img 
+                        src={selectedDeveloper.imageUrl} 
+                        alt={selectedDeveloper.name} 
+                        className="w-full object-cover"
+                        loading="lazy"
+                      />
+                    </picture>
                   </div>
                   
                   <div className="flex justify-center space-x-4 mb-4">

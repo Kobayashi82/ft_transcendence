@@ -24,8 +24,8 @@ const Header: React.FC = () => {
   
   // Navigation items with translations
   const navItems = [
-    { name: t('nav.quickMatch'), path: "/play/quick", icon: <Gamepad2 className="w-4 h-4" /> },
-    { name: t('nav.tournament'), path: "/play/tournament", icon: <Trophy className="w-4 h-4" /> },
+    { name: t('nav.quickMatch'), path: "/quick", icon: <Gamepad2 className="w-4 h-4" /> },
+    { name: t('nav.tournament'), path: "/tournament", icon: <Trophy className="w-4 h-4" /> },
     { name: t('nav.rankings'), path: "/rankings", icon: <Users className="w-4 h-4" /> },
     { name: t('nav.leaderboard'), path: "/leaderboard", icon: <BarChart3 className="w-4 h-4" /> },
     { name: t('nav.about'), path: "/about", icon: <Info className="w-4 h-4" /> },
