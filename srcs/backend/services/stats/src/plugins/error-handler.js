@@ -23,6 +23,20 @@ async function errorHandlerPlugin(fastify, options) {
       statusCode: error.statusCode || 500,
     });
 
+    // Handle validation errors
+    if (error.validation) {
+      return reply
+        .code(400)
+        .send({ error: 'Validation Error', details: error.validation });
+    }
+    
+    // Handle database errors
+    if (error.code && error.code.startsWith('SQLITE_')) {
+      return reply
+        .code(500)
+        .send({ error: 'Database Error', message: error.message });
+    }
+    
     const statusCode = error.statusCode || 500;
     reply.status(statusCode).send({
       statusCode,

@@ -1,100 +1,96 @@
-"use strict";
-
-const fp = require("fastify-plugin");
-const SQLite = require("better-sqlite3");
-const path = require("path");
+// db/config.js
+const fp = require('fastify-plugin');
+const SQLite = require('better-sqlite3');
+const path = require('path');
 
 async function dbPlugin(fastify, options) {
-  // Crear conexión a la base de datos SQLite
-  const dbPath = path.resolve(options.database.path || './database.sqlite');
+  
+  // Get database path from options or use default
+  const dbPath = path.resolve(options.database?.path || './data/stats.db');
+  
+  // Connect to SQLite database
   const db = new SQLite(dbPath);
+  
+  // Enable foreign keys
+  db.pragma('foreign_keys = ON');
+  
+  // Initialize database schema
+  function initializeDatabase() {
+    // Create games table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS games (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tournament_id INTEGER NULL,
+        start_time DATETIME NOT NULL,
+        end_time DATETIME NOT NULL,
+        settings TEXT NOT NULL,
+        FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE SET NULL
+      )
+    `);
 
-  // Crear tabla de usuarios de ejemplo
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+    // Create players table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS players (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL UNIQUE
+      )
+    `);
 
-  // Decorar Fastify con métodos de base de datos
-  fastify.decorate("userDB", {
-    // Crear un nuevo usuario
-    async createUser(username, email) {
-      try {
-        const stmt = db.prepare('INSERT INTO users (username, email) VALUES (?, ?)');
-        const result = stmt.run(username, email);
-        return { 
-          id: result.lastInsertRowid, 
-          username, 
-          email 
-        };
-      } catch (error) {
-        if (error.message.includes('UNIQUE constraint failed')) {
-          throw new Error('Username or email already exists');
-        }
-        throw error;
-      }
-    },
+    // Create game_players table (for the many-to-many relationship between games and players)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS game_players (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        game_id INTEGER NOT NULL,
+        player_id INTEGER NOT NULL,
+        score INTEGER NOT NULL,
+        FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
+        FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+        UNIQUE(game_id, player_id)
+      )
+    `);
 
-    // Obtener usuario por ID
-    async getUserById(id) {
-      const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
-      return stmt.get(id);
-    },
+    // Create tournaments table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS tournaments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        start_time DATETIME NOT NULL,
+        end_time DATETIME NULL,
+        settings TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending'
+      )
+    `);
 
-    // Obtener usuario por username
-    async getUserByUsername(username) {
-      const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
-      return stmt.get(username);
-    },
+    // Create tournament_players table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS tournament_players (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tournament_id INTEGER NOT NULL,
+        player_id INTEGER NOT NULL,
+        final_position INTEGER NULL,
+        FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+        FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+        UNIQUE(tournament_id, player_id)
+      )
+    `);
 
-    // Listar todos los usuarios
-    async listUsers(limit = 10, offset = 0) {
-      const stmt = db.prepare(`
-        SELECT * FROM users 
-        ORDER BY created_at DESC 
-        LIMIT ? OFFSET ?
-      `);
-      return stmt.all(limit, offset);
-    },
-
-    // Actualizar usuario
-    async updateUser(id, updates) {
-      const updateFields = Object.keys(updates)
-        .map(key => `${key} = ?`)
-        .join(', ');
-      
-      const values = [...Object.values(updates), id];
-      
-      const stmt = db.prepare(`
-        UPDATE users 
-        SET ${updateFields} 
-        WHERE id = ?
-      `);
-      
-      stmt.run(values);
-      
-      return this.getUserById(id);
-    },
-
-    // Eliminar usuario
-    async deleteUser(id) {
-      const stmt = db.prepare('DELETE FROM users WHERE id = ?');
-      const result = stmt.run(id);
-      return result.changes > 0;
-    }
-  });
-
-  // Cerrar conexión cuando el servidor se apague
-  fastify.addHook("onClose", (instance, done) => {
+    fastify.log.info('Database schema initialized');
+  }
+  
+  // Initialize the database
+  initializeDatabase();
+  
+  // Make the database connection available through the fastify instance
+  fastify.decorate('db', db);
+  
+  // Close the database connection when fastify is shutting down
+  fastify.addHook('onClose', (instance, done) => {
     if (db) {
+      instance.log.info('Closing database connection');
       db.close();
     }
     done();
   });
 }
 
-module.exports = fp(dbPlugin, { name: "db" });
+module.exports = fp(dbPlugin, { name: 'db' });

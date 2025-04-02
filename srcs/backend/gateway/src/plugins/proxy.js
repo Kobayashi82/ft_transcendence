@@ -3,6 +3,30 @@
 const fp = require("fastify-plugin");
 const httpProxy = require("@fastify/http-proxy");
 
+// Helper function to check if a route matches a pattern with parameters
+function routeMatches(route, pattern) {
+  // Exact match
+  if (route === pattern) return true;
+  
+  // Split both into segments
+  const routeSegments = route.split('/').filter(Boolean);
+  const patternSegments = pattern.split('/').filter(Boolean);
+  
+  // Different number of segments means no match
+  if (routeSegments.length !== patternSegments.length) return false;
+  
+  // Check segment by segment
+  for (let i = 0; i < routeSegments.length; i++) {
+    // If pattern segment starts with :, it's a parameter and matches anything
+    if (patternSegments[i].startsWith(':')) continue;
+    
+    // Otherwise segments must match exactly
+    if (routeSegments[i] !== patternSegments[i]) return false;
+  }
+  
+  return true;
+}
+
 const getAllowedHttpMethods = (routes) => {
   // Default methods
   const defaultMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
@@ -61,9 +85,12 @@ async function proxyPlugin(fastify, options) {
 
     // Find matching route and methods
     let allowedMethods = null;
+    let matchFound = false;
 
+    // Check for exact route match
     if (service.routes && service.routes[routePath]) {
       const routeConfig = service.routes[routePath];
+      matchFound = true;
 
       if (typeof routeConfig === "object") {
          // Get required methods
@@ -73,6 +100,37 @@ async function proxyPlugin(fastify, options) {
             : [routeConfig.method.toUpperCase()];
         }
       }
+    } else if (service.routes) {
+      // Check for pattern matches (routes with parameters)
+      for (const [pattern, routeConfig] of Object.entries(service.routes)) {
+        if (routeMatches(routePath, pattern)) {
+          matchFound = true;
+          
+          if (typeof routeConfig === "object" && routeConfig.method) {
+            allowedMethods = Array.isArray(routeConfig.method)
+              ? routeConfig.method.map((m) => m.toUpperCase())
+              : [routeConfig.method.toUpperCase()];
+          }
+          break;
+        }
+      }
+    }
+
+    // If route not found and no wildcard routes
+    if (!matchFound && !service.routes["*"] && !service.routes["/*"]) {
+      // Log attempt to access undefined route
+      console.warn("Route not found", {
+        url: request.url,
+        routePath: routePath,
+        service: serviceName,
+      });
+
+      reply.code(404).send({
+        statusCode: 404,
+        error: "Not Found",
+        message: `Route ${routePath} not found`,
+      });
+      return reply;
     }
 
     // Check if the method is allowed
@@ -112,28 +170,13 @@ async function proxyPlugin(fastify, options) {
       prefix: prefix,
       http2: false,
 
-      // Add preValidation to validate routes
+      // Skip preValidation as we now handle routing in preHandler
+      /*
       preValidation: (request, reply, done) => {
-        // Get the route path by removing the prefix from the URL
-        const routePath = request.url.substring(prefix.length).split("?")[0];
-
-        // Check if the route is defined in the service configuration
-        if (!routes[routePath]) {
-          console.warn("Route not found", {
-            url: request.url,
-            routePath: routePath,
-            service: serviceName,
-          });
-
-          return reply.code(404).send({
-            statusCode: 404,
-            error: "Not Found",
-            message: `Route ${routePath} not found`,
-          });
-        }
-
+        // This is now handled in the preHandler hook above
         done();
       },
+      */
 
       replyOptions: {
         rewriteRequestHeaders: (req, headers) => {

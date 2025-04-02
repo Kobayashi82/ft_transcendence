@@ -1,0 +1,271 @@
+"use strict";
+
+const fp = require('fastify-plugin');
+
+async function statsRoutes(fastify, options) {
+  const { db } = fastify;
+
+  // Get global stats
+  fastify.get('/stats', async (request, reply) => {
+    try {
+      const totalGames = db.prepare('SELECT COUNT(*) as count FROM games').get().count;
+      const totalTournaments = db.prepare('SELECT COUNT(*) as count FROM tournaments').get().count;
+      const totalPlayers = db.prepare('SELECT COUNT(*) as count FROM players').get().count;
+      
+      // Get average players per game
+      const avgPlayersPerGame = db.prepare(`
+        SELECT AVG(player_count) as avg
+        FROM (
+          SELECT game_id, COUNT(*) as player_count
+          FROM game_players
+          GROUP BY game_id
+        ) as game_counts
+      `).get().avg || 0;
+      
+      // Get average score
+      const avgScore = db.prepare('SELECT AVG(score) as avg FROM game_players').get().avg || 0;
+      
+      // Get average games per player
+      const avgGamesPerPlayer = totalPlayers > 0 ? 
+        (db.prepare('SELECT COUNT(*) as count FROM game_players').get().count / totalPlayers) : 0;
+      
+      // Get average tournaments per player
+      const avgTournamentsPerPlayer = totalPlayers > 0 ? 
+        (db.prepare('SELECT COUNT(*) as count FROM tournament_players').get().count / totalPlayers) : 0;
+      
+      return {
+        totalGames,
+        totalTournaments,
+        totalPlayers,
+        avgPlayersPerGame,
+        avgScore,
+        avgGamesPerPlayer,
+        avgTournamentsPerPlayer
+      };
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Failed to get stats' });
+    }
+  });
+
+  // Get leaderboard by most wins
+  fastify.get('/stats/leaderboard/wins', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', default: 10 }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const limit = parseInt(request.query.limit) || 10;
+      
+      const leaderboard = db.prepare(`
+        WITH player_wins AS (
+          SELECT 
+            p.id as player_id,
+            p.user_id,
+            COUNT(*) as wins
+          FROM game_players gp1
+          JOIN players p ON gp1.player_id = p.id
+          WHERE NOT EXISTS (
+            SELECT 1 FROM game_players gp2
+            WHERE gp2.game_id = gp1.game_id AND gp2.score > gp1.score
+          )
+          GROUP BY p.id
+        )
+        SELECT 
+          pw.player_id,
+          pw.user_id,
+          pw.wins,
+          (SELECT COUNT(*) FROM game_players gp WHERE gp.player_id = pw.player_id) as total_games,
+          ROUND((pw.wins * 100.0 / (SELECT COUNT(*) FROM game_players gp WHERE gp.player_id = pw.player_id)), 2) as win_rate
+        FROM player_wins pw
+        ORDER BY wins DESC, win_rate DESC
+        LIMIT ?
+      `).all(limit);
+      
+      return { data: leaderboard };
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Failed to get leaderboard' });
+    }
+  });
+
+  // Get leaderboard by best win rate (minimum 5 games)
+  fastify.get('/stats/leaderboard/winrate', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', default: 10 },
+          min_games: { type: 'integer', default: 5 }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const limit = parseInt(request.query.limit) || 10;
+      const minGames = parseInt(request.query.min_games) || 5;
+      
+      const leaderboard = db.prepare(`
+        WITH player_stats AS (
+          SELECT 
+            p.id as player_id,
+            p.user_id,
+            COUNT(*) as total_games,
+            SUM(CASE WHEN NOT EXISTS (
+              SELECT 1 FROM game_players gp2
+              WHERE gp2.game_id = gp1.game_id AND gp2.score > gp1.score
+            ) THEN 1 ELSE 0 END) as wins
+          FROM game_players gp1
+          JOIN players p ON gp1.player_id = p.id
+          GROUP BY p.id
+          HAVING total_games >= ?
+        )
+        SELECT 
+          ps.player_id,
+          ps.user_id,
+          ps.wins,
+          ps.total_games,
+          ROUND((ps.wins * 100.0 / ps.total_games), 2) as win_rate
+        FROM player_stats ps
+        ORDER BY win_rate DESC, total_games DESC
+        LIMIT ?
+      `).all(minGames, limit);
+      
+      return { data: leaderboard };
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Failed to get leaderboard' });
+    }
+  });
+
+  // Get leaderboard by tournament wins
+  fastify.get('/stats/leaderboard/tournaments', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', default: 10 }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const limit = parseInt(request.query.limit) || 10;
+      
+      const leaderboard = db.prepare(`
+        SELECT 
+          p.id as player_id,
+          p.user_id,
+          COUNT(*) as tournament_wins,
+          (SELECT COUNT(*) FROM tournament_players tp WHERE tp.player_id = p.id) as total_tournaments
+        FROM tournament_players tp
+        JOIN players p ON tp.player_id = p.id
+        WHERE tp.final_position = 1
+        GROUP BY p.id
+        ORDER BY tournament_wins DESC, total_tournaments ASC
+        LIMIT ?
+      `).all(limit);
+      
+      return { data: leaderboard };
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Failed to get leaderboard' });
+    }
+  });
+
+  // Get user statistics by user ID
+  fastify.get('/stats/user/:userId', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['userId'],
+        properties: {
+          userId: { type: 'string' }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { userId } = request.params;
+      
+      const player = db.prepare('SELECT * FROM players WHERE user_id = ?').get(userId);
+      
+      if (!player) {
+        return reply.code(404).send({ error: 'Player not found' });
+      }
+      
+      // Get total games and wins
+      const gameStats = db.prepare(`
+        SELECT 
+          COUNT(*) as total_games,
+          SUM(CASE WHEN NOT EXISTS (
+            SELECT 1 FROM game_players gp2
+            WHERE gp2.game_id = gp1.game_id AND gp2.score > gp1.score
+          ) THEN 1 ELSE 0 END) as wins
+        FROM game_players gp1
+        WHERE player_id = ?
+      `).get(player.id);
+      
+      // Get total tournaments and wins
+      const tournamentStats = db.prepare(`
+        SELECT 
+          COUNT(*) as total_tournaments,
+          SUM(CASE WHEN final_position = 1 THEN 1 ELSE 0 END) as tournament_wins
+        FROM tournament_players
+        WHERE player_id = ?
+      `).get(player.id);
+      
+      // Get average score
+      const avgScore = db.prepare(`
+        SELECT AVG(score) as avg_score
+        FROM game_players
+        WHERE player_id = ?
+      `).get(player.id).avg_score || 0;
+      
+      // Calculate win rate
+      const winRate = gameStats.total_games > 0 
+        ? (gameStats.wins * 100.0 / gameStats.total_games).toFixed(2) 
+        : 0;
+      
+      return {
+        player_id: player.id,
+        user_id: player.user_id,
+        total_games: gameStats.total_games,
+        wins: gameStats.wins,
+        win_rate: parseFloat(winRate),
+        avg_score: avgScore,
+        total_tournaments: tournamentStats.total_tournaments,
+        tournament_wins: tournamentStats.tournament_wins,
+        recent_games: db.prepare(`
+          SELECT g.id, g.start_time, g.end_time, gp.score
+          FROM games g
+          JOIN game_players gp ON g.id = gp.game_id
+          WHERE gp.player_id = ?
+          ORDER BY g.start_time DESC
+          LIMIT 5
+        `).all(player.id),
+        recent_tournaments: db.prepare(`
+          SELECT t.id, t.name, t.start_time, t.end_time, tp.final_position
+          FROM tournaments t
+          JOIN tournament_players tp ON t.id = tp.tournament_id
+          WHERE tp.player_id = ?
+          ORDER BY t.start_time DESC
+          LIMIT 5
+        `).all(player.id)
+      };
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Failed to get user stats' });
+    }
+  });
+}
+
+module.exports = fp(statsRoutes, {
+  name: 'stats-routes',
+  dependencies: ['db']
+});

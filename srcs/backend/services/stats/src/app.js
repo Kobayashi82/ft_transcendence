@@ -7,8 +7,14 @@ const app = fastify();
 app.decorate("config", config);
 
 app.register(require("./plugins/db"), { database: config.database });
+app.register(require('./models/player'));
+app.register(require('./models/game'));
+app.register(require('./models/tournament'));
+
 app.register(require("./plugins/error-handler"));
+app.register(require("./plugins/seed"));
 app.register(require("./routes"));
+
 
 // Shutdown
 const gracefulShutdown = async () => {
