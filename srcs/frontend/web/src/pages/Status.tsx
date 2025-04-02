@@ -8,6 +8,7 @@ import {
   Server,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "../contexts/LanguageContext";
 
 // List of available microservices
 // Add or modify here to update throughout the application
@@ -45,6 +46,8 @@ interface ServerStatus {
 }
 
 const ServerStatusPage: React.FC = () => {
+  const { t } = useLanguage();
+  
   // Initialize state with cached data if available, or loading status if first visit
   const [status, setStatus] = useState<ServerStatus | null>(cachedData.status);
   const [loading, setLoading] = useState<boolean>(!cachedData.status);
@@ -239,10 +242,35 @@ const ServerStatusPage: React.FC = () => {
     }
   };
 
+  // Translate status text
+  const translateStatus = (status: string): string => {
+    switch (status?.toLowerCase()) {
+      case "up":
+        return t('status.state.up');
+      case "down":
+        return t('status.state.down');
+      case "loading":
+        return t('status.state.loading');
+      case "warning":
+        return t('status.state.warning');
+      case "degraded":
+        return t('status.state.degraded');
+      case "critical":
+        return t('status.state.critical');
+      case "error":
+        return t('status.state.error');
+      case "healthy":
+        return t('status.state.healthy');
+      default:
+        return status;
+    }
+  };
+
   // Status badge component
   const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     const textColor = getStatusColor(status);
     const icon = getStatusIcon(status);
+    const translatedStatus = translateStatus(status);
 
     // Custom background based on status for better contrast (using theme similar to Login.tsx)
     const bgColorClass = (() => {
@@ -269,7 +297,7 @@ const ServerStatusPage: React.FC = () => {
         className={`inline-flex items-center gap-1 ${bgColorClass} ${textColor} text-xs font-medium px-2.5 py-1 rounded-full border`}
       >
         {icon}
-        {status}
+        {translatedStatus}
       </span>
     );
   };
@@ -344,7 +372,7 @@ const ServerStatusPage: React.FC = () => {
         <div className="text-center p-8 bg-gray-800 rounded-lg shadow-lg max-w-md">
           <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-red-400 mb-4">
-            Connection Error
+            {t('status.connectionError')}
           </h1>
           <p className="text-gray-300 mb-6">{error}</p>
           <div className="flex justify-center gap-4">
@@ -353,11 +381,11 @@ const ServerStatusPage: React.FC = () => {
               className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center justify-center"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
+              {t('status.retry')}
             </button>
             <Link to="/" className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 flex items-center justify-center">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
+              {t('status.backToHome')}
             </Link>
           </div>
         </div>
@@ -375,7 +403,7 @@ const ServerStatusPage: React.FC = () => {
           <div>
             <div className="flex items-center">
               <h1 className="text-3xl font-semibold text-white mb-2">
-                Server Status
+                {t('status.title')}
               </h1>
               <button
                 onClick={handleManualRefresh}
@@ -390,7 +418,7 @@ const ServerStatusPage: React.FC = () => {
               </button>
             </div>
             <span className="block mt-2 text-md font-normal text-indigo-400">
-              Real-time monitoring
+              {t('status.subtitle')}
             </span>
           </div>
         </div>
@@ -404,9 +432,9 @@ const ServerStatusPage: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-white">
-                  Gateway
+                  {t('status.gateway')}
                 </h3>
-                <p className="text-gray-400 text-sm">API Gateway Service</p>
+                <p className="text-gray-400 text-sm">{t('status.gatewayDescription')}</p>
               </div>
             </div>
           </div>
@@ -416,13 +444,13 @@ const ServerStatusPage: React.FC = () => {
               <thead className="bg-gray-700">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3">
-                    Uptime
+                    {t('status.uptime')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3">
-                    Status
+                    {t('status.status')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3">
-                    Last Updated
+                    {t('status.lastUpdated')}
                   </th>
                 </tr>
               </thead>
@@ -460,8 +488,8 @@ const ServerStatusPage: React.FC = () => {
                 </svg>
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-white">Microservices</h2>
-                <p className="text-gray-400 text-sm">Status of all backend services</p>
+                <h2 className="text-xl font-semibold text-white">{t('status.microservices')}</h2>
+                <p className="text-gray-400 text-sm">{t('status.microservicesDescription')}</p>
               </div>
             </div>
           </div>
@@ -471,13 +499,13 @@ const ServerStatusPage: React.FC = () => {
               <thead className="bg-gray-700">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3">
-                    Service
+                    {t('status.service')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3">
-                    Status
+                    {t('status.status')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3">
-                    Response Time
+                    {t('status.responseTime')}
                   </th>
                 </tr>
               </thead>
@@ -547,7 +575,7 @@ const ServerStatusPage: React.FC = () => {
                         colSpan={3}
                         className="px-6 py-8 text-center text-sm text-gray-400"
                       >
-                        No services information available
+                        {t('status.noServicesAvailable')}
                       </td>
                     </tr>
                   )}

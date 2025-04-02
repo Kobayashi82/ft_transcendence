@@ -1,0 +1,71 @@
+const translations = {
+  // Common
+  'language': 'Langue',
+  'english': 'Anglais',
+  'spanish': 'Espagnol',
+  'french': 'Français',
+
+  // Navigation
+  'nav.quickMatch': 'Match Rapide',
+  'nav.tournament': 'Tournoi',
+  'nav.rankings': 'Classements',
+  'nav.leaderboard': 'Tableau des Scores',
+  'nav.about': 'À Propos',
+  'nav.status': 'État du Serveur',
+
+  // Home page
+  'home.title': 'Transcendence',
+  'home.subtitle': 'L\'Expérience de Jeu Ultime',
+  'home.disclaimer': 'Bon, peut-être pas "ultime", mais c\'est définitivement une expérience de jeu.',
+  'home.description': 'Défiez des adversaires, grimpez dans le classement et prouvez que vous êtes légèrement meilleur que des inconnus en ligne.',
+  'home.playNow': 'Jouer Maintenant',
+  'home.choiceTitle': 'Faites Votre Choix',
+  'home.choiceDescription': 'Choisissez votre chemin vers la gloire (ou cliquez simplement au hasard). Dominerez-vous en Match Rapide, vous élèverez-vous en mode Tournoi, ou consulterez-vous simplement le Tableau des Scores pour voir à quel point vous êtes mauvais ? Le choix vous appartient…',
+
+  // Game modes
+  'gameMode.quickMatch.title': 'Match Rapide',
+  'gameMode.quickMatch.description': 'Défiez un autre joueur en 1 contre 1.',
+  'gameMode.tournament.title': 'Tournoi',
+  'gameMode.tournament.description': 'Rejoignez un tournoi.',
+  'gameMode.rankings.title': 'Classements',
+  'gameMode.rankings.description': 'Consultez les classements du serveur.',
+  'gameMode.leaderboard.title': 'Tableau des Scores',
+  'gameMode.leaderboard.description': 'Consultez les meilleurs joueurs et leurs statistiques.',
+  'gameMode.about.title': 'À Propos',
+  'gameMode.about.description': 'En savoir plus sur le projet.',
+  'gameMode.status.title': 'État du Serveur',
+  'gameMode.status.description': 'Vérifiez l\'état du serveur.',
+
+  // Status page
+  'status.title': 'État du Serveur',
+  'status.subtitle': 'Surveillance en temps réel',
+  'status.gateway': 'Passerelle',
+  'status.gatewayDescription': 'Service de Passerelle API',
+  'status.uptime': 'Temps de Fonctionnement',
+  'status.status': 'État',
+  'status.lastUpdated': 'Dernière Mise à Jour',
+  'status.microservices': 'Microservices',
+  'status.microservicesDescription': 'État de tous les services backend',
+  'status.service': 'Service',
+  'status.responseTime': 'Temps de Réponse',
+  'status.connectionError': 'Erreur de Connexion',
+  'status.retry': 'Réessayer',
+  'status.backToHome': 'Retour à l\'Accueil',
+  'status.noServicesAvailable': 'Aucune information de service disponible',
+
+  // Status states
+  'status.state.up': 'Actif',
+  'status.state.down': 'Inactif',
+  'status.state.loading': 'Chargement',
+  'status.state.warning': 'Avertissement',
+  'status.state.degraded': 'Dégradé',
+  'status.state.critical': 'Critique',
+  'status.state.error': 'Erreur',
+  'status.state.healthy': 'Opérationnel',
+
+  // Under construction page
+  'construction.title': 'Bientôt Disponible',
+  'construction.message': 'Cette page est en construction',
+};
+
+export default translations;

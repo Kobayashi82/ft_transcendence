@@ -10,23 +10,26 @@ import {
   Menu,
   X
 } from "lucide-react";
+import { useLanguage } from "../../contexts/LanguageContext";
+import LanguageSelector from "./LanguageSelector";
 
 const Header: React.FC = () => {
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { t } = useLanguage();
   
   // Check if a nav item is active
   const isActive = (path: string) => location.pathname === path;
   
-  // Navigation items
+  // Navigation items with translations
   const navItems = [
-    { name: "Quick Match", path: "/quick", icon: <Gamepad2 className="w-4 h-4" /> },
-    { name: "Tournament", path: "/tournament", icon: <Trophy className="w-4 h-4" /> },
-    { name: "Rankings", path: "/rankings", icon: <Users className="w-4 h-4" /> },
-    { name: "Leaderboard", path: "/leaderboard", icon: <BarChart3 className="w-4 h-4" /> },
-    { name: "About Us", path: "/about", icon: <Info className="w-4 h-4" /> },
-    { name: "Server Status", path: "/status", icon: <ActivitySquare className="w-4 h-4" /> }
+    { name: t('nav.quickMatch'), path: "/play/quick", icon: <Gamepad2 className="w-4 h-4" /> },
+    { name: t('nav.tournament'), path: "/play/tournament", icon: <Trophy className="w-4 h-4" /> },
+    { name: t('nav.rankings'), path: "/rankings", icon: <Users className="w-4 h-4" /> },
+    { name: t('nav.leaderboard'), path: "/leaderboard", icon: <BarChart3 className="w-4 h-4" /> },
+    { name: t('nav.about'), path: "/about", icon: <Info className="w-4 h-4" /> },
+    { name: t('nav.status'), path: "/status", icon: <ActivitySquare className="w-4 h-4" /> }
   ];
 
   // Add scroll listener
@@ -61,7 +64,7 @@ const Header: React.FC = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-1">
+          <nav className="hidden md:flex space-x-1 items-center">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -76,6 +79,9 @@ const Header: React.FC = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Language selector in desktop view */}
+            <LanguageSelector />
           </nav>
 
           {/* Mobile menu button */}
@@ -98,6 +104,12 @@ const Header: React.FC = () => {
         }`}
       >
         <div className="px-4 py-3 space-y-1">
+          {/* Language selector at top of mobile menu - horizontal version */}
+          <div className="mb-3 border-b border-gray-800 pb-3">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 px-2">{t('language')}</p>
+            <LanguageSelector isMobile={true} />
+          </div>
+          
           {navItems.map((item) => (
             <Link
               key={item.path}

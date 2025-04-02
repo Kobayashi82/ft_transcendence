@@ -5,11 +5,16 @@ import {
   Gamepad2, 
   Swords, 
   ChevronRight, 
-  BarChart3 
+  BarChart3,
+  Info,
+  ActivitySquare
 } from "lucide-react";
 import PingPongGame from "../components/PingPongHome";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const Home: React.FC = () => {
+  const { t } = useLanguage();
+  
   // State for animation effects
   const [isLoaded, setIsLoaded] = useState(false);
   const [hoverItem, setHoverItem] = useState<string | null>(null);
@@ -44,53 +49,53 @@ const Home: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Game mode cards data
+  // Game mode cards data - using translations
   const gameModes = [
     {
       id: "quickmatch",
-      title: "Quick Match",
-      description: "Challenge another player in a 1v1 match.",
+      title: t('gameMode.quickMatch.title'),
+      description: t('gameMode.quickMatch.description'),
       icon: <Swords className="w-8 h-8" />,
       color: "from-blue-600 to-indigo-700",
-      link: "/quick"
+      link: "/play/quick"
     },
     {
       id: "tournament",
-      title: "Tournament",
-      description: "Join a tournament.",
+      title: t('gameMode.tournament.title'),
+      description: t('gameMode.tournament.description'),
       icon: <Trophy className="w-8 h-8" />,
       color: "from-purple-600 to-pink-700",
-      link: "/tournament"
+      link: "/play/tournament"
     },
-	{
-	  id: "rankings",
-	  title: "Rankings",
-	  description: "Check the server status.",
-	  icon: <BarChart3 className="w-8 h-8" />,
-	  color: "from-amber-500 to-orange-700",
-	  link: "/rankings"
-	},
+    {
+      id: "rankings",
+      title: t('gameMode.rankings.title'),
+      description: t('gameMode.rankings.description'),
+      icon: <BarChart3 className="w-8 h-8" />,
+      color: "from-amber-500 to-orange-700",
+      link: "/rankings"
+    },
     {
       id: "leaderboard",
-      title: "Leaderboard",
-      description: "Check the top players and their stats.",
+      title: t('gameMode.leaderboard.title'),
+      description: t('gameMode.leaderboard.description'),
       icon: <BarChart3 className="w-8 h-8" />,
       color: "from-amber-500 to-orange-700",
       link: "/leaderboard"
     },
     {
       id: "about",
-      title: "About us",
-      description: "Check the server status.",
-      icon: <BarChart3 className="w-8 h-8" />,
-      color: "from-amber-500 to-orange-700",
+      title: t('gameMode.about.title'),
+      description: t('gameMode.about.description'),
+      icon: <Info className="w-8 h-8" />,
+      color: "from-green-500 to-teal-700",
       link: "/about"
     },
     {
       id: "status",
-      title: "Server Status",
-      description: "Check the server status.",
-      icon: <BarChart3 className="w-8 h-8" />,
+      title: t('gameMode.status.title'),
+      description: t('gameMode.status.description'),
+      icon: <ActivitySquare className="w-8 h-8" />,
       color: "from-amber-500 to-orange-700",
       link: "/status"
     }
@@ -123,16 +128,16 @@ const Home: React.FC = () => {
           {/* Main Content */}
           <div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-2 sm:mb-4 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500">
-              Transcendence
+              {t('home.title')}
             </h1>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-8 leading-tight">
-				The Ultimate Gaming Experience
+              {t('home.subtitle')}
             </h2>
             <p className="text-md sm:text-l text-gray-400 mb-6 sm:mb-12">
-				Okay, maybe not "ultimate," but it's definitely a gaming experience.
+              {t('home.disclaimer')}
             </p>
-			<p className="text-lg sm:text-xl text-blue-200 mb-6 sm:mb-12">
-  				Challenge opponents, climb the leaderboard, and prove you're slightly better than random strangers online.
+            <p className="text-lg sm:text-xl text-blue-200 mb-6 sm:mb-12">
+              {t('home.description')}
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
@@ -140,7 +145,7 @@ const Home: React.FC = () => {
                 className="group bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 flex items-center space-x-2 shadow-lg shadow-blue-900/50 transform hover:scale-105"
               >
                 <Gamepad2 className="w-5 h-5" />
-                <span className="font-bold">Play Now</span>
+                <span className="font-bold">{t('home.playNow')}</span>
                 <ChevronRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
@@ -148,7 +153,7 @@ const Home: React.FC = () => {
                 className="group bg-gray-800/50 backdrop-blur-sm border border-gray-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg hover:bg-gray-700/50 transition-all duration-300 flex items-center space-x-2 transform hover:scale-105"
               >
                 <Trophy className="w-5 h-5" />
-                <span className="font-bold">Leaderboard</span>
+                <span className="font-bold">{t('gameMode.leaderboard.title')}</span>
               </Link>
             </div>
           </div>
@@ -166,9 +171,9 @@ const Home: React.FC = () => {
       <div className="relative z-10 py-10 sm:py-16 bg-gray-900/40 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">Make Your Choice</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">{t('home.choiceTitle')}</h2>
             <p className="text-lg sm:text-xl text-blue-300 max-w-3xl mx-auto">
-			Choose your path to glory (or just click something randomly). Will you dominate in Quick Match, rise in Tournament mode, or just check the Leaderboard to see how bad you are? The choice is yours…
+              {t('home.choiceDescription')}
             </p>
           </div>
           
