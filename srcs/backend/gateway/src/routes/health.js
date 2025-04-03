@@ -1,6 +1,7 @@
 "use strict";
 
 const axios = require("axios");
+const { name } = require("../config/services/stats");
 
 // Health check
 async function healthRoutes(fastify, options) {
@@ -33,22 +34,26 @@ async function checkServices(services, startTime, fastify) {
 
         // Try making a request to the /health of the service
         const response = await axios.get(`${url}/health`, {
-          timeout: 3000,
+          timeout: 2000,
           validateStatus: () => true,
         });
 
-        const elapsedSeconds = (Date.now() - startTime) / 1000;
         const responseTime = Date.now() - startTime;
         const isHealthy = response.status >= 200 && response.status < 300;
         const status = isHealthy ? "up" : "degraded";
 
-        serviceStatus[name] = {
+        const serv_name = response.data.service.name || name;
+        serviceStatus[serv_name] = {
           status,
           statusCode: response.status,
           responseTime: `${responseTime}ms`,
         };
       } catch (error) {
-        serviceStatus[name] = {
+        let temp_name;
+        if (name === 'ai_deeppong') temp_name = 'AI DeepPong';
+        if (name === 'game') temp_name = 'Game';
+        if (name === 'stats') temp_name = 'Stats';
+        serviceStatus[temp_name] = {
           status: "down",
           error: error.code || error.message,
         };

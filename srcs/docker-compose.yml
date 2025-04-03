@@ -11,7 +11,8 @@ services:
     ports:
       - "443:443"
     networks:
-      - public-net
+      - frontend-net
+      - backend-net
     restart: unless-stopped
 
   # --------------------- WEB PAGE (80) -------------------- #
@@ -24,7 +25,7 @@ services:
     volumes:
       - ./frontend/web:/app
     networks:
-      - public-net
+      - frontend-net
     restart: unless-stopped
 
   # -------------------- GATEWAY (3000) -------------------- #
@@ -38,30 +39,16 @@ services:
       - ./backend/gateway/src:/app/src
     environment:
       - SERVICE_URL=gateway:3000
-      - AUTH_SERVICE_URL=http://auth:3000
-      - AUTH_SERVICE_URL=http://stats:3000
+      - STATS_SERVICE_URL=http://stats:3000
+      - GAME_SERVICE_URL=http://game:3000
+      - AI_DEEPPONG_SERVICE_URL=http://ai_deeppong:3000
       - CORS_ORIGIN=${CORS_ORIGIN-*}
     networks:
-      - public-net
+      - backend-net
       - service-net
     restart: unless-stopped
 
   # --------------- MICRO-SERVICES --------------- #
-
-  # Auth (3000)
-  auth:
-    container_name: auth
-    build:
-      context: ./backend/services/auth
-      dockerfile: Dockerfile.dev
-    volumes:
-      - ./backend/services/auth/src:/app/src
-      - ms_auth_data:/app/data
-    environment:
-      - SERVICE_URL=auth:3000
-    networks:
-      - service-net
-    restart: unless-stopped
 
   # Stats (3000)
   stats:
@@ -78,17 +65,47 @@ services:
       - service-net
     restart: unless-stopped
 
+  # Game (3000)
+  game:
+    container_name: game
+    build:
+      context: ./backend/services/game
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend/services/game/src:/app/src
+    environment:
+      - SERVICE_URL=game:3000
+    networks:
+      - service-net
+    restart: unless-stopped
+    
+  # AI DeepPong (3000)
+  ai_deeppong:
+    container_name: ai_deeppong
+    build:
+      context: ./backend/services/ai_deeppong
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend/services/ai_deeppong/src:/app/src
+    environment:
+      - SERVICE_URL=ai_deeppong:3000
+    networks:
+      - service-net
+    restart: unless-stopped
+
 # ------------------------- VOLUMES ------------------------ #
 
 volumes:
-  ms_auth_data:
   ms_stats_data:
 
 # ------------------------- NETWORK ------------------------ #
 
 networks:
-  public-net:
-    name: public-net
+  frontend-net:
+    name: frontend-net
+    driver: bridge
+  backend-net:
+    name: backend-net
     driver: bridge
   service-net:
     name: service-net

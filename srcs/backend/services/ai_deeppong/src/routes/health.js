@@ -2,12 +2,9 @@
 
 async function healthRoutes(fastify, options) {
   fastify.get("/health", async (request, reply) => {
-
-      //await fastify.seed();
-
       const serviceStatus = {
         service: {
-          name: 'Stats',
+          name: 'AI DeepPong',
           status: "up",
           uptime: process.uptime(),
           timestamp: new Date().toISOString(),

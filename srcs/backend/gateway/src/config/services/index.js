@@ -1,13 +1,15 @@
 'use strict'
 
-const serviceAuth = require('./auth')
 const serviceStats = require('./stats')
+const serviceGame = require('./game')
+const serviceAI_DeepPong = require('./ai_deeppong')
 
 const buildServicesConfig = () => {
 
   const services = {
-    [serviceAuth.name]: serviceAuth,
     [serviceStats.name]: serviceStats,
+    [serviceGame.name]: serviceGame,
+    [serviceAI_DeepPong.name]: serviceAI_DeepPong,
   }
   
   // Build route map with prefix as key and service name as value

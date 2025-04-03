@@ -118,7 +118,7 @@ module.exports = {
       rateLimit: { max: 20, timeWindow: 10 }
     },
     
-    // Health check endpoint for the service
+    // Health check
     "/health": {
       method: ["GET"],
       path: "/health",

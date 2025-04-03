@@ -1,0 +1,14 @@
+{
+	"name": "game",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Game microservice",
+	"author": "vzurera-",
+	"main": "src/app.js",
+	"dependencies": {
+		"fastify": "^5.2.2",
+		"fastify-plugin": "^5.0.1",
+    	"dotenv": "^16.4.7"
+	}
+}
+
