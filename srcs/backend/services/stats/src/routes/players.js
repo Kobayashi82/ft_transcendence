@@ -50,7 +50,7 @@ async function playerRoutes(fastify, options) {
     }
   }, async (request, reply) => {
     try {
-      const player = playerModel.getOrCreatePlayer(request.params.userId);
+      const player = playerModel.getOrCreatePlayer(request.params.userId.toLowerCase().trim());
       return player;
     } catch (err) {
       request.log.error(err);

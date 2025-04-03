@@ -102,6 +102,16 @@ module.exports = {
       path: "/stats/leaderboard/tournaments",
       rateLimit: { max: 20, timeWindow: 10 }
     },
+    "/stats/leaderboard/totalgames": {
+      method: ["GET"],
+      path: "/stats/leaderboard/totalgames",
+      rateLimit: { max: 20, timeWindow: 10 }
+    },
+    "/stats/leaderboard/fastest": {
+      method: ["GET"],
+      path: "/stats/leaderboard/fastest",
+      rateLimit: { max: 20, timeWindow: 10 }
+    },
     "/stats/user/:userId": {
       method: ["GET"],
       path: "/stats/user/:userId",

@@ -178,6 +178,98 @@ async function statsRoutes(fastify, options) {
     }
   });
 
+  // Get leaderboard by total games played
+  fastify.get('/stats/leaderboard/totalgames', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', default: 10 }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const limit = parseInt(request.query.limit) || 10;
+      
+      const leaderboard = db.prepare(`
+        SELECT 
+          p.id as player_id,
+          p.user_id,
+          COUNT(*) as total_games,
+          SUM(CASE WHEN NOT EXISTS (
+            SELECT 1 FROM game_players gp2
+            WHERE gp2.game_id = gp1.game_id AND gp2.score > gp1.score
+          ) THEN 1 ELSE 0 END) as wins
+        FROM game_players gp1
+        JOIN players p ON gp1.player_id = p.id
+        GROUP BY p.id
+        ORDER BY total_games DESC, wins DESC
+        LIMIT ?
+      `).all(limit);
+      
+      return { data: leaderboard };
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Failed to get total games leaderboard' });
+    }
+  });
+
+  // Get leaderboard by fastest wins
+  fastify.get('/stats/leaderboard/fastest', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', default: 10 }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const limit = parseInt(request.query.limit) || 10;
+      
+      const leaderboard = db.prepare(`
+        WITH winning_games AS (
+          SELECT 
+            gp1.player_id,
+            g.id as game_id,
+            CAST(
+              (julianday(g.end_time) - julianday(g.start_time)) * 24 * 60 * 60 AS INTEGER
+            ) as duration_seconds
+          FROM game_players gp1
+          JOIN games g ON gp1.game_id = g.id
+          WHERE NOT EXISTS (
+            SELECT 1 FROM game_players gp2
+            WHERE gp2.game_id = gp1.game_id AND gp2.score > gp1.score
+          )
+          AND g.end_time IS NOT NULL
+          AND g.start_time IS NOT NULL
+        ),
+        fastest_wins AS (
+          SELECT 
+            player_id,
+            MIN(duration_seconds) as fastest_win
+          FROM winning_games
+          GROUP BY player_id
+        )
+        SELECT 
+          p.id as player_id,
+          p.user_id,
+          fw.fastest_win
+        FROM fastest_wins fw
+        JOIN players p ON fw.player_id = p.id
+        ORDER BY fw.fastest_win ASC
+        LIMIT ?
+      `).all(limit);
+      
+      return { data: leaderboard };
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Failed to get fastest wins leaderboard' });
+    }
+  });
+
   // Get user statistics by user ID
   fastify.get('/stats/user/:userId', {
     schema: {
@@ -193,7 +285,7 @@ async function statsRoutes(fastify, options) {
     try {
       const { userId } = request.params;
       
-      const player = db.prepare('SELECT * FROM players WHERE user_id = ?').get(userId);
+      const player = db.prepare('SELECT * FROM players WHERE LOWER(user_id) = LOWER(?)').get(userId);
       
       if (!player) {
         return reply.code(404).send({ error: 'Player not found' });

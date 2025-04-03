@@ -105,7 +105,7 @@ const translations = {
   // Rankings page
   'rankings.title': 'Player Rankings',
   'rankings.subtitle': 'Track performance and view detailed stats for any player',
-  'rankings.searchPlaceholder': 'Enter a player name',
+  'rankings.searchPlaceholder': 'Enter player ID or username',
   'rankings.search': 'Search',
   'rankings.userNotFound': 'Player not found',
   'rankings.errorFetchingStats': 'Error fetching player statistics',
@@ -141,7 +141,7 @@ const translations = {
   'rankings.noTournamentsFound': 'No tournaments found',
   'rankings.noGamesInTournament': 'No games found in this tournament',
   'rankings.searchForPlayer': 'Search for a Player',
-  'rankings.enterUserIdToView': 'Enter a player name to view their statistics',
+  'rankings.enterUserIdToView': 'Enter a player ID to view their statistics',
   'rankings.unknown': 'Unknown',
   'rankings.win': 'Win',
   'rankings.loss': 'Loss',
@@ -163,6 +163,7 @@ const translations = {
   'leaderboard.games': 'Games',
   'leaderboard.noData': 'No data available',
   'leaderboard.errorFetching': 'Error fetching leaderboard data',
+  'leaderboard.updatedInfo': 'Leaderboard is updated daily',
 };
 
 export default translations;

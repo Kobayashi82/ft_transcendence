@@ -105,7 +105,7 @@ const translations = {
   // Rankings page
   'rankings.title': 'Clasificación de Jugadores',
   'rankings.subtitle': 'Sigue el rendimiento y consulta estadísticas detalladas de cualquier jugador',
-  'rankings.searchPlaceholder': 'Introduce el nombre de usuario',
+  'rankings.searchPlaceholder': 'Introduce ID o nombre de usuario',
   'rankings.search': 'Buscar',
   'rankings.userNotFound': 'Jugador no encontrado',
   'rankings.errorFetchingStats': 'Error al obtener estadísticas del jugador',
@@ -141,7 +141,7 @@ const translations = {
   'rankings.noTournamentsFound': 'No se encontraron torneos',
   'rankings.noGamesInTournament': 'No hay partidas en este torneo',
   'rankings.searchForPlayer': 'Buscar un Jugador',
-  'rankings.enterUserIdToView': 'Introduce nombre de un jugador para ver sus estadísticas',
+  'rankings.enterUserIdToView': 'Introduce el ID de un jugador para ver sus estadísticas',
   'rankings.unknown': 'Desconocido',
   'rankings.win': 'Victoria',
   'rankings.loss': 'Derrota',
@@ -163,6 +163,7 @@ const translations = {
   'leaderboard.games': 'Partidas',
   'leaderboard.noData': 'No hay datos disponibles',
   'leaderboard.errorFetching': 'Error al obtener datos de la tabla de líderes',
+  'leaderboard.updatedInfo': 'La tabla de líderes se actualiza diariamente',
 };
 
 export default translations;

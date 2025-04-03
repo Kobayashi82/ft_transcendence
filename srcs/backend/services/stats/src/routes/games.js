@@ -106,7 +106,7 @@ async function gameRoutes(fastify, options) {
     }
   }, async (request, reply) => {
     try {
-      const games = gameModel.getGamesByUser(request.params.userId);
+      const games = gameModel.getGamesByUser(request.params.userId.toLowerCase().trim());
       return { data: games };
     } catch (err) {
       request.log.error(err);

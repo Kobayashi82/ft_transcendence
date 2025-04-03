@@ -86,7 +86,7 @@ async function tournamentRoutes(fastify, options) {
     }
   }, async (request, reply) => {
     try {
-      const tournaments = tournamentModel.getTournamentsByUser(request.params.userId);
+      const tournaments = tournamentModel.getTournamentsByUser(request.params.userId.toLowerCase().trim());
       return { data: tournaments };
     } catch (err) {
       request.log.error(err);

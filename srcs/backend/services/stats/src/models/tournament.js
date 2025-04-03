@@ -8,6 +8,11 @@ async function tournamentModelPlugin(fastify, options) {
   function createTournament(tournamentData) {
     const { name, start_time, settings, players } = tournamentData;
     
+    // Asegurarse de que start_time sea una cadena ISO
+    const startTimeStr = start_time ? 
+      (typeof start_time === 'object' && start_time instanceof Date ? 
+        start_time.toISOString() : start_time) : null;
+    
     // Start a database transaction
     const transaction = db.transaction(() => {
       // Insert tournament
@@ -16,7 +21,7 @@ async function tournamentModelPlugin(fastify, options) {
         VALUES (?, ?, ?, ?)
       `).run(
         name,
-        start_time,
+        startTimeStr,
         JSON.stringify(settings),
         'pending'
       );
@@ -77,6 +82,14 @@ async function tournamentModelPlugin(fastify, options) {
   function updateTournament(id, tournamentData) {
     const { name, end_time, settings, status } = tournamentData;
     
+    // Asegurarse de que end_time sea una cadena ISO o null
+    const endTimeStr = end_time ? 
+      (typeof end_time === 'object' && end_time instanceof Date ? 
+        end_time.toISOString() : end_time) : null;
+    
+    // Asegurarse de que settings sea JSON si se proporciona
+    const settingsStr = settings ? JSON.stringify(settings) : null;
+    
     const result = db.prepare(`
       UPDATE tournaments
       SET name = COALESCE(?, name),
@@ -86,8 +99,8 @@ async function tournamentModelPlugin(fastify, options) {
       WHERE id = ?
     `).run(
       name,
-      end_time,
-      settings ? JSON.stringify(settings) : null,
+      endTimeStr,
+      settingsStr,
       status,
       id
     );
@@ -131,7 +144,7 @@ async function tournamentModelPlugin(fastify, options) {
       FROM tournaments t
       JOIN tournament_players tp ON t.id = tp.tournament_id
       JOIN players p ON tp.player_id = p.id
-      WHERE p.user_id = ?
+      WHERE LOWER(p.user_id) = LOWER(?)
       ORDER BY t.start_time DESC
     `).all(userId);
     
@@ -175,17 +188,20 @@ async function tournamentModelPlugin(fastify, options) {
           UPDATE tournament_players
           SET final_position = ?
           WHERE tournament_id = ? AND player_id = (
-            SELECT id FROM players WHERE user_id = ?
+            SELECT id FROM players WHERE LOWER(user_id) = LOWER(?)
           )
         `).run(result.position, tournamentId, result.user_id);
       }
       
       // Update tournament status to completed
+      // Utilizar la fecha actual en formato ISO string
+      const currentDate = new Date().toISOString();
+      
       db.prepare(`
         UPDATE tournaments
-        SET status = 'completed', end_time = CURRENT_TIMESTAMP
+        SET status = 'completed', end_time = ?
         WHERE id = ? AND end_time IS NULL
-      `).run(tournamentId);
+      `).run(currentDate, tournamentId);
     });
     
     try {

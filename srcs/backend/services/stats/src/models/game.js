@@ -8,6 +8,15 @@ async function gameModelPlugin(fastify, options) {
   function createGame(gameData) {
     const { tournament_id, start_time, end_time, settings, players } = gameData;
     
+    // Asegurarse de que las fechas sean cadenas ISO
+    const startTimeStr = start_time ? 
+      (typeof start_time === 'object' && start_time instanceof Date ? 
+        start_time.toISOString() : start_time) : null;
+        
+    const endTimeStr = end_time ? 
+      (typeof end_time === 'object' && end_time instanceof Date ? 
+        end_time.toISOString() : end_time) : null;
+    
     // Start a database transaction
     const transaction = db.transaction(() => {
       // Insert game
@@ -16,8 +25,8 @@ async function gameModelPlugin(fastify, options) {
         VALUES (?, ?, ?, ?)
       `).run(
         tournament_id || null,
-        start_time,
-        end_time,
+        startTimeStr,
+        endTimeStr,
         JSON.stringify(settings)
       );
       
@@ -71,6 +80,16 @@ async function gameModelPlugin(fastify, options) {
   function updateGame(id, gameData) {
     const { tournament_id, end_time, settings } = gameData;
     
+    // Asegurarse de que end_time sea una cadena ISO o null
+    const endTimeStr = end_time ? 
+      (typeof end_time === 'object' && end_time instanceof Date ? 
+        end_time.toISOString() : end_time) : null;
+    
+    // Obtener configuración actual si no se proporciona una nueva
+    const currentSettings = settings 
+      ? JSON.stringify(settings) 
+      : db.prepare('SELECT settings FROM games WHERE id = ?').get(id)?.settings;
+    
     const result = db.prepare(`
       UPDATE games
       SET tournament_id = ?,
@@ -79,8 +98,8 @@ async function gameModelPlugin(fastify, options) {
       WHERE id = ?
     `).run(
       tournament_id || null,
-      end_time,
-      settings ? JSON.stringify(settings) : db.prepare('SELECT settings FROM games WHERE id = ?').get(id).settings,
+      endTimeStr,
+      currentSettings,
       id
     );
     
@@ -144,7 +163,7 @@ async function gameModelPlugin(fastify, options) {
       FROM games g
       JOIN game_players gp ON g.id = gp.game_id
       JOIN players p ON gp.player_id = p.id
-      WHERE p.user_id = ?
+      WHERE LOWER(p.user_id) = LOWER(?)
       ORDER BY g.start_time DESC
     `).all(userId);
     
