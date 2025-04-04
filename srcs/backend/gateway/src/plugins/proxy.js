@@ -55,9 +55,10 @@ const getAllowedHttpMethods = (routes) => {
   return Array.from(methods);
 };
 
-
 async function proxyPlugin(fastify, options) {
   const { services, routeMap } = fastify.config;
+  const wsProxies = {};
+  const activeConnections = new Map();
 
   // Add a preHandler hook to check allowed methods
   fastify.addHook("preHandler", async (request, reply) => {
@@ -155,10 +156,12 @@ async function proxyPlugin(fastify, options) {
   // Register a proxy for each service
   for (const [serviceName, serviceConfig] of Object.entries(services)) {
     const {
-      url,
+      url: serviceUrl,
       prefix,
       routes = {},
       proxyOptions = {},
+      wsEnabled = false,
+      wsPath = prefix,
       timeout,
     } = serviceConfig;
 
@@ -166,17 +169,9 @@ async function proxyPlugin(fastify, options) {
     const httpMethods = getAllowedHttpMethods(routes);
 
     fastify.register(httpProxy, {
-      upstream: url,
+      upstream: serviceUrl,
       prefix: prefix,
       http2: false,
-
-      // Skip preValidation as we now handle routing in preHandler
-      /*
-      preValidation: (request, reply, done) => {
-        // This is now handled in the preHandler hook above
-        done();
-      },
-      */
 
       replyOptions: {
         rewriteRequestHeaders: (req, headers) => {
@@ -201,6 +196,125 @@ async function proxyPlugin(fastify, options) {
       timeout: timeout,
       ...proxyOptions,
     });
+
+    // Set up WebSocket proxy for this service if enabled
+    if (wsEnabled) {
+      const parsedUrl = new URL(serviceUrl);
+      wsProxies[wsPath] = {
+        target: {
+          host: parsedUrl.hostname,
+          port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+          protocol: parsedUrl.protocol
+        },
+        serviceName,
+        serviceUrl
+      };
+    }
+  }
+
+  // Handle WebSocket upgrade requests
+  fastify.server.on('upgrade', (request, socket, head) => {
+    const pathname = new URL(request.url, 'http://localhost').pathname;
+    
+    // Find the matching WebSocket proxy for this path
+    const matchingProxy = Object.entries(wsProxies).find(([path, _]) => pathname.startsWith(path));
+    if (!matchingProxy) {
+      socket.destroy();
+      return;
+    }
+
+    const [_, proxyInfo] = matchingProxy;
+    const { target, serviceName, serviceUrl } = proxyInfo;
+    const requestId = `${request.socket.remoteAddress.replace(/[.:]/g, '-')}_${pathname.replace(/[\/?.]/g, '-')}_${Date.now()}`;
+    
+    // Create headers
+    const headers = {
+      ...request.headers,
+      'x-source': 'gateway',
+      'x-target': serviceName,
+      'x-request-id': requestId,
+      'x-gateway-timestamp': Date.now().toString()
+    };
+
+    // Determine which module to use based on protocol
+    const httpModule = target.protocol === 'https:' ? require('https') : require('http');
+
+    // Create options
+    const options = {
+      host: target.host,
+      port: target.port,
+      path: pathname,
+      headers: headers,
+      method: 'GET'
+    };
+
+    // Create a proxy request
+    const proxyReq = httpModule.request(options);
+    
+    proxyReq.on('upgrade', (proxyRes, proxySocket, proxyHead) => {
+      // Connection established with the target
+      socket.write(
+        `HTTP/1.1 101 Switching Protocols\r\n` +
+        `Upgrade: ${proxyRes.headers.upgrade}\r\n` +
+        `Connection: Upgrade\r\n` +
+        `Sec-WebSocket-Accept: ${proxyRes.headers['sec-websocket-accept']}\r\n` +
+        `\r\n`
+      );
+
+      // Create connection object
+      const connectionId = `${requestId}_${Date.now()}`;
+      const connection = {
+        id: connectionId,
+        clientSocket: socket,
+        serviceSocket: proxySocket,
+        service: serviceName,
+        path: pathname,
+        clientIp: request.socket.remoteAddress,
+        connectedAt: new Date(),
+      };
+      
+      // Store in active connections map
+      activeConnections.set(connectionId, connection);
+
+      // Connect the client socket with the target socket
+      proxySocket.pipe(socket);
+      socket.pipe(proxySocket);
+
+      // Handle errors and connection close
+      proxySocket.on('error', (err) => {
+        console.error(`WebSocket proxy target error for ${serviceName}:`, err, { connectionId });
+        socket.destroy();
+        cleanupConnection(connectionId);
+      });
+
+      socket.on('error', (err) => {
+        console.error(`WebSocket client error for ${serviceName}:`, err, { connectionId });
+        proxySocket.destroy();
+        cleanupConnection(connectionId);
+      });
+      
+      // Handle connection close from either side
+      const closeHandler = () => {
+        cleanupConnection(connectionId);
+      };
+      
+      proxySocket.on('close', closeHandler);
+      socket.on('close', closeHandler);
+    });
+
+    proxyReq.on('error', (err) => {
+      console.error(`Failed to proxy WebSocket for ${serviceName}:`, err);
+      socket.destroy();
+    });
+
+    proxyReq.end();
+  });
+
+  // Helper function to clean up a connection
+  function cleanupConnection(connectionId) {
+    if (activeConnections.has(connectionId)) {
+      activeConnections.delete(connectionId);
+    }
   }
 
   // Capture proxy errors

@@ -19,6 +19,16 @@ const config = {
       timeout: 5000,
     },
   },
+
+  // Websocket configuration
+  websocket: {
+    reconnectTimeout: 5000,
+    options: {
+      maxPayload: 1024 * 1024, // 1MB
+      pingTimeout: 30000,
+      pingInterval: 15000
+    }
+  }
 };
 
 module.exports = config;

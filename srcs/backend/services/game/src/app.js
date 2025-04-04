@@ -6,6 +6,7 @@ const app = fastify();
 
 app.decorate("config", config);
 
+app.register(require('./websocket-handler'), config.websocket);
 app.register(require("./plugins/error-handler"));
 app.register(require("./routes"));
 
