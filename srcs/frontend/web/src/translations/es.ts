@@ -13,7 +13,7 @@ const translations = {
   'nav.about': 'Acerca de',
   'nav.status': 'Estado del Servidor',
 
-  // Home page
+  // Home
   'home.title': 'Transcendence',
   'home.subtitle': 'La Experiencia de Juego Definitiva',
   'home.disclaimer': 'Bueno, quizás no "definitiva", pero definitivamente es una experiencia de juego.',
@@ -22,7 +22,7 @@ const translations = {
   'home.choiceTitle': 'Haz Tu Elección',
   'home.choiceDescription': '¿Elegirás el camino a la gloria (o simplemente harás clic en algo al azar)? ¿Dominarás en Partida Rápida, te elevarás en el modo Torneo, o simplemente consultarás la Tabla de Líderes para ver lo malo que eres? La elección es tuya…',
 
-  // Game modes
+  // Game
   'gameMode.quickMatch.title': 'Partida Rápida',
   'gameMode.quickMatch.description': 'Desafía a otro jugador en un 1 contra 1.',
   'gameMode.tournament.title': 'Torneo',
@@ -36,7 +36,7 @@ const translations = {
   'gameMode.status.title': 'Estado del Servidor',
   'gameMode.status.description': 'Consulta el estado del servidor.',
 
-  // Status page
+  // Status
   'status.title': 'Estado del Servidor',
   'status.subtitle': 'Monitoreo en tiempo real',
   'status.gateway': 'Gateway',
@@ -52,8 +52,6 @@ const translations = {
   'status.retry': 'Reintentar',
   'status.backToHome': 'Volver al Inicio',
   'status.noServicesAvailable': 'No hay información de servicios disponible',
-
-  // Status states
   'status.state.up': 'Activo',
   'status.state.down': 'Caído',
   'status.state.loading': 'Cargando',
@@ -63,11 +61,11 @@ const translations = {
   'status.state.error': 'Error',
   'status.state.healthy': 'Saludable',
 
-  // Under construction page
+  // Under construction
   'construction.title': 'Próximamente',
   'construction.message': 'Esta página está en construcción',
 
-  // About Us page
+  // About Us
   'about.title': 'El Equipo detrás de Transcendence',
   'about.subtitle': 'Conoce a los desarrolladores ligeramente obsesivos y definitivamente cafeinados que dieron vida a este juego',
   'about.projectTitle': 'Acerca de Transcendence',
@@ -102,7 +100,7 @@ const translations = {
   'about.dev3.detail2': 'detail 2...',
   'about.dev3.funFact': 'Dato curioso: ...',
 
-  // Rankings page
+  // Rankings
   'rankings.title': 'Clasificación de Jugadores',
   'rankings.subtitle': 'Sigue el rendimiento y consulta estadísticas detalladas de cualquier jugador',
   'rankings.searchPlaceholder': 'Introduce el nombre de usuario',
@@ -147,7 +145,7 @@ const translations = {
   'rankings.loss': 'Derrota',
   'rankings.draw': 'Empate',
 
-  // Leaderboard page
+  // Leaderboard
   'leaderboard.title': 'Tabla de Líderes',
   'leaderboard.subtitle': 'Mira cómo se clasifican los jugadores en diferentes categorías',
   'leaderboard.mostWins': 'Más Victorias',
@@ -163,6 +161,11 @@ const translations = {
   'leaderboard.games': 'Partidas',
   'leaderboard.noData': 'No hay datos disponibles',
   'leaderboard.errorFetching': 'Error al obtener datos de la tabla de líderes',
+
+  // NotFound page
+  'notFound.title': '¡Página no encontrada',
+  'notFound.message': 'Parece que esta página está fuera del campo de juego',
+  'notFound.backToHome': 'Volver a la Página Principal',
 };
 
 export default translations;

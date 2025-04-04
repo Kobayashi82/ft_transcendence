@@ -13,7 +13,7 @@ const translations = {
   'nav.about': 'About Us',
   'nav.status': 'Server Status',
 
-  // Home page
+  // Home
   'home.title': 'Transcendence',
   'home.subtitle': 'The Ultimate Gaming Experience',
   'home.disclaimer': "Okay, maybe not \"ultimate,\" but it's definitely a gaming experience.",
@@ -22,7 +22,7 @@ const translations = {
   'home.choiceTitle': 'Make Your Choice',
   'home.choiceDescription': "Choose your path to glory (or just click something randomly). Will you dominate in Quick Match, rise in Tournament mode, or just check the Leaderboard to see how bad you are? The choice is yours…",
 
-  // Game modes
+  // Game
   'gameMode.quickMatch.title': 'Quick Match',
   'gameMode.quickMatch.description': 'Challenge another player in a 1v1 match.',
   'gameMode.tournament.title': 'Tournament',
@@ -36,7 +36,7 @@ const translations = {
   'gameMode.status.title': 'Server Status',
   'gameMode.status.description': 'Check the server status.',
 
-  // Status page
+  // Status
   'status.title': 'Server Status',
   'status.subtitle': 'Real-time monitoring',
   'status.gateway': 'Gateway',
@@ -52,8 +52,6 @@ const translations = {
   'status.retry': 'Retry',
   'status.backToHome': 'Back to Home',
   'status.noServicesAvailable': 'No services information available',
-
-  // Status states
   'status.state.up': 'Up',
   'status.state.down': 'Down',
   'status.state.loading': 'Loading',
@@ -63,11 +61,11 @@ const translations = {
   'status.state.error': 'Error',
   'status.state.healthy': 'Healthy',
 
-  // Under construction page
+  // Under construction
   'construction.title': 'Coming Soon',
   'construction.message': 'This page is under construction',
 
-  // About Us page
+  // About Us
   'about.title': 'The Team Behind Transcendence',
   'about.subtitle': 'Meet the slightly obsessive, definitely caffeinated developers who brought this game to life',
   'about.projectTitle': 'About Transcendence',
@@ -101,8 +99,8 @@ const translations = {
   'about.dev3.detail1': 'detail 1...',
   'about.dev3.detail2': 'detail 2...',
   'about.dev3.funFact': 'Fun fact: ...',
-
-  // Rankings page
+  
+  // Rankings
   'rankings.title': 'Player Rankings',
   'rankings.subtitle': 'Track performance and view detailed stats for any player',
   'rankings.searchPlaceholder': 'Enter a player name',
@@ -147,7 +145,7 @@ const translations = {
   'rankings.loss': 'Loss',
   'rankings.draw': 'Draw',
 
-  // Leaderboard page
+  // Leaderboard
   'leaderboard.title': 'Leaderboard',
   'leaderboard.subtitle': 'See how players rank across different categories',
   'leaderboard.mostWins': 'Most Wins',
@@ -163,6 +161,11 @@ const translations = {
   'leaderboard.games': 'Games',
   'leaderboard.noData': 'No data available',
   'leaderboard.errorFetching': 'Error fetching leaderboard data',
+
+  // NotFound page
+  'notFound.title': 'Page not found',
+  'notFound.message': 'Looks like this page is out of the playing field',
+  'notFound.backToHome': 'Back to Home Page',
 };
 
 export default translations;

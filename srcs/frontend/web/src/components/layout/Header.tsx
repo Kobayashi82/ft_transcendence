@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { 
-  Gamepad2, 
-  Trophy, 
-  Users, 
-  BarChart3, 
-  ActivitySquare,
-  Info,
-  Menu,
-  X
-} from "lucide-react";
+import { Gamepad2, Trophy, Users, BarChart3, ActivitySquare, Info, Menu, X } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import LanguageSelector from "./LanguageSelector";
 
@@ -18,11 +9,8 @@ const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { t } = useLanguage();
+  const isActive = (path: string) => location.pathname === path; 
   
-  // Check if a nav item is active
-  const isActive = (path: string) => location.pathname === path;
-  
-  // Navigation items with translations
   const navItems = [
     { name: t('nav.quickMatch'), path: "/quick", icon: <Gamepad2 className="w-4 h-4" /> },
     { name: t('nav.tournament'), path: "/tournament", icon: <Trophy className="w-4 h-4" /> },
@@ -32,15 +20,8 @@ const Header: React.FC = () => {
     { name: t('nav.status'), path: "/status", icon: <ActivitySquare className="w-4 h-4" /> }
   ];
 
-  // Add scroll listener
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
+    const handleScroll = () => { if (window.scrollY > 20) { setIsScrolled(true); } else { setIsScrolled(false); }};
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -63,7 +44,7 @@ const Header: React.FC = () => {
             Transcendence
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop */}
           <nav className="hidden md:flex space-x-1 items-center">
             {navItems.map((item) => (
               <Link
@@ -80,11 +61,11 @@ const Header: React.FC = () => {
               </Link>
             ))}
             
-            {/* Language selector in desktop view */}
+            {/* Language selector */}
             <LanguageSelector />
           </nav>
 
-          {/* Mobile menu button */}
+          {/* Mobile button */}
           <button 
             className="md:hidden text-gray-300 hover:text-white focus:outline-none"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -104,7 +85,7 @@ const Header: React.FC = () => {
         }`}
       >
         <div className="px-4 py-3 space-y-1">
-          {/* Language selector at top of mobile menu - horizontal version */}
+          {/* Language selector */}
           <div className="mb-3 border-b border-gray-800 pb-3">
             <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 px-2">{t('language')}</p>
             <LanguageSelector isMobile={true} />

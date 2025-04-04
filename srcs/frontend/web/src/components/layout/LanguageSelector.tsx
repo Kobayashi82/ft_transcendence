@@ -2,10 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Globe } from 'lucide-react';
 import { useLanguage, LanguageCode } from '../../contexts/LanguageContext';
 
-// Language flag component
 const LanguageFlag: React.FC<{ code: string }> = ({ code }) => {
-  // Simple SVG flags with proper aspect ratios
-  const renderFlag = () => {
+const renderFlag = () => {
     switch (code) {
       case 'en':
         return (
@@ -63,36 +61,29 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ isMobile = false })
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Language options
   const languages = [
     { code: 'en', name: t('english') },
     { code: 'es', name: t('spanish') },
     { code: 'fr', name: t('french') },
   ];
 
-  // Handle click outside to close dropdown (only for desktop)
   useEffect(() => {
-    if (isMobile) return; // Skip for mobile
+    if (isMobile) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) { setIsOpen(false); }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => { document.removeEventListener('mousedown', handleClickOutside); };
   }, [isMobile]);
 
-  // Handle language change
   const handleLanguageChange = (code: LanguageCode) => {
     setLanguage(code);
     setIsOpen(false);
   };
 
-  // For mobile, render a simpler version with horizontal buttons
+  // Mobile
   if (isMobile) {
     return (
       <div className="flex justify-start space-x-2 px-2 py-1">
@@ -115,7 +106,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ isMobile = false })
     );
   }
 
-  // Desktop version with dropdown
+  // Desktop
   return (
     <div className="relative" ref={dropdownRef}>
       <button

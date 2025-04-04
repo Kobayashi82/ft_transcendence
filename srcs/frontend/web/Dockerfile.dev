@@ -9,10 +9,11 @@ COPY package*.json ./
 
 COPY . .
 
+ARG API_URL
+ENV VITE_API_URL=${API_URL}
 ENV NODE_ENV=development
 ENV CHOKIDAR_USEPOLLING=true
 ENV WATCHPACK_POLLING=true
-ENV VITE_API_URL=http://gateway:3000/api
 
 EXPOSE 80
 

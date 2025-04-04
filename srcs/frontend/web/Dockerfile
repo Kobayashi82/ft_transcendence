@@ -7,7 +7,8 @@ RUN npm ci
 
 COPY . .
 
-ENV VITE_API_URL=http://gateway:3000/api
+ARG API_URL
+ENV VITE_API_URL=${API_URL}
 
 RUN npm run build
 

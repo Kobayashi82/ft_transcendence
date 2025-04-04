@@ -1,49 +1,64 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
-// Define available languages
 export type LanguageCode = 'en' | 'es' | 'fr';
 
-// Language context types
 interface LanguageContextType {
   language: LanguageCode;
   setLanguage: (language: LanguageCode) => void;
   t: (key: string) => string;
+  isUserSelected: boolean;
 }
 
-// Create the context with default values
 const LanguageContext = createContext<LanguageContextType>({
   language: 'en',
   setLanguage: () => {},
   t: () => '',
+  isUserSelected: false,
 });
 
 interface LanguageProviderProps {
   children: ReactNode;
 }
 
-// Create a provider component
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
-  // Try to get language from localStorage or use browser language, default to English
-  const getInitialLanguage = (): LanguageCode => {
+
+  const getInitialLanguage = (): { code: LanguageCode, isUserSelected: boolean } => {
+
     const savedLanguage = localStorage.getItem('language') as LanguageCode;
+    const hasUserPreference = localStorage.getItem('hasUserSelectedLanguage') === 'true';
     
-    if (savedLanguage && ['en', 'es', 'fr'].includes(savedLanguage)) {
-      return savedLanguage;
+    if (savedLanguage && hasUserPreference && ['en', 'es', 'fr'].includes(savedLanguage)) {
+      return { code: savedLanguage, isUserSelected: true };
     }
     
-    // Try to detect browser language
-    const browserLang = navigator.language.split('-')[0];
-    if (['en', 'es', 'fr'].includes(browserLang as LanguageCode)) {
-      return browserLang as LanguageCode;
-    }
-    
-    return 'en'; // Default to English
+    try {
+      const browserLangs = navigator.languages || [navigator.language];
+      for (const lang of browserLangs) {
+        const langCode = lang.split('-')[0].toLowerCase();
+        if (['en', 'es', 'fr'].includes(langCode)) {
+          return { code: langCode as LanguageCode, isUserSelected: false };
+        }
+      }
+    } catch (error) {
+      console.error('Error detecting browser language:', error);
+    }   
+
+    return { code: 'en', isUserSelected: false };
   };
 
-  const [language, setLanguageState] = useState<LanguageCode>(getInitialLanguage);
+  const initialLanguageData = getInitialLanguage();
+  const [language, setLanguageState] = useState<LanguageCode>(initialLanguageData.code);
+  const [isUserSelected, setIsUserSelected] = useState<boolean>(initialLanguageData.isUserSelected);
   const [translations, setTranslations] = useState<Record<string, string>>({});
 
-  // Load translations
+  const setLanguage = (newLanguage: LanguageCode) => {
+    setLanguageState(newLanguage);
+    setIsUserSelected(true);
+    localStorage.setItem('language', newLanguage);
+    localStorage.setItem('hasUserSelectedLanguage', 'true');
+    document.documentElement.lang = newLanguage;
+  };
+
   useEffect(() => {
     const loadTranslations = async () => {
       try {
@@ -51,7 +66,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
         setTranslations(translationsModule.default);
       } catch (error) {
         console.error(`Failed to load translations for ${language}:`, error);
-        // Fallback to English if translations cannot be loaded
+
         if (language !== 'en') {
           const fallbackModule = await import('../translations/en.ts');
           setTranslations(fallbackModule.default);
@@ -62,29 +77,14 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     loadTranslations();
   }, [language]);
 
-  // Set language and save to localStorage
-  const setLanguage = (newLanguage: LanguageCode) => {
-    setLanguageState(newLanguage);
-    localStorage.setItem('language', newLanguage);
-    document.documentElement.lang = newLanguage;
-  };
-
-  // Translation function
-  const t = (key: string): string => {
-    return translations[key] || key;
-  };
-
-  // Set the document language attribute
-  useEffect(() => {
-    document.documentElement.lang = language;
-  }, [language]);
+  useEffect(() => { document.documentElement.lang = language; }, [language]);
+  const t = (key: string): string => { return translations[key] || key; };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, isUserSelected }}>
       {children}
     </LanguageContext.Provider>
   );
 };
 
-// Custom hook for using the language context
 export const useLanguage = () => useContext(LanguageContext);

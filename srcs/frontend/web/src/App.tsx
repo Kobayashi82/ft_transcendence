@@ -1,13 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
-import Status from "./pages/Status";
-import AboutPage from "./pages/About"; // Import the new About page
-import Header from "./components/layout/Header";
-import UnderConstruction from "./components/UnderConstruction";
-import ScrollToTop from "./components/ScrollToTop";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import Header from "./components/layout/Header";
+import ScrollToTop from "./components/ScrollToTop";
+import Home from "./pages/Home";
+import UnderConstruction from "./components/UnderConstruction";
 import RankingsPage from "./pages/Rankings";
 import LeaderboardPage from "./pages/Leaderboard";
+import AboutPage from "./pages/About";
+import Status from "./pages/Status";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -16,16 +17,16 @@ function App() {
 	  	<ScrollToTop />
         <div className="flex flex-col min-h-screen bg-gray-900 text-white">
           <Header />
-          <main className="flex-grow pt-16"> {/* Added pt-16 for fixed header */}
+          <main className="flex-grow pt-16">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/status" element={<Status />} />
-              <Route path="/about" element={<AboutPage />} /> {/* Add our new About route */}
-              {/* Other routes */}
               <Route path="/quick" element={<UnderConstruction />} />
               <Route path="/tournament" element={<UnderConstruction />} />
               <Route path="/rankings" element={<RankingsPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/status" element={<Status />} />
+			  <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
         </div>
