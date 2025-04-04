@@ -39,9 +39,9 @@ const AboutPage: React.FC = () => {
       title: t('about.dev1.title'),
       bio: t('about.dev1.bio'),
       imageUrl: vzurera,
-      github: "https://github.com/alexcoder",
-      linkedin: "https://linkedin.com/in/alexcoder",
-      intraLink: "https://profile.intra.42.fr/users/alexcoder"
+      github: "https://github.com/Kobayashi82",
+      linkedin: "https://theuselessweb.com/",
+      intraLink: "https://profile.intra.42.fr/users/vzurera-"
     },
     {
       id: "dev2",
@@ -50,7 +50,7 @@ const AboutPage: React.FC = () => {
       bio: t('about.dev2.bio'),
       imageUrl: person2,
       github: "https://github.com/person2",
-      linkedin: "https://linkedin.com/in/person2",
+      linkedin: "https://puginarug.com/",
       intraLink: "https://profile.intra.42.fr/users/person2"
     },
     {
@@ -91,6 +91,7 @@ const AboutPage: React.FC = () => {
             <h2 className="text-2xl font-bold text-white mb-4">{t('about.projectTitle')}</h2>
             <p className="text-gray-300 mb-4">{t('about.projectDescription')}</p>
             <p className="text-gray-300 mb-4">{t('about.projectJoke')}</p>
+			<p className="text-gray-300 mb-4">🏓😊🏓</p>
             <p className="text-blue-300 font-medium">{t('about.techStack')}</p>
             <div className="flex flex-wrap justify-center mt-4 gap-2">
             {['React', 'TypeScript', 'Tailwind CSS', 'Node.js', 'Fastify', 'SQLite', 'Docker', 'Nginx'].map((tech) => (

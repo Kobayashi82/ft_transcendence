@@ -1,0 +1,252 @@
+import React from "react";
+import { Trophy, ChevronRight, ChevronDown } from "lucide-react";
+import { useLanguage } from "../contexts/LanguageContext";
+
+// Types
+interface TournamentDetails {
+  id: number;
+  name: string;
+  start_time: string;
+  end_time: string | null;
+  settings: {
+    format: string;
+    pointsToWin: number;
+    [key: string]: any;
+  };
+  status: string;
+  players: {
+    id: number;
+    user_id: string;
+    final_position: number | null;
+  }[];
+  games: GameDetails[];
+}
+
+interface GameDetails {
+  id: number;
+  tournament_id: number | null;
+  start_time: string;
+  end_time: string;
+  settings: {
+    ballSpeed: number;
+    paddleSize: number;
+    speedIncrement: number;
+    pointsToWin: number;
+    [key: string]: any;
+  };
+  players: {
+    id: number;
+    user_id: string;
+    score: number;
+  }[];
+}
+
+// Extended tournament interface with expanded state
+interface TournamentWithExpand extends TournamentDetails {
+  isExpanded: boolean;
+}
+
+interface TournamentsTableProps {
+  tournaments: TournamentWithExpand[];
+  userId: string;
+  onToggleExpand: (tournamentId: number) => void;
+}
+
+const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId, onToggleExpand }) => {
+  const { t } = useLanguage();
+
+  // Format date to local string
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+  };
+
+  // Calculate game duration in minutes
+  const calculateDuration = (start: string, end: string) => {
+    const startTime = new Date(start).getTime();
+    const endTime = new Date(end).getTime();
+    const durationMs = endTime - startTime;
+    const minutes = Math.round(durationMs / (1000 * 60));
+    return `${minutes} ${t('rankings.minutes')}`;
+  };
+
+  // Get position text
+  const getPositionText = (position: number | null) => {
+    if (!position) return t('rankings.unknown');
+    
+    switch (position) {
+      case 1: return t('rankings.first');
+      case 2: return t('rankings.second');
+      case 3: return t('rankings.third');
+      case 4: return t('rankings.third');
+      default: return position.toString();
+    }
+  };
+
+  // Get winner of tournament
+  const getTournamentWinner = (tournament: TournamentDetails) => {
+    const winner = tournament.players.find(player => player.final_position === 1);
+    return winner ? winner.user_id : t('rankings.unknown');
+  };
+
+  // Format participants list
+  const formatParticipants = (players: { user_id: string }[]) => {
+    return players.map(player => player.user_id).join(", ");
+  };
+
+  return (
+    <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl">
+      <div className="h-2 bg-gradient-to-r from-amber-500 to-orange-600"></div>
+      <div className="p-6">
+        <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
+          <Trophy className="mr-2 h-6 w-6 text-amber-400" />
+          {t('rankings.tournaments')}
+        </h2>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="text-left border-b border-gray-700">
+                <th className="pb-3 px-4 text-gray-400 font-medium" style={{ width: '40px' }}></th>
+                <th className="pb-3 px-4 text-gray-400 font-medium">
+                  {t('rankings.tournamentName')}
+                </th>
+                <th className="pb-3 px-4 text-gray-400 font-medium">
+                  {t('rankings.date')}
+                </th>
+                <th className="pb-3 px-4 text-gray-400 font-medium">
+                  {t('rankings.participants')}
+                </th>
+                <th className="pb-3 px-4 text-gray-400 font-medium">
+                  {t('rankings.winner')}
+                </th>
+                <th className="pb-3 px-4 text-gray-400 font-medium">
+                  {t('rankings.playerPosition')}
+                </th>
+                <th className="pb-3 px-4 text-gray-400 font-medium">
+                  {t('rankings.settings')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {tournaments.map(tournament => (
+                <React.Fragment key={tournament.id}>
+                  {/* Tournament row */}
+                  <tr className="hover:bg-gray-700/30 cursor-pointer border-b border-gray-700/50" onClick={() => onToggleExpand(tournament.id)}>
+                    <td className="py-4 px-4 text-gray-300">
+                      <button className="p-1 hover:bg-gray-600 rounded-full transition-colors">
+                        {tournament.isExpanded ? 
+                          <ChevronDown className="h-5 w-5 text-blue-400" /> : 
+                          <ChevronRight className="h-5 w-5 text-gray-400" />}
+                      </button>
+                    </td>
+                    <td className="py-4 px-4 text-white font-medium">
+                      {tournament.name}
+                    </td>
+                    <td className="py-4 px-4 text-gray-300">
+                      {formatDate(tournament.start_time)}
+                    </td>
+                    <td className="py-4 px-4 text-gray-300">
+                      {formatParticipants(tournament.players)}
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="font-medium text-amber-400">
+                        {getTournamentWinner(tournament)}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-gray-300">
+                      {getPositionText(tournament.players.find(p => p.user_id === userId)?.final_position || null)}
+                    </td>
+                    <td className="py-4 px-4 text-gray-300">
+                      <div className="text-sm">
+                        <p>{t('rankings.format')}: {tournament.settings.format || "-"}</p>
+                        <p>{t('rankings.pointsToWin')}: {tournament.settings.pointsToWin || "-"}</p>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  {/* Expanded tournament games */}
+                  {tournament.isExpanded && (
+                    <tr>
+                      <td colSpan={7} className="py-0 px-0">
+                        <div className="bg-gray-700/30 p-4">
+                          <h4 className="text-white font-medium mb-3 pl-8">
+                            {t('rankings.tournamentGames')}
+                          </h4>
+                          <div className="overflow-x-auto pl-8 pr-4">
+                            <table className="w-full border-collapse">
+                              <thead>
+                                <tr className="text-left border-b border-gray-600">
+                                  <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
+                                    {t('rankings.round')}
+                                  </th>
+                                  <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
+                                    {t('rankings.players')}
+                                  </th>
+                                  <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
+                                    {t('rankings.score')}
+                                  </th>
+                                  <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
+                                    {t('rankings.duration')}
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-600/50">
+                                {tournament.games.map((game, index) => (
+                                  <tr key={game.id} className="hover:bg-gray-600/30">
+                                    <td className="py-3 px-4 text-gray-300">
+                                      {t('rankings.round')} {index + 1}
+                                    </td>
+                                    <td className="py-3 px-4 text-gray-300">
+                                      {game.players.map(p => p.user_id).join(" 🆚 ")}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <div className="flex items-center">
+                                        <span className={`font-bold ${game.players[0].user_id === userId ? 'text-blue-400' : 'text-gray-300'}`}>
+                                          {game.players[0].score}
+                                        </span>
+                                        <span className="mx-2 text-gray-500">-</span>
+                                        <span className={`font-bold ${game.players[1]?.user_id === userId ? 'text-blue-400' : 'text-gray-300'}`}>
+                                          {game.players[1]?.score || 0}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="py-3 px-4 text-gray-300">
+                                      {calculateDuration(game.start_time, game.end_time)}
+                                    </td>
+                                  </tr>
+                                ))}
+                                
+                                {tournament.games.length === 0 && (
+                                  <tr>
+                                    <td colSpan={4} className="py-4 text-center text-gray-400">
+                                      {t('rankings.noGamesInTournament')}
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+              
+              {tournaments.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-6 text-center text-gray-400">
+                    {t('rankings.noTournamentsFound')}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TournamentsTable;
