@@ -5,10 +5,10 @@ const fastify = require("fastify");
 const app = fastify();
 
 app.decorate("config", config);
-
-app.register(require('./websocket-handler'), config.websocket);
+app.register(require('@fastify/websocket'), config.websocket.options);
 app.register(require("./plugins/error-handler"));
 app.register(require("./routes"));
+app.register(require("./plugins/websocket-handler"));
 
 // Shutdown
 const gracefulShutdown = async () => {
@@ -32,7 +32,7 @@ const start = async () => {
     process.on("SIGINT", gracefulShutdown);
     process.on("SIGTERM", gracefulShutdown);
   } catch (err) {
-    console.error('Server failed');
+    console.error('Server failed', err);
     process.exit(1);
   }
 };

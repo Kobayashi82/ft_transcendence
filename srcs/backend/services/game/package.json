@@ -6,9 +6,11 @@
 	"author": "vzurera-",
 	"main": "src/app.js",
 	"dependencies": {
+		"@fastify/websocket": "^11.0.2",
 		"fastify": "^5.2.2",
 		"fastify-plugin": "^5.0.1",
-    	"dotenv": "^16.4.7"
+    	"dotenv": "^16.4.7",
+		"uuid": "^11.1.0"
 	}
 }
 

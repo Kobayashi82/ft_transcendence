@@ -20,14 +20,29 @@ const config = {
     },
   },
 
-  // Websocket configuration
+  // Websocket
   websocket: {
     reconnectTimeout: 5000,
     options: {
-      maxPayload: 1024 * 1024, // 1MB
+      maxPayload: 1024 * 1024,
       pingTimeout: 30000,
       pingInterval: 15000
     }
+  },
+
+  // Game configuration
+  game: {
+    // Default game configuration
+    defaults: {
+      ballSpeed: 'medium',
+      winningScore: 5,
+      accelerationEnabled: false,
+      paddleSize: 'medium'
+    },
+    // Client disconnection timeout (in milliseconds)
+    disconnectionTimeout: 30000,
+    // Game inactivity timeout (in milliseconds)
+    inactivityTimeout: 3600000 // 1 hour
   }
 };
 
