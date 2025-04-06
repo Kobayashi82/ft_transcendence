@@ -157,6 +157,9 @@ function websocketHandler(fastify, options, done) {
         return sendError(ws, 'Missing gameId in state message');
       }
       
+      // Register this client with the game manager so it receives updates
+      gameManager.registerClient(data.gameId, clientId, ws);
+      
       const gameState = gameManager.getGameState(data.gameId);     
       if (gameState) {
         ws.send(JSON.stringify({

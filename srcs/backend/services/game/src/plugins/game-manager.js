@@ -22,6 +22,7 @@ class GameManager {
       game,
       clients: new Set(),
       lastActivity: Date.now(),
+      disconnectedPlayers: new Map() // Initialize this Map
     });
     
     console.log(`Game created: ${gameId}`);
@@ -55,6 +56,13 @@ class GameManager {
   // PLAYER PLAYING
   isPlayerInGame(playerName) {
     return this.players.has(playerName);
+  }
+  
+  // Check if game has disconnected players
+  hasDisconnectedPlayers(gameId) {
+    const gameEntry = this.games.get(gameId);
+    if (!gameEntry) return false;
+    return gameEntry.disconnectedPlayers.size > 0;
   }
   
   // ------------------ WEBSOCKETS ------------------

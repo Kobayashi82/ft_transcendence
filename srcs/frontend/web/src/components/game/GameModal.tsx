@@ -81,9 +81,9 @@ const GameModal: React.FC<GameModalProps> = ({
   useEffect(() => {
 	const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProtocol}//${window.location.host}/api/game/ws/pong`;
-    
+
     console.log("Connecting to WebSocket:", wsUrl);
-    
+
     // Create WebSocket connection
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
@@ -93,11 +93,11 @@ const GameModal: React.FC<GameModalProps> = ({
       console.log("WebSocket connection established");
       setIsConnected(true);
       setError(null);
-      
+
       // Request the current game state
       const stateRequest = { type: "state", gameId: gameId };
       ws.send(JSON.stringify(stateRequest));
-      
+
       // Send ping every 30 seconds to keep connection alive
       const pingInterval = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
