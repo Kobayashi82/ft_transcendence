@@ -41,7 +41,7 @@ interface GameStateData {
 
 interface PongGameProps {
   gameState: GameStateData;
-  playerNumber: number | null;
+  playerNumber: number;
   onMove: (direction: 'up' | 'down' | 'stop') => void;
   onSetPosition: (y: number) => void;
 }
@@ -51,6 +51,7 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>(0);
   const mouseIsDownRef = useRef<boolean>(false);
+  const lastRenderedStateRef = useRef<GameStateData | null>(null);
   
   // Colors
   const colors = {
@@ -61,6 +62,7 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     ball: "#ffffff",
     score: "rgba(255, 255, 255, 0.7)",
     scoreHighlight: "#6366f1", // Indigo
+    activePlayer: "#60a5fa", // Lighter blue for active player's paddle
   };
   
   // Draw function
@@ -71,7 +73,35 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     
+    // Update the last rendered state
+    lastRenderedStateRef.current = { ...gameState };
+    
     const { config, player1, player2, ball } = gameState;
+    
+    // Calc scaler for canvas/game dimensions
+    const scaleX = canvas.width / config.width;
+    const scaleY = canvas.height / config.height;
+
+    // Scale game dimensions to canvas size
+    const scaledBall = {
+      x: ball.x * scaleX,
+      y: ball.y * scaleY,
+      size: config.ballSize * Math.min(scaleX, scaleY)
+    };
+    
+    const scaledPaddle1 = {
+      x: config.paddleWidth * scaleX, // Left paddle x position scaled
+      y: player1.y * scaleY,
+      width: config.paddleWidth * scaleX,
+      height: config.paddleHeight * scaleY
+    };
+    
+    const scaledPaddle2 = {
+      x: canvas.width - (config.paddleWidth * scaleX),
+      y: player2.y * scaleY,
+      width: config.paddleWidth * scaleX,
+      height: config.paddleHeight * scaleY
+    };
     
     // Clear canvas
     ctx.fillStyle = colors.background;
@@ -100,50 +130,49 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     ctx.lineWidth = 1;
     ctx.stroke();
     
-    // Draw player 1 paddle
+    // Draw player 1 paddle - highlight current player's paddle
     const paddleRadius = 4;
-    ctx.fillStyle = colors.paddle;
+    ctx.fillStyle = playerNumber === 1 ? colors.activePlayer : colors.paddle;
     
     // Left paddle with rounded corners
     ctx.beginPath();
-    ctx.moveTo(config.paddleWidth + paddleRadius, player1.y);
-    ctx.arcTo(0, player1.y, 0, player1.y + paddleRadius, paddleRadius);
-    ctx.arcTo(0, player1.y + config.paddleHeight, paddleRadius, player1.y + config.paddleHeight, paddleRadius);
-    ctx.arcTo(config.paddleWidth, player1.y + config.paddleHeight, config.paddleWidth, player1.y + config.paddleHeight - paddleRadius, paddleRadius);
-    ctx.arcTo(config.paddleWidth, player1.y, config.paddleWidth - paddleRadius, player1.y, paddleRadius);
+    ctx.moveTo(scaledPaddle1.width + paddleRadius, scaledPaddle1.y);
+    ctx.arcTo(0, scaledPaddle1.y, 0, scaledPaddle1.y + paddleRadius, paddleRadius);
+    ctx.arcTo(0, scaledPaddle1.y + scaledPaddle1.height, paddleRadius, scaledPaddle1.y + scaledPaddle1.height, paddleRadius);
+    ctx.arcTo(scaledPaddle1.width, scaledPaddle1.y + scaledPaddle1.height, scaledPaddle1.width, scaledPaddle1.y + scaledPaddle1.height - paddleRadius, paddleRadius);
+    ctx.arcTo(scaledPaddle1.width, scaledPaddle1.y, scaledPaddle1.width - paddleRadius, scaledPaddle1.y, paddleRadius);
     ctx.closePath();
     ctx.fill();
     
-    // Draw player 2 paddle
-    ctx.fillStyle = colors.paddle;
-    const p2x = canvas.width - config.paddleWidth;
+    // Draw player 2 paddle - highlight current player's paddle
+    ctx.fillStyle = playerNumber === 2 ? colors.activePlayer : colors.paddle;
     
     // Right paddle with rounded corners
     ctx.beginPath();
-    ctx.moveTo(p2x - paddleRadius, player2.y);
-    ctx.arcTo(canvas.width, player2.y, canvas.width, player2.y + paddleRadius, paddleRadius);
-    ctx.arcTo(canvas.width, player2.y + config.paddleHeight, canvas.width - paddleRadius, player2.y + config.paddleHeight, paddleRadius);
-    ctx.arcTo(p2x, player2.y + config.paddleHeight, p2x, player2.y + config.paddleHeight - paddleRadius, paddleRadius);
-    ctx.arcTo(p2x, player2.y, p2x + paddleRadius, player2.y, paddleRadius);
+    ctx.moveTo(scaledPaddle2.x - paddleRadius, scaledPaddle2.y);
+    ctx.arcTo(canvas.width, scaledPaddle2.y, canvas.width, scaledPaddle2.y + paddleRadius, paddleRadius);
+    ctx.arcTo(canvas.width, scaledPaddle2.y + scaledPaddle2.height, canvas.width - paddleRadius, scaledPaddle2.y + scaledPaddle2.height, paddleRadius);
+    ctx.arcTo(scaledPaddle2.x, scaledPaddle2.y + scaledPaddle2.height, scaledPaddle2.x, scaledPaddle2.y + scaledPaddle2.height - paddleRadius, paddleRadius);
+    ctx.arcTo(scaledPaddle2.x, scaledPaddle2.y, scaledPaddle2.x + paddleRadius, scaledPaddle2.y, paddleRadius);
     ctx.closePath();
     ctx.fill();
     
     // Draw ball
     ctx.beginPath();
-    ctx.arc(ball.x, ball.y, config.ballSize, 0, Math.PI * 2);
+    ctx.arc(scaledBall.x, scaledBall.y, scaledBall.size, 0, Math.PI * 2);
     ctx.fillStyle = colors.ball;
     ctx.fill();
     
     // Add a subtle glow to the ball
     const gradient = ctx.createRadialGradient(
-      ball.x, ball.y, 0,
-      ball.x, ball.y, config.ballSize * 2
+      scaledBall.x, scaledBall.y, 0,
+      scaledBall.x, scaledBall.y, scaledBall.size * 2
     );
     gradient.addColorStop(0, "rgba(255, 255, 255, 0.2)");
     gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(ball.x, ball.y, config.ballSize * 2, 0, Math.PI * 2);
+    ctx.arc(scaledBall.x, scaledBall.y, scaledBall.size * 2, 0, Math.PI * 2);
     ctx.fill();
     
     // Draw scores
@@ -219,7 +248,10 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
   // Animation loop
   useEffect(() => {
     const animate = () => {
-      drawGame();
+      // Only redraw if game state has changed
+      if (lastRenderedStateRef.current !== gameState) {
+        drawGame();
+      }
       animationFrameRef.current = requestAnimationFrame(animate);
     };
     
@@ -242,6 +274,10 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
         canvas.width = parent.clientWidth;
         canvas.height = parent.clientHeight;
       }
+      
+      // Force redraw after resize
+      lastRenderedStateRef.current = null;
+      drawGame();
     };
     
     handleResize();
@@ -250,7 +286,7 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [gameState]);
   
   // Handle mouse/touch input for paddle control
   useEffect(() => {
@@ -274,8 +310,14 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       }
       
       // Convert to canvas coordinates
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
+      let x = clientX - rect.left;
+      let y = clientY - rect.top;
+      
+      // Convert canvas coordinates to game coordinates
+      if (gameState && gameState.config) {
+        const scaleY = gameState.config.height / canvas.height;
+        y = y * scaleY;
+      }
       
       return { x, y };
     };

@@ -79,7 +79,7 @@ const GameModal: React.FC<GameModalProps> = ({
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
 
   useEffect(() => {
-	const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProtocol}//${window.location.host}/api/game/ws/pong`;
 
     console.log("Connecting to WebSocket:", wsUrl);
@@ -119,6 +119,14 @@ const GameModal: React.FC<GameModalProps> = ({
         switch (message.type) {
           case "state":
             setGameState(message.data);
+            // Determine player number based on username
+            if (message.data && message.data.player1 && message.data.player2) {
+              if (message.data.player1.name === player1) {
+                setPlayerNumber(1);
+              } else if (message.data.player2.name === player1) {
+                setPlayerNumber(2);
+              }
+            }
             break;            
           case "started":
             setGameState(message.gameState);
@@ -128,10 +136,10 @@ const GameModal: React.FC<GameModalProps> = ({
             break;            
           case "resumed":
             setGameState(message.gameState);
-            break;
-		  case "cancel":
-			setGameState(message.gameState);
-			break;				
+            break;            
+          case "cancelled":
+            setGameState(message.gameState);
+            break;                
           case "pong":
             break;
           case "error":
@@ -176,7 +184,7 @@ const GameModal: React.FC<GameModalProps> = ({
         wsRef.current = null;
       }
     };
-  }, [gameId]);
+  }, [gameId, player1]);
 
   // Start the game
   const startGame = () => {
@@ -241,48 +249,82 @@ const GameModal: React.FC<GameModalProps> = ({
   
   // Handle keyboard events for controls
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle keyboard events if the game is in playing state
-      if (gameState?.gameState !== "playing") return;
-      
-      switch (e.key) {
-        case "ArrowUp":
-        case "w":
-        case "W":
-          handleMove("up");
-          break;
-        case "ArrowDown":
-        case "s":
-        case "S":
-          handleMove("down");
-          break;
+	const handleKeyDown = (e: KeyboardEvent) => {
+	  // Only handle keyboard events if the game is in playing state
+	  if (gameState?.gameState !== "playing") return;
+	  
+	  // Player 1 controls (W, S keys) - Note: No else, both blocks can execute
+	  if (e.key === "w" || e.key === "W") {
+		handleMove("up", 1); // Explicitly specify player 1
+	  } else if (e.key === "s" || e.key === "S") {
+		handleMove("down", 1); // Explicitly specify player 1
+	  }
+	  
+	  // Player 2 controls (Arrow keys) - Separate if block
+	  if (e.key === "ArrowUp") {
+		e.preventDefault(); // Prevent browser scroll
+		handleMove("up", 2); // Explicitly specify player 2
+	  } else if (e.key === "ArrowDown") {
+		e.preventDefault(); // Prevent browser scroll
+		handleMove("down", 2); // Explicitly specify player 2
+	  }
+	};
+	
+	const handleKeyUp = (e: KeyboardEvent) => {
+	  // Only handle keyboard events if the game is in playing state
+	  if (gameState?.gameState !== "playing") return;
+	  
+	  // Player 1 controls (W, S keys)
+	  if (e.key === "w" || e.key === "W" || e.key === "s" || e.key === "S") {
+		handleMove("stop", 1); // Explicitly specify player 1
+	  }
+	  
+	  // Player 2 controls (Arrow keys)
+	  if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+		e.preventDefault(); // Prevent browser scroll
+		handleMove("stop", 2); // Explicitly specify player 2
+	  }
+	};
+  
+	// También necesitamos modificar la función handleMove para aceptar un parámetro de jugador explícito
+	const handleMove = (direction: 'up' | 'down' | 'stop', player: number) => {
+	  if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+		console.log(`Sending move: direction=${direction}, player=${player}, gameId=${gameId}`);
+		
+		const moveMessage = {
+		  type: "move",
+		  gameId,
+		  player: player, // Use the explicit player parameter
+		  direction
+		};
+		
+		wsRef.current.send(JSON.stringify(moveMessage));
+	  }
+	};
+    
+    // Custom key event handler to prevent arrow key scrolling
+    const preventArrowScroll = (e: KeyboardEvent) => {
+      // Prevent arrow key scrolling at all times when game modal is open
+      if (e.key === "ArrowUp" || e.key === "ArrowDown" || 
+          e.key === "ArrowLeft" || e.key === "ArrowRight" || 
+          e.key === " " /* Space bar */) {
+        e.preventDefault();
       }
     };
     
-    const handleKeyUp = (e: KeyboardEvent) => {
-      // Only handle keyboard events if the game is in playing state
-      if (gameState?.gameState !== "playing") return;
-      
-      switch (e.key) {
-        case "ArrowUp":
-        case "w":
-        case "W":
-        case "ArrowDown":
-        case "s":
-        case "S":
-          handleMove("stop");
-          break;
-      }
-    };
-    
+    // Add event listeners
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+    
+    // Add global event listener to prevent scrolling with arrow keys
+    window.addEventListener("keydown", preventArrowScroll);
     
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("keydown", preventArrowScroll);
     };
-  }, [gameState]);
+  }, [gameState, playerNumber]);
   
   // Prevent page unload/navigation when game is in progress
   useEffect(() => {
@@ -356,6 +398,12 @@ const GameModal: React.FC<GameModalProps> = ({
            (gameState.gameState === "playing" || gameState.gameState === "paused");
   };
 
+  // Show which player number you are
+  const getPlayerText = () => {
+    if (!gameState) return "";
+    return `You are Player ${playerNumber}`;
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm">
       <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl w-full max-w-5xl">
@@ -365,6 +413,7 @@ const GameModal: React.FC<GameModalProps> = ({
               {player1} vs. {player2 || t('quickMatch.waiting')}
             </h3>
             <p className="text-gray-400 text-sm">{getStatusText()}</p>
+            <p className="text-blue-400 text-xs">{getPlayerText()}</p>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -440,11 +489,22 @@ const GameModal: React.FC<GameModalProps> = ({
         
         {/* Controls help */}
         <div className="bg-gray-900 px-6 py-4 border-t border-gray-700">
-          <p className="text-gray-400 text-sm">
-            Use <span className="bg-gray-800 px-2 py-1 rounded text-white">W</span> / 
-            <span className="bg-gray-800 px-2 py-1 rounded text-white">↑</span> to move up, 
-            <span className="bg-gray-800 px-2 py-1 rounded text-white">S</span> / 
-            <span className="bg-gray-800 px-2 py-1 rounded text-white">↓</span> to move down.
+          {playerNumber === 1 ? (
+            <p className="text-gray-400 text-sm">
+              {t('quickMatch.controls', { 
+                up_keys: <span className="bg-gray-800 px-2 py-1 rounded text-white">W</span>,
+                down_keys: <span className="bg-gray-800 px-2 py-1 rounded text-white">S</span>
+              })}
+            </p>
+          ) : (
+            <p className="text-gray-400 text-sm">
+              {t('quickMatch.controls', { 
+                up_keys: <span className="bg-gray-800 px-2 py-1 rounded text-white">↑</span>,
+                down_keys: <span className="bg-gray-800 px-2 py-1 rounded text-white">↓</span>
+              })}
+            </p>
+          )}
+          <p className="text-gray-400 text-sm mt-2">
             You can also click or touch the screen to move the paddle.
           </p>
         </div>
