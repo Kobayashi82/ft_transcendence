@@ -51,7 +51,7 @@ function websocketHandler(fastify, options, done) {
           case 'resume':
             handleResume(data, clientId, ws);
             break;
-          case 'cancel':
+          case 'cancelled':
             handleCancel(data, clientId, ws);
             break;
           case 'state':

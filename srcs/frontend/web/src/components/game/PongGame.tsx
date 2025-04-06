@@ -42,8 +42,8 @@ interface GameStateData {
 interface PongGameProps {
   gameState: GameStateData;
   playerNumber: number;
-  onMove: (direction: 'up' | 'down' | 'stop') => void;
-  onSetPosition: (y: number) => void;
+  onMove: (direction: 'up' | 'down' | 'stop', player?: number) => void;
+  onSetPosition: (y: number, player?: number) => void;
 }
 
 const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, onSetPosition }) => {
@@ -52,6 +52,9 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
   const animationFrameRef = useRef<number>(0);
   const mouseIsDownRef = useRef<boolean>(false);
   const lastRenderedStateRef = useRef<GameStateData | null>(null);
+  
+  // Referencias para el control táctil
+  const touchTargetsRef = useRef<{[key: number]: number}>({});
   
   // Colors
   const colors = {
@@ -111,6 +114,18 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     ctx.strokeStyle = colors.border;
     ctx.lineWidth = 2;
     ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+    
+    // Draw dividing line for touch areas (only during game play)
+    if (gameState.gameState === "playing") {
+      // Vertical center line to indicate sides for touch control
+      ctx.beginPath();
+      ctx.setLineDash([5, 5]); // Dashed line
+      ctx.moveTo(canvas.width / 2, 10);
+      ctx.lineTo(canvas.width / 2, canvas.height - 10);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+      ctx.stroke();
+      ctx.setLineDash([]); // Reset to solid line
+    }
     
     // Draw net
     const netWidth = 2;
@@ -288,95 +303,238 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     };
   }, [gameState]);
   
-  // Handle mouse/touch input for paddle control
+  // Function to handle paddle movement with touch/mouse input
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !playerNumber) return;
+    if (!canvas) return;
     
-    const getCanvasCoords = (event: MouseEvent | TouchEvent) => {
+    // Function to convert canvas coordinates to game coordinates
+    const canvasToGameCoords = (canvasX: number, canvasY: number) => {
+      if (!gameState || !gameState.config) return { x: 0, y: 0 };
+      
       const rect = canvas.getBoundingClientRect();
       
-      // Get position based on event type
-      let clientX: number, clientY: number;
+      // Scale factors between canvas and game coordinates
+      const scaleX = gameState.config.width / canvas.width;
+      const scaleY = gameState.config.height / canvas.height;
       
-      if ('touches' in event) {
-        // Touch event
-        clientX = event.touches[0].clientX;
-        clientY = event.touches[0].clientY;
-      } else {
-        // Mouse event
-        clientX = event.clientX;
-        clientY = event.clientY;
-      }
+      // Convert to game coordinates
+      const gameX = canvasX * scaleX;
+      const gameY = canvasY * scaleY;
       
-      // Convert to canvas coordinates
-      let x = clientX - rect.left;
-      let y = clientY - rect.top;
-      
-      // Convert canvas coordinates to game coordinates
-      if (gameState && gameState.config) {
-        const scaleY = gameState.config.height / canvas.height;
-        y = y * scaleY;
-      }
-      
-      return { x, y };
+      return { x: gameX, y: gameY };
     };
     
-    const handleMouseDown = (event: MouseEvent | TouchEvent) => {
+    // Function to determine direction based on current position and target
+    const getDirectionFromTarget = (currentY: number, targetY: number, paddleHeight: number) => {
+      // Add padding to allow for the paddle to center on the target
+      const paddleCenter = currentY + paddleHeight / 2;
+      const threshold = 5; // Small threshold to prevent rapid up/down switching
+      
+      if (targetY < paddleCenter - threshold) {
+        return 'up';
+      } else if (targetY > paddleCenter + threshold) {
+        return 'down';
+      } else {
+        return 'stop';
+      }
+    };
+    
+    // Touch start/mouse down handler
+    const handleStart = (event: TouchEvent | MouseEvent) => {
       event.preventDefault();
       mouseIsDownRef.current = true;
       
       // Only process if the game is in playing state
       if (gameState.gameState !== "playing") return;
       
-      const { y } = getCanvasCoords(event);
+      // Get position based on event type
+      let clientX: number, clientY: number;
+      let playerId = 0;
       
-      // Calculate paddle position (centered on mouse/touch y)
-      const paddleY = y - (gameState.config.paddleHeight / 2);
-      
-      // Send position update
-      onSetPosition(paddleY);
+      if ('touches' in event) {
+        // Touch event - handle multiple touches
+        for (let i = 0; i < event.touches.length; i++) {
+          const touch = event.touches[i];
+          clientX = touch.clientX;
+          clientY = touch.clientY;
+          
+          // Convert to canvas coordinates
+          const rect = canvas.getBoundingClientRect();
+          const x = clientX - rect.left;
+          const y = clientY - rect.top;
+          
+          // Determine which player's side was touched
+          if (x < canvas.width / 2) {
+            // Left side (Player 1)
+            playerId = 1;
+          } else {
+            // Right side (Player 2)
+            playerId = 2;
+          }
+          
+          // Convert to game coordinates
+          const gameCoords = canvasToGameCoords(x, y);
+          
+          // Store the target position for this player
+          touchTargetsRef.current[playerId] = gameCoords.y;
+          
+          // Start moving the paddle in the appropriate direction
+          const currentY = playerId === 1 ? gameState.player1.y : gameState.player2.y;
+          const direction = getDirectionFromTarget(
+            currentY, 
+            gameCoords.y, 
+            gameState.config.paddleHeight
+          );
+          
+          onMove(direction, playerId);
+        }
+      } else {
+        // Mouse event
+        clientX = event.clientX;
+        clientY = event.clientY;
+        
+        // Convert to canvas coordinates
+        const rect = canvas.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        
+        // Determine which player's side was clicked
+        if (x < canvas.width / 2) {
+          // Left side (Player 1)
+          playerId = 1;
+        } else {
+          // Right side (Player 2)
+          playerId = 2;
+        }
+        
+        // Convert to game coordinates
+        const gameCoords = canvasToGameCoords(x, y);
+        
+        // Store the target position for this player
+        touchTargetsRef.current[playerId] = gameCoords.y;
+        
+        // Start moving the paddle in the appropriate direction
+        const currentY = playerId === 1 ? gameState.player1.y : gameState.player2.y;
+        const direction = getDirectionFromTarget(
+          currentY, 
+          gameCoords.y, 
+          gameState.config.paddleHeight
+        );
+        
+        onMove(direction, playerId);
+      }
     };
     
-    const handleMouseMove = (event: MouseEvent | TouchEvent) => {
+    // Touch move/mouse move handler
+    const handleMove = (event: TouchEvent | MouseEvent) => {
       // Only process if mouse is down and game is in playing state
       if (!mouseIsDownRef.current || gameState.gameState !== "playing") return;
       
       event.preventDefault();
-      const { y } = getCanvasCoords(event);
       
-      // Calculate paddle position (centered on mouse/touch y)
-      const paddleY = y - (gameState.config.paddleHeight / 2);
-      
-      // Send position update
-      onSetPosition(paddleY);
+      // Get position based on event type
+      if ('touches' in event) {
+        // Touch event - handle multiple touches
+        for (let i = 0; i < event.touches.length; i++) {
+          const touch = event.touches[i];
+          const rect = canvas.getBoundingClientRect();
+          const x = touch.clientX - rect.left;
+          const y = touch.clientY - rect.top;
+          
+          // Determine which player's side was touched
+          let playerId;
+          if (x < canvas.width / 2) {
+            // Left side (Player 1)
+            playerId = 1;
+          } else {
+            // Right side (Player 2)
+            playerId = 2;
+          }
+          
+          // Convert to game coordinates
+          const gameCoords = canvasToGameCoords(x, y);
+          
+          // Update the target position for this player
+          touchTargetsRef.current[playerId] = gameCoords.y;
+          
+          // Update paddle movement direction
+          const currentY = playerId === 1 ? gameState.player1.y : gameState.player2.y;
+          const direction = getDirectionFromTarget(
+            currentY, 
+            gameCoords.y, 
+            gameState.config.paddleHeight
+          );
+          
+          onMove(direction, playerId);
+        }
+      } else {
+        // Mouse event
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        
+        // Determine which player's side was clicked
+        let playerId;
+        if (x < canvas.width / 2) {
+          // Left side (Player 1)
+          playerId = 1;
+        } else {
+          // Right side (Player 2)
+          playerId = 2;
+        }
+        
+        // Convert to game coordinates
+        const gameCoords = canvasToGameCoords(x, y);
+        
+        // Update the target position for this player
+        touchTargetsRef.current[playerId] = gameCoords.y;
+        
+        // Update paddle movement direction
+        const currentY = playerId === 1 ? gameState.player1.y : gameState.player2.y;
+        const direction = getDirectionFromTarget(
+          currentY, 
+          gameCoords.y, 
+          gameState.config.paddleHeight
+        );
+        
+        onMove(direction, playerId);
+      }
     };
     
-    const handleMouseUp = () => {
+    // Touch end/mouse up handler
+    const handleEnd = () => {
       mouseIsDownRef.current = false;
+      
+      // Stop movement for both players
+      onMove('stop', 1);
+      onMove('stop', 2);
+      
+      // Clear target positions
+      touchTargetsRef.current = {};
     };
     
     // Add event listeners
-    canvas.addEventListener("mousedown", handleMouseDown);
-    canvas.addEventListener("touchstart", handleMouseDown);
+    canvas.addEventListener("mousedown", handleStart);
+    canvas.addEventListener("touchstart", handleStart, { passive: false });
     
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("touchmove", handleMouseMove);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("touchmove", handleMove, { passive: false });
     
-    window.addEventListener("mouseup", handleMouseUp);
-    window.addEventListener("touchend", handleMouseUp);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchend", handleEnd);
     
     return () => {
-      canvas.removeEventListener("mousedown", handleMouseDown);
-      canvas.removeEventListener("touchstart", handleMouseDown);
+      canvas.removeEventListener("mousedown", handleStart);
+      canvas.removeEventListener("touchstart", handleStart);
       
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("touchmove", handleMouseMove);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("touchmove", handleMove);
       
-      window.removeEventListener("mouseup", handleMouseUp);
-      window.removeEventListener("touchend", handleMouseUp);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchend", handleEnd);
     };
-  }, [gameState, playerNumber, onSetPosition]);
+  }, [gameState, onMove, onSetPosition]);
   
   return (
     <canvas 
