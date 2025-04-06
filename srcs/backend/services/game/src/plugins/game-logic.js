@@ -1,96 +1,63 @@
 "use strict";
 
+const config = require('../config');
+
 class PongGame {
   constructor(options = {}) {
-    // Game configuration
-    this.ballSpeed = options.ballSpeed || 'medium'; // 'slow', 'medium', 'fast'
-    this.winningScore = options.winningScore || 5;
-    this.accelerationEnabled = options.accelerationEnabled || false;
-    this.paddleSize = options.paddleSize || 'medium'; // 'short', 'medium', 'long'
+    this.ballSpeed = options.ballSpeed || config.game.defaults.ballSpeed,
+    this.winningScore = options.winningScore || config.game.defaults.winningScore,
+    this.accelerationEnabled = options.accelerationEnabled || config.game.defaults.accelerationEnabled,
+    this.paddleSize = options.paddleSize || config.game.defaults.paddleSize
     
-    // Game dimensions
     this.width = 600;
     this.height = 400;
     
-    // Initial paddle dimensions based on size selection
-    const paddleSizes = {
-      short: 40,
-      medium: 80,
-      long: 120
-    };
-    
+    const paddleSizes = { short: 40, medium: 80, long: 120 };
     this.paddleHeight = paddleSizes[this.paddleSize];
     this.paddleWidth = 10;
     
-    // Ball dimensions
+    const initialSpeeds = { slow: 4, medium: 6, fast: 8 };
+    this.initialBallVelocity = initialSpeeds[this.ballSpeed];
     this.ballSize = 10;
     
-    // Initial speed values based on speed selection
-    const initialSpeeds = {
-      slow: 4,
-      medium: 6,
-      fast: 8
-    };
-    
-    this.initialBallVelocity = initialSpeeds[this.ballSpeed];
-    
-    // Initialize the game
-    this.reset();
-    
-    // Movement state for continuous movement
-    this.player1Movement = null; // 'up', 'down', or null
-    this.player2Movement = null; // 'up', 'down', or null
-    
-    // Game state
-    this.gameState = 'waiting'; // 'waiting', 'playing', 'paused', 'finished', 'cancelled'
-    
-    // Last update timestamp
-    this.lastUpdate = Date.now();
-    
-    // Player info
     this.player1 = null;
     this.player2 = null;
-  }
-  
-  reset() {
-    // Reset scores
     this.player1Score = 0;
     this.player2Score = 0;
-    
-    // Reset paddle positions
+    this.player1Movement = null; // 'up', 'down', or null
+    this.player2Movement = null; // 'up', 'down', or null
     this.player1Y = (this.height - this.paddleHeight) / 2;
     this.player2Y = (this.height - this.paddleHeight) / 2;
-    
-    // Reset ball position and velocity
     this.resetBall();
-    
-    // Reset game state if it was finished
-    if (this.gameState === 'finished' || this.gameState === 'cancelled') {
-      this.gameState = 'waiting';
-    }
-    
-    // Reset player movements
-    this.player1Movement = null;
-    this.player2Movement = null;
+        
+    this.gameState = 'waiting'; // 'waiting', 'playing', 'paused', 'finished', 'cancelled'
+    this.lastUpdate = Date.now();
   }
-  
+
+  // PLAYER NAME
+  setPlayer(playerNumber, playerName) {
+    if      (playerNumber === 1) { this.player1 = playerName; }
+    else if (playerNumber === 2) { this.player2 = playerName; }
+  }
+
+  // RESET BALL
   resetBall() {
     // Center the ball
     this.ballX = this.width / 2;
     this.ballY = this.height / 2;
     
-    // Random angle between -45 and 45 degrees (in radians)
+    // Random angle between -45 and 45 degrees
     const angle = (Math.random() * 90 - 45) * Math.PI / 180;
     
     // Random direction (left or right)
     const direction = Math.random() > 0.5 ? 1 : -1;
     
-    // Set initial velocity based on the selected speed
+    // Initial velocity
     this.ballVelX = direction * this.initialBallVelocity * Math.cos(angle);
     this.ballVelY = this.initialBallVelocity * Math.sin(angle);
   }
   
-  // Start the game
+  // START
   start() {
     if (this.gameState === 'waiting' || this.gameState === 'paused') {
       this.gameState = 'playing';
@@ -100,7 +67,7 @@ class PongGame {
     return false;
   }
   
-  // Pause the game
+  // PAUSE
   pause() {
     if (this.gameState === 'playing') {
       this.gameState = 'paused';
@@ -109,7 +76,7 @@ class PongGame {
     return false;
   }
   
-  // Resume the game
+  // RESUME
   resume() {
     if (this.gameState === 'paused') {
       this.gameState = 'playing';
@@ -119,51 +86,29 @@ class PongGame {
     return false;
   }
   
-  // Cancel the game
+  // CANCEL
   cancel() {
     this.gameState = 'cancelled';
     return true;
   }
   
-  // Update player movement state
-  setPlayerMovement(player, direction) {
-    if (player === 1) {
-      this.player1Movement = direction;
-    } else if (player === 2) {
-      this.player2Movement = direction;
-    }
+  // PADDLE MOVE
+  setPaddleMove(player, direction) {
+    if      (player === 1) { this.player1Movement = direction; }
+    else if (player === 2) { this.player2Movement = direction; }
   }
   
-  // Move paddle directly to a specific position
+  // PADDLE POSTITION
   setPaddlePosition(player, y) {
     const clampedY = Math.max(0, Math.min(this.height - this.paddleHeight, y));
     
-    if (player === 1) {
-      this.player1Y = clampedY;
-    } else if (player === 2) {
-      this.player2Y = clampedY;
-    }
+    if      (player === 1) { this.player1Y = clampedY; }
+    else if (player === 2) { this.player2Y = clampedY; }
   }
   
-  // Set player info
-  setPlayer(playerNumber, playerName) {
-    if (playerNumber === 1) {
-      this.player1 = playerName;
-    } else if (playerNumber === 2) {
-      this.player2 = playerName;
-    }
-  }
-  
-  // Check if game has both players
-  hasBothPlayers() {
-    return this.player1 !== null && this.player2 !== null;
-  }
-  
-  // Update game state
+  // UPDATE
   update() {
-    if (this.gameState !== 'playing') {
-      return;
-    }
+    if (this.gameState !== 'playing') return;
     
     // Calculate time delta for frame-rate independent movement
     const now = Date.now();
@@ -213,6 +158,7 @@ class PongGame {
         this.ballVelX *= 1.1;
         this.ballVelY *= 1.1;
       }
+      
     }
     
     // Ball collision with right paddle (player 2)
@@ -250,7 +196,7 @@ class PongGame {
     }
   }
   
-  // Check if someone has won
+  // WIN CHECK
   checkWinCondition() {
     if (this.player1Score >= this.winningScore || this.player2Score >= this.winningScore) {
       this.gameState = 'finished';
@@ -261,7 +207,7 @@ class PongGame {
     }
   }
   
-  // Get current game state for sending to clients
+  // STATE
   getState() {
     return {
       gameState: this.gameState,

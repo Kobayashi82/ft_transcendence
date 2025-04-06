@@ -215,9 +215,12 @@ async function proxyPlugin(fastify, options) {
   // Handle WebSocket upgrade requests
   fastify.server.on('upgrade', (request, socket, head) => {
     const pathname = new URL(request.url, 'http://localhost').pathname;
-    
+
+    const strippedPathname = pathname.replace(/^\/api\/game/, '');
+    const matchingProxy = Object.entries(wsProxies).find(([path, _]) => strippedPathname.startsWith(path));
+
     // Find the matching WebSocket proxy for this path
-    const matchingProxy = Object.entries(wsProxies).find(([path, _]) => pathname.startsWith(path));
+    // const matchingProxy = Object.entries(wsProxies).find(([path, _]) => pathname.startsWith(path));
     if (!matchingProxy) {
       socket.destroy();
       return;

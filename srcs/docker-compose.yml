@@ -78,6 +78,7 @@ services:
     environment:
       - SERVICE_URL=game:3000
     networks:
+      - backend-net
       - service-net
     restart: unless-stopped
     

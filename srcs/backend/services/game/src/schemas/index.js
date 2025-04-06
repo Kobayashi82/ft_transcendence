@@ -2,7 +2,7 @@
 
 // Schema definitions 
 const schemas = {
-  // Schema for game configuration options
+  // Schema for options
   gameOptions: {
     response: {
       200: {
@@ -17,24 +17,35 @@ const schemas = {
               max: { type: 'integer' }
             }
           },
-          accelerationEnabled: { type: 'array', items: { type: 'boolean' } }
+          accelerationEnabled: { type: 'array', items: { type: 'boolean' } },
+          default: { 
+            type: 'object',
+            properties: {
+              ballSpeed: { type: 'string' },
+              winningScore: { type: 'integer' },
+              accelerationEnabled: { type: 'boolean' },
+              paddleSize: { type: 'string' },
+              ai_opponents: { type: 'array', items: { type: 'string' } },
+            }
+          }
         }
       }
     }
   },
 
-  // Schema for creating a new game
+  // Schema for new game
   createGame: {
     body: {
       type: 'object',
       properties: {
-        playerName: { type: 'string', minLength: 1 },
+        player1Name: { type: 'string', minLength: 1 },
+        player2Name: { type: 'string', minLength: 1 },
         ballSpeed: { type: 'string', enum: ['slow', 'medium', 'fast'] },
         winningScore: { type: 'integer', minimum: 1, maximum: 20 },
         accelerationEnabled: { type: 'boolean' },
         paddleSize: { type: 'string', enum: ['short', 'medium', 'long'] }
       },
-      required: ['playerName']
+      required: ['player1Name', 'player2Name']
     },
     response: {
       200: {
@@ -63,91 +74,7 @@ const schemas = {
     }
   },
 
-  // Schema for joining a game
-  joinGame: {
-    params: {
-      type: 'object',
-      properties: {
-        gameId: { type: 'string' }
-      },
-      required: ['gameId']
-    },
-    body: {
-      type: 'object',
-      properties: {
-        playerName: { type: 'string', minLength: 1 }
-      },
-      required: ['playerName']
-    },
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          gameId: { type: 'string' },
-          player: { type: 'integer' },
-          gameState: { type: 'object' }
-        }
-      },
-      400: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' }
-        }
-      },
-      404: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' }
-        }
-      },
-      409: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' }
-        }
-      }
-    }
-  },
-
-  // Schema for spectating a game
-  spectateGame: {
-    params: {
-      type: 'object',
-      properties: {
-        gameId: { type: 'string' }
-      },
-      required: ['gameId']
-    },
-    body: {
-      type: 'object',
-      properties: {
-        spectatorName: { type: 'string' }
-      }
-    },
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          gameId: { type: 'string' },
-          gameState: { type: 'object' }
-        }
-      },
-      404: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' }
-        }
-      }
-    }
-  },
-
-  // Schema for game actions (start, pause, resume, cancel, reset)
+  // Schema for game actions (start, pause, resume, cancel)
   gameAction: {
     params: {
       type: 'object',
@@ -181,7 +108,7 @@ const schemas = {
     }
   },
 
-  // Schema for getting game state
+  // Schema for game state
   getGame: {
     params: {
       type: 'object',
@@ -277,53 +204,6 @@ const schemas = {
       }
     }
   },
-
-  // Schema for listing games
-  listGames: {
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          count: { type: 'integer' },
-          games: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                gameId: { type: 'string' },
-                players: {
-                  type: 'object',
-                  properties: {
-                    player1: { type: ['string', 'null'] },
-                    player2: { type: ['string', 'null'] }
-                  }
-                },
-                spectators: { type: 'integer' },
-                state: { type: 'string' },
-                score: {
-                  type: 'object',
-                  properties: {
-                    player1: { type: 'integer' },
-                    player2: { type: 'integer' }
-                  }
-                },
-                settings: {
-                  type: 'object',
-                  properties: {
-                    ballSpeed: { type: 'string' },
-                    winningScore: { type: 'integer' },
-                    paddleSize: { type: 'string' },
-                    accelerationEnabled: { type: 'boolean' }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
 };
 
 module.exports = schemas;

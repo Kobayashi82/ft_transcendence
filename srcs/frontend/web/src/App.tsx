@@ -3,8 +3,9 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import Header from "./components/layout/Header";
 import ScrollToTop from "./components/ScrollToTop";
 import Home from "./pages/Home";
+import QuickMatch from "./pages/QuickMatch";
 import UnderConstruction from "./components/UnderConstruction";
-import RankingsPage from "./pages/Rankings";
+import RankingsPage from "./pages/Stats";
 import LeaderboardPage from "./pages/Leaderboard";
 import AboutPage from "./pages/About";
 import Status from "./pages/Status";
@@ -20,7 +21,7 @@ function App() {
           <main className="flex-grow pt-16">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/quick" element={<UnderConstruction />} />
+              <Route path="/quick" element={<QuickMatch />} />
               <Route path="/tournament" element={<UnderConstruction />} />
               <Route path="/rankings" element={<RankingsPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />

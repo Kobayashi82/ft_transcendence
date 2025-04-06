@@ -2,7 +2,6 @@
 
 const PongGame = require('./game-logic');
 const { v4: uuidv4 } = require('uuid');
-const config = require('../config');
 
 class GameManager {
   constructor() {
@@ -10,16 +9,11 @@ class GameManager {
     this.clients = new Map();
     this.players = new Map(); // Maps player names to gameIds
     
-    // Set up game loop
-    setInterval(() => this.updateGames(), 16); // 60 FPS
-    
-    // Set up cleanup for inactive games
-    setInterval(() => this.cleanupInactiveGames(), 60000); // Every minute
-    
-    // Set up handling of disconnected players
-    setInterval(() => this.handleDisconnectedPlayers(), 5000); // Every 5 seconds
+    setInterval(() => this.updateGames(), 16); // 60 fps
+    setInterval(() => this.cleanupInactiveGames(), 60000);
   }
-  
+
+  // CREATE
   createGame(options = {}) {
     const gameId = uuidv4();
     const game = new PongGame(options);
@@ -27,119 +21,52 @@ class GameManager {
     this.games.set(gameId, {
       game,
       clients: new Set(),
-      spectators: new Set(),
       lastActivity: Date.now(),
-      disconnectedPlayers: new Map(), // Track disconnected players and their disconnect time
-      disconnectionTimeout: 30000 // 30 seconds before removing a disconnected player
     });
     
     console.log(`Game created: ${gameId}`);
     return gameId;
   }
   
+  // GET GAME
   getGame(gameId) {
     const gameEntry = this.games.get(gameId);
     return gameEntry ? gameEntry.game : null;
   }
   
+  // STATUS
   getGameState(gameId) {
-    const game = this.getGame(gameId);
-    if (!game) return null;
-    
-    return game.getState();
+    const game = this.getGame(gameId);   
+    return game ? game.getState() : null;
   }
-  
-  listGames() {
-    const gamesList = [];
-    
-    for (const [gameId, gameEntry] of this.games.entries()) {
-      const game = gameEntry.game;
-      gamesList.push({
-        gameId,
-        players: {
-          player1: game.player1,
-          player2: game.player2
-        },
-        spectators: gameEntry.spectators.size,
-        state: game.gameState,
-        score: {
-          player1: game.player1Score,
-          player2: game.player2Score
-        },
-        settings: {
-          ballSpeed: game.ballSpeed,
-          winningScore: game.winningScore,
-          paddleSize: game.paddleSize,
-          accelerationEnabled: game.accelerationEnabled
-        }
-      });
-    }
-    
-    return gamesList;
-  }
-  
-  // Add a player to a game
+
+  // ADD PLAYER
   addPlayer(gameId, playerName, playerNumber) {
     const gameEntry = this.games.get(gameId);
     if (!gameEntry) return false;
     
-    // Set player in game
     gameEntry.game.setPlayer(playerNumber, playerName);
-    
-    // Add to player-gameId mapping
-    this.players.set(playerName, {
-      gameId,
-      playerNumber
-    });
-    
-    // Update last activity timestamp
+    this.players.set(playerName, { gameId, playerNumber }); // Add to player-gameId mapping
     gameEntry.lastActivity = Date.now();
     
     return true;
   }
-  
-  // Add a spectator to a game
-  addSpectator(gameId, spectatorName) {
-    const gameEntry = this.games.get(gameId);
-    if (!gameEntry) return false;
-    
-    gameEntry.spectators.add(spectatorName);
-    gameEntry.lastActivity = Date.now();
-    
-    return true;
-  }
-  
-  // Check if player is already in a game
+
+  // PLAYER PLAYING
   isPlayerInGame(playerName) {
     return this.players.has(playerName);
   }
   
-  // Check if game has both players
-  isGameFull(gameId) {
-    const game = this.getGame(gameId);
-    if (!game) return false;
-    
-    return game.player1 !== null && game.player2 !== null;
-  }
-  
-  // Check if game has enough players to start
-  hasEnoughPlayers(gameId) {
-    const game = this.getGame(gameId);
-    if (!game) return false;
-    
-    return game.hasBothPlayers();
-  }
-  
+  // ------------------ WEBSOCKETS ------------------
+
   // Register a WebSocket client
   registerClient(gameId, clientId, ws, playerName = null, isSpectator = false) {
     const gameEntry = this.games.get(gameId);
     if (!gameEntry) return false;
     
-    // Add client to game's client list
-    gameEntry.clients.add(clientId);
+    gameEntry.clients.add(clientId);  // Add client to game's client list
     
-    // Store client info
-    this.clients.set(clientId, {
+    this.clients.set(clientId, {      // Store client info
       ws,
       gameId,
       playerName,
@@ -186,228 +113,125 @@ class GameManager {
     console.log(`Client ${clientId} unregistered`);
   }
   
-  // Check if a game has any disconnected players
-  hasDisconnectedPlayers(gameId) {
-    const gameEntry = this.games.get(gameId);
-    if (!gameEntry) return false;
-    
-    return gameEntry.disconnectedPlayers.size > 0;
-  }
-  
   // Broadcast game state to all connected clients
   broadcastGameState(gameId) {
     const gameEntry = this.games.get(gameId);
     if (!gameEntry || gameEntry.clients.size === 0) return;
     
     const gameState = gameEntry.game.getState();
-    
+
     // Broadcast to all clients
     for (const clientId of gameEntry.clients) {
       const clientEntry = this.clients.get(clientId);
-      if (clientEntry && clientEntry.ws.readyState === 1) { // WebSocket.OPEN
+      if (clientEntry && clientEntry.ws.readyState === 1) {
         clientEntry.ws.send(JSON.stringify({
-          type: 'gameState',
+          type: 'state',
           data: gameState
         }));
       }
     }
   }
   
-  // Handle disconnected players
-  handleDisconnectedPlayers() {
-    const now = Date.now();
-    
-    for (const [gameId, gameEntry] of this.games.entries()) {
-      // Skip games with no disconnected players
-      if (gameEntry.disconnectedPlayers.size === 0) {
-        continue;
-      }
-      
-      // Check each disconnected player
-      for (const [playerName, disconnectTime] of gameEntry.disconnectedPlayers.entries()) {
-        // If player has been disconnected longer than the timeout, remove them
-        if (now - disconnectTime > gameEntry.disconnectionTimeout) {
-          console.log(`Player ${playerName} removed from game ${gameId} due to timeout`);
-          
-          // Remove player from game
-          if (gameEntry.game.player1 === playerName) {
-            gameEntry.game.player1 = null;
-          } else if (gameEntry.game.player2 === playerName) {
-            gameEntry.game.player2 = null;
-          }
-          
-          // Remove from player-gameId mapping
-          this.players.delete(playerName);
-          
-          // Remove from disconnected players
-          gameEntry.disconnectedPlayers.delete(playerName);
-          
-          // If game was in progress, cancel it
-          if (gameEntry.game.gameState === 'playing' || gameEntry.game.gameState === 'paused') {
-            gameEntry.game.cancel();
-            this.broadcastGameState(gameId);
-          }
-        }
-      }
-    }
-  }
-  
-  // Start a game
+  // ------------------ WEBSOCKETS ------------------
+
+  // START
   startGame(gameId) {
     const game = this.getGame(gameId);
     if (!game) return false;
-    
-    // Check if game has both players
-    if (!game.hasBothPlayers()) {
-      return false;
-    }
-    
+
     const success = game.start();
-    
-    // Update last activity timestamp
     const gameEntry = this.games.get(gameId);
     gameEntry.lastActivity = Date.now();
-    
-    // Broadcast new state to all clients
-    if (success) {
-      this.broadcastGameState(gameId);
-    }
-    
+
+    if (success) this.broadcastGameState(gameId);
     return success;
   }
   
-  // Pause a game
+  // PAUSE
   pauseGame(gameId) {
     const game = this.getGame(gameId);
     if (!game) return false;
     
-    const success = game.pause();
-    
-    // Update last activity timestamp
+    const success = game.pause();    
     const gameEntry = this.games.get(gameId);
     gameEntry.lastActivity = Date.now();
     
-    // Broadcast new state to all clients
-    if (success) {
-      this.broadcastGameState(gameId);
-    }
-    
+    if (success) this.broadcastGameState(gameId);  
     return success;
   }
   
-  // Resume a paused game
+  // RESUME
   resumeGame(gameId) {
     const game = this.getGame(gameId);
     if (!game) return false;
-    
+
     const success = game.resume();
-    
-    // Update last activity timestamp
     const gameEntry = this.games.get(gameId);
     gameEntry.lastActivity = Date.now();
-    
-    // Broadcast new state to all clients
-    if (success) {
-      this.broadcastGameState(gameId);
-    }
-    
+
+    if (success) this.broadcastGameState(gameId); 
     return success;
   }
   
-  // Cancel a game
+  // CANCEL
   cancelGame(gameId) {
     const game = this.getGame(gameId);
     if (!game) return false;
     
     const success = game.cancel();
     
-    // Remove player references
-    if (game.player1) {
-      this.players.delete(game.player1);
-    }
-    if (game.player2) {
-      this.players.delete(game.player2);
-    }
+    // Remove players
+    if (game.player1) this.players.delete(game.player1);
+    if (game.player2) this.players.delete(game.player2);
     
-    // Update last activity timestamp
     const gameEntry = this.games.get(gameId);
     gameEntry.lastActivity = Date.now();
-    
-    // Broadcast new state to all clients
-    if (success) {
-      this.broadcastGameState(gameId);
-    }
-    
+
+    if (success) this.broadcastGameState(gameId);     
     return success;
   }
   
-  // Reset a game
-  resetGame(gameId) {
+  // PADDLE MOVE
+  handlePaddleMove(gameId, player, direction) {
     const game = this.getGame(gameId);
     if (!game) return false;
     
-    game.reset();
-    
-    // Update last activity timestamp
-    const gameEntry = this.games.get(gameId);
-    gameEntry.lastActivity = Date.now();
-    
-    // Broadcast new state to all clients
-    this.broadcastGameState(gameId);
-    
-    return true;
-  }
-  
-  // Handle player movement
-  handlePlayerMovement(gameId, player, direction) {
-    const game = this.getGame(gameId);
-    if (!game) return false;
-    
-    game.setPlayerMovement(player, direction);
-    
-    // Update last activity timestamp
+    game.setPaddleMove(player, direction);
     const gameEntry = this.games.get(gameId);
     gameEntry.lastActivity = Date.now();
     
     return true;
   }
   
-  // Set paddle position directly
+  // PADDLE POSITION
   setPaddlePosition(gameId, player, y) {
     const game = this.getGame(gameId);
     if (!game) return false;
     
-    game.setPaddlePosition(player, y);
-    
-    // Update last activity timestamp
+    game.setPaddlePosition(player, y);    
     const gameEntry = this.games.get(gameId);
     gameEntry.lastActivity = Date.now();
     
     return true;
   }
   
-  // Update games state
+  // UPDATE
   updateGames() {
     for (const [gameId, gameEntry] of this.games.entries()) {
-      // Skip inactive games
-      if (gameEntry.game.gameState !== 'playing') {
-        continue;
-      }
+      if (gameEntry.game.gameState !== 'playing') continue;
       
-      // Update game state
+      // Update game
       gameEntry.game.update();
       
       // If game just finished, send results to stats service
-      if (gameEntry.game.gameState === 'finished') {
-        this.sendGameResultsToStats(gameId);
-      }
-      
+      if (gameEntry.game.gameState === 'finished') this.sendGameResultsToStats(gameId);
+     
       // Broadcast updated state to clients
       this.broadcastGameState(gameId);
     }
   }
   
-  // Clean up inactive games
+  // CLEAN UP
   cleanupInactiveGames() {
     const now = Date.now();
     
@@ -419,27 +243,22 @@ class GameManager {
           this.clients.delete(clientId);
         }
         
-        // Remove player references
-        if (gameEntry.game.player1) {
-          this.players.delete(gameEntry.game.player1);
-        }
-        if (gameEntry.game.player2) {
-          this.players.delete(gameEntry.game.player2);
-        }
+        // Remove players
+        if (gameEntry.game.player1) this.players.delete(gameEntry.game.player1);
+        if (gameEntry.game.player2) this.players.delete(gameEntry.game.player2);
         
-        // Remove the game
+        // Remove game
         this.games.delete(gameId);
         console.log(`Game ${gameId} removed due to inactivity`);
       }
     }
   }
   
-  // Send game results to the stats service
+  // RESULTS
   sendGameResultsToStats(gameId) {
     const gameState = this.getGameState(gameId);
     if (!gameState) return;
     
-    // TODO: Implement when stats service is ready
     console.log(`Sending game results for ${gameId} to stats service`);
     
     // This would be implemented as a service call when the stats service is ready

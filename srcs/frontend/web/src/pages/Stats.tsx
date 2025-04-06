@@ -4,9 +4,9 @@ import { Search, X, Info } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 
 // Component imports
-import PlayerOverview from "../components/PlayerOverview";
-import GamesTable from "../components/GamesTable";
-import TournamentsTable from "../components/TournamentsTable";
+import PlayerOverview from "../components/stats/PlayerOverview";
+import GamesTable from "../components/stats/GamesTable";
+import TournamentsTable from "../components/stats/TournamentsTable";
 
 interface Player {
 	id: number;
