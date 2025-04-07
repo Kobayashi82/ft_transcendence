@@ -8,6 +8,11 @@ async function routes(fastify, options) {
   // OPTIONS
   fastify.get('/options', { schema: schemas.gameOptions }, async (request, reply) => {
     return {
+      width: fastify.config.game.width,
+      height: fastify.config.game.height,
+      paddleWidth: fastify.config.game.paddleWidth,
+      paddleHeight: fastify.config.game.paddleHeight,
+      ballSize: fastify.config.game.ballSize,
       ballSpeed: ['slow', 'medium', 'fast'],
       paddleSize: ['short', 'medium', 'long'],
       winningScore: { min: 1, max: 20 },

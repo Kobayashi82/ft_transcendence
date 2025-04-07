@@ -11,12 +11,10 @@ import AboutPage from "./pages/About";
 import Status from "./pages/Status";
 import NotFound from "./pages/NotFound";
 
-// Componente simple para controlar la visibilidad durante carga de traducciones
 const AppContent = () => {
   const { isLoaded } = useLanguage();
   
   if (!isLoaded) {
-    // Pantalla de carga minimalista mientras se cargan las traducciones
     return (
       <div className="flex flex-col min-h-screen bg-gray-900"></div>
     );

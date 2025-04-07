@@ -65,6 +65,8 @@ const translations = {
   'quickMatch.inProgress': 'Partie en cours',
   'quickMatch.paused': 'Partie en pause',
   'quickMatch.cancelled': 'Partie annulée',
+  'quickMatch.resume': 'Reprendre',
+  'quickMatch.pause': 'Pause',
   'quickMatch.wins': 'gagne !',
   'quickMatch.finalScore': 'Score Final',
   'quickMatch.confirmCancel': 'Annuler la Partie ?',

@@ -11,6 +11,9 @@ const AI = {
   }
 };
 
+const paddleSizes = { short: 40, medium: 80, long: 120 };
+const initialSpeeds = { slow: 4, medium: 6, fast: 8 };
+
 const config = {
   // Server
   serviceName: (process.env.SERVICE_URL && process.env.SERVICE_URL.split(":")[0]) || "game",
@@ -29,6 +32,12 @@ const config = {
   // Game options
   AI: AI,
   game: {
+    width: 600,
+    height: 400,    
+    paddleWidth: 10,
+    paddleHeight: paddleSizes['medium'],
+    ballSize: 10,
+    initialBallVelocity: initialSpeeds['medium'],
     defaults: {
       ballSpeed: 'medium',        // slow, medium, fast
       winningScore: 5,            // 1 - 20

@@ -12,7 +12,6 @@ function websocketHandler(fastify, options, done) {
     
     console.log(`WebSocket connection established: ${clientId}`);
     console.log(`Connection details: ${req.headers['origin']}`);
-    ws.send(JSON.stringify({ type: 'welcome', message: 'Conexión establecida' }));
            
     // DISCONNECT
     ws.on('close', () => {
@@ -51,7 +50,7 @@ function websocketHandler(fastify, options, done) {
           case 'resume':
             handleResume(data, clientId, ws);
             break;
-          case 'cancelled':
+          case 'cancel':
             handleCancel(data, clientId, ws);
             break;
           case 'state':
@@ -122,7 +121,7 @@ function websocketHandler(fastify, options, done) {
       
       if (success) {
         ws.send(JSON.stringify({
-          type: 'cancelled',
+          type: 'cancel',
           gameId: data.gameId,
           gameState: gameManager.getGameState(data.gameId)
         }));

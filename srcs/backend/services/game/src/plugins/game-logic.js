@@ -9,16 +9,14 @@ class PongGame {
     this.accelerationEnabled = options.accelerationEnabled || config.game.defaults.accelerationEnabled,
     this.paddleSize = options.paddleSize || config.game.defaults.paddleSize
     
-    this.width = 600;
-    this.height = 400;
+    this.width = config.game.width;
+    this.height = config.game.height;
     
-    const paddleSizes = { short: 40, medium: 80, long: 120 };
-    this.paddleHeight = paddleSizes[this.paddleSize];
-    this.paddleWidth = 10;
+    this.paddleHeight = config.game.paddleHeight;
+    this.paddleWidth = config.game.paddleWidth;
     
-    const initialSpeeds = { slow: 4, medium: 6, fast: 8 };
-    this.initialBallVelocity = initialSpeeds[this.ballSpeed];
-    this.ballSize = 10;
+    this.ballSize = config.game.ballSize;
+    this.initialBallVelocity = config.game.initialBallVelocity;
     
     this.player1 = null;
     this.player2 = null;

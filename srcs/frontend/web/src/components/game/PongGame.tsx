@@ -145,7 +145,7 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     ctx.lineWidth = 1;
     ctx.stroke();
     
-    // Draw player 1 paddle - highlight current player's paddle
+    // Draw player 1 paddle
     const paddleRadius = 4;
     ctx.fillStyle = playerNumber === 1 ? colors.activePlayer : colors.paddle;
     
@@ -159,7 +159,7 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     ctx.closePath();
     ctx.fill();
     
-    // Draw player 2 paddle - highlight current player's paddle
+    // Draw player 2 paddle
     ctx.fillStyle = playerNumber === 2 ? colors.activePlayer : colors.paddle;
     
     // Right paddle with rounded corners
@@ -190,32 +190,32 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     ctx.arc(scaledBall.x, scaledBall.y, scaledBall.size * 2, 0, Math.PI * 2);
     ctx.fill();
     
-    // Draw scores
-    ctx.fillStyle = colors.score;
-    ctx.font = "bold 48px Arial";
-    ctx.textAlign = "center";
+    // // Draw scores
+    // ctx.fillStyle = colors.score;
+    // ctx.font = "bold 48px Arial";
+    // ctx.textAlign = "center";
     
-    // Player 1 score
-    ctx.fillStyle = playerNumber === 1 ? colors.scoreHighlight : colors.score;
-    ctx.fillText(player1.score.toString(), canvas.width / 4, 60);
+    // // Player 1 score
+    // ctx.fillStyle = playerNumber === 1 ? colors.scoreHighlight : colors.score;
+    // ctx.fillText(player1.score.toString(), canvas.width / 4, 60);
     
-    // Player 2 score
-    ctx.fillStyle = playerNumber === 2 ? colors.scoreHighlight : colors.score;
-    ctx.fillText(player2.score.toString(), (canvas.width / 4) * 3, 60);
+    // // Player 2 score
+    // ctx.fillStyle = playerNumber === 2 ? colors.scoreHighlight : colors.score;
+    // ctx.fillText(player2.score.toString(), (canvas.width / 4) * 3, 60);
     
-    // Draw player names
-    ctx.font = "14px Arial";
-    ctx.fillStyle = colors.score;
+    // // Draw player names
+    // ctx.font = "14px Arial";
+    // ctx.fillStyle = colors.score;
     
-    if (player1.name) {
-      ctx.fillStyle = playerNumber === 1 ? colors.scoreHighlight : colors.score;
-      ctx.fillText(player1.name, canvas.width / 4, 90);
-    }
+    // if (player1.name) {
+    //   ctx.fillStyle = playerNumber === 1 ? colors.scoreHighlight : colors.score;
+    //   ctx.fillText(player1.name, canvas.width / 4, 90);
+    // }
     
-    if (player2.name) {
-      ctx.fillStyle = playerNumber === 2 ? colors.scoreHighlight : colors.score;
-      ctx.fillText(player2.name, (canvas.width / 4) * 3, 90);
-    }
+    // if (player2.name) {
+    //   ctx.fillStyle = playerNumber === 2 ? colors.scoreHighlight : colors.score;
+    //   ctx.fillText(player2.name, (canvas.width / 4) * 3, 90);
+    // }
     
     // If game is not playing, show overlay message
     if (gameState.gameState !== "playing") {
