@@ -76,12 +76,12 @@ const Home: React.FC = () => {
 	  link: "/status"
 	},
     {
-      id: "rankings",
-      title: t('gameMode.rankings.title'),
-      description: t('gameMode.rankings.description'),
+      id: "stats",
+      title: t('gameMode.stats.title'),
+      description: t('gameMode.stats.description'),
       icon: <Users className="w-8 h-8" />,
       color: "from-green-500 to-teal-700",
-      link: "/rankings"
+      link: "/stats"
     },
     {
       id: "leaderboard",

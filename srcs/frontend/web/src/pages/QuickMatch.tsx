@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Gamepad2, Users, Settings, Info, Check } from "lucide-react";
+import { Gamepad2, Users, Settings, Info, Check, ChevronDown } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import GameModal from "../components/game/GameModal";
 
@@ -40,6 +40,10 @@ const QuickMatchPage: React.FC = () => {
   const [player2, setPlayer2] = useState<string>("");
   const [showAIList1, setShowAIList1] = useState<boolean>(false);
   const [showAIList2, setShowAIList2] = useState<boolean>(false);
+
+  // Refs for dropdown areas
+  const dropdownRef1 = React.useRef<HTMLDivElement>(null);
+  const dropdownRef2 = React.useRef<HTMLDivElement>(null);
 
   // State for game settings
   const [ballSpeed, setBallSpeed] = useState<string>("medium");
@@ -196,6 +200,29 @@ const QuickMatchPage: React.FC = () => {
       setShowAIList1(false);
     }
   };
+  
+  // Click outside handler for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // For dropdown 1
+      if (dropdownRef1.current && !dropdownRef1.current.contains(event.target as Node)) {
+        setShowAIList1(false);
+      }
+      
+      // For dropdown 2
+      if (dropdownRef2.current && !dropdownRef2.current.contains(event.target as Node)) {
+        setShowAIList2(false);
+      }
+    };
+    
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Select a player
   const selectPlayer = (playerNum: number, userId: string) => {
@@ -216,15 +243,33 @@ const QuickMatchPage: React.FC = () => {
     return options?.default?.ai_opponents || [];
   };
 
+  // Get display text for speed/size options
+  const getOptionDisplayText = (option: string) => {
+    switch(option.toLowerCase()) {
+      case 'slow':
+        return t('quickMatch.slow');
+      case 'medium':
+        return t('quickMatch.medium');
+      case 'fast':
+        return t('quickMatch.fast');
+      case 'short':
+        return t('quickMatch.short');
+      case 'long':
+        return t('quickMatch.long');
+      default:
+        return option.charAt(0).toUpperCase() + option.slice(1);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-indigo-950 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 mb-4">
-            {t('gameMode.quickMatch.title')}
+          <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 leading-[1.3] pb-4">
+            {t('quickMatch.title')}
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            {t('gameMode.quickMatch.description')}
+            {t('quickMatch.subtitle')}
           </p>
         </div>
         
@@ -260,118 +305,169 @@ const QuickMatchPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left column - Player selection */}
           <div className="lg:col-span-1">
-            <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl">
+            <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl h-full flex flex-col">
               <div className="h-2 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
-              <div className="p-6">
+              <div className="p-6 flex-1 flex flex-col">
                 <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
                   <Users className="mr-2 h-6 w-6 text-blue-400" />
-                  {t('rankings.players')}
+                  {t('stats.players')}
                 </h2>
                 
-                {/* Player 1 Selection */}
-                <div className="mb-6">
-                  <label className="block text-gray-300 text-sm font-medium mb-2">
-                    {t('quickMatch.player1')}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={player1}
-                      onChange={(e) => setPlayer1(e.target.value)}
-                      onClick={() => toggleAIList(1)}
-                      placeholder={t('quickMatch.selectPlayer')}
-                      className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {showAIList1 && (
-                      <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2">
-                          <div className="font-medium text-blue-400 px-2 py-1">{t('quickMatch.aiOpponents')}</div>
-                          {getAIOpponents().map((ai) => (
-                            <div
-                              key={`ai-${ai}`}
-                              className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300"
-                              onClick={() => selectPlayer(1, ai)}
-                            >
-                              {ai}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="p-2">
-                          <div className="font-medium text-blue-400 px-2 py-1">{t('quickMatch.humanPlayers')}</div>
-                          {players.map((player) => (
-                            <div
-                              key={player.id}
-                              className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300"
-                              onClick={() => selectPlayer(1, player.user_id)}
-                            >
-                              {player.user_id}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Player 2 Selection - Always shown */}
-                <div className="mb-6">
-                  <label className="block text-gray-300 text-sm font-medium mb-2">
-                    {t('quickMatch.player2')}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={player2}
-                      onChange={(e) => setPlayer2(e.target.value)}
-                      onClick={() => toggleAIList(2)}
-                      placeholder={t('quickMatch.selectPlayer')}
-                      className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {showAIList2 && (
-                      <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2">
-                          <div className="font-medium text-blue-400 px-2 py-1">{t('quickMatch.aiOpponents')}</div>
-                          {getAIOpponents().map((ai) => (
-                            <div
-                              key={`ai-${ai}`}
-                              className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300"
-                              onClick={() => selectPlayer(2, ai)}
-                            >
-                              {ai}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="p-2">
-                          <div className="font-medium text-blue-400 px-2 py-1">{t('quickMatch.humanPlayers')}</div>
-                          {players
-                            .filter(player => player.user_id !== player1)
-                            .map((player) => (
-                              <div
-                                key={player.id}
-                                className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300"
-                                onClick={() => selectPlayer(2, player.user_id)}
-                              >
-                                {player.user_id}
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    {/* Player 1 Selection */}
+                    <div className="mb-6">
+                      <label className="block text-gray-300 text-sm font-medium mb-2">
+                        {t('quickMatch.player1')}
+                      </label>
+                      <div className="relative" ref={dropdownRef1}>
+                        <input
+                          type="text"
+                          value={player1}
+                          onChange={(e) => setPlayer1(e.target.value)}
+                          placeholder={t('quickMatch.selectPlayer')}
+                          spellCheck="false"
+                          className="w-full pr-10 p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          onClick={() => setShowAIList1(false)}
+                        />
+                        <button 
+                          onClick={() => toggleAIList(1)}
+                          className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-white"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                        {showAIList1 && (
+                          <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                            <div className="flex h-40  mb-1">
+                              {/* AI Opponents Column */}
+                              <div className="w-1/2 border-r border-gray-700 overflow-y-auto">
+                                <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
+                                  <div className="font-medium text-blue-400 px-2 py-1 text-sm">{t('quickMatch.aiOpponents')}</div>
+                                </div>
+                                <div className="p-2">
+                                  {getAIOpponents().map((ai) => (
+                                    <div
+                                      key={`ai-${ai}`}
+                                      className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
+                                      onClick={() => selectPlayer(1, ai)}
+                                    >
+                                      {ai}
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                            ))}
-                        </div>
+                              
+                              {/* Human Players Column */}
+                              <div className="w-1/2 overflow-y-auto">
+                                <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
+                                  <div className="font-medium text-blue-400 px-2 py-1 text-sm">{t('quickMatch.humanPlayers')}</div>
+                                </div>
+                                <div className="p-2">
+                                  {players.map((player) => (
+                                    <div
+                                      key={player.id}
+                                      className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
+                                      onClick={() => selectPlayer(1, player.user_id)}
+                                    >
+                                      {player.user_id}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
+                    
+                    {/* Player 2 Selection */}
+                    <div className="mb-4">
+                      <label className="block text-gray-300 text-sm font-medium mb-2">
+                        {t('quickMatch.player2')}
+                      </label>
+                      <div className="relative" ref={dropdownRef2}>
+                        <input
+                          type="text"
+                          value={player2}
+                          onChange={(e) => setPlayer2(e.target.value)}
+                          placeholder={t('quickMatch.selectPlayer')}
+                          spellCheck="false"
+                          className="w-full pr-10 p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          onClick={() => setShowAIList2(false)}
+                        />
+                        <button 
+                          onClick={() => toggleAIList(2)}
+                          className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-white"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                        {showAIList2 && (
+                          <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                            <div className="flex h-32">
+                              {/* AI Opponents Column */}
+                              <div className="w-1/2 border-r border-gray-700 overflow-y-auto">
+                                <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
+                                  <div className="font-medium text-blue-400 px-2 py-1 text-sm">{t('quickMatch.aiOpponents')}</div>
+                                </div>
+                                <div className="p-2">
+                                  {getAIOpponents().map((ai) => (
+                                    <div
+                                      key={`ai-${ai}`}
+                                      className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
+                                      onClick={() => selectPlayer(2, ai)}
+                                    >
+                                      {ai}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              {/* Human Players Column */}
+                              <div className="w-1/2 overflow-y-auto">
+                                <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
+                                  <div className="font-medium text-blue-400 px-2 py-1 text-sm">{t('quickMatch.humanPlayers')}</div>
+                                </div>
+                                <div className="p-2">
+                                  {players
+                                    .filter(player => player.user_id !== player1)
+                                    .map((player) => (
+                                      <div
+                                        key={player.id}
+                                        className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
+                                        onClick={() => selectPlayer(2, player.user_id)}
+                                      >
+                                        {player.user_id}
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Info text */}
+                      <div className="mt-3 p-3 pt-1">
+                        <p className="text-gray-500 text-sm">
+                          {t('quickMatch.playerHelp')}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                
-                {/* Action buttons */}
-                <div className="mt-6 space-y-4">
-                  <button
-                    onClick={createGame}
-                    disabled={loading || !player1 || !player2}
-                    className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center ${
-                      (loading || !player1 || !player2) ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    <Gamepad2 className="mr-2 h-5 w-5" />
-                    {t('home.playNow')}
-                  </button>
+                  
+                  {/* Action buttons */}
+                  <div className="mt-auto pt-0">
+                    <button
+                      onClick={createGame}
+                      disabled={loading || !player1 || !player2}
+                      className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center ${
+                        (loading || !player1 || !player2) ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <Gamepad2 className="mr-2 h-5 w-5" />
+                      {t('home.playNow')}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -405,7 +501,7 @@ const QuickMatchPage: React.FC = () => {
                               : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                           }`}
                         >
-                          {speed.charAt(0).toUpperCase() + speed.slice(1)}
+                          {getOptionDisplayText(speed)}
                         </button>
                       ))}
                     </div>
@@ -428,7 +524,7 @@ const QuickMatchPage: React.FC = () => {
                               : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                           }`}
                         >
-                          {size.charAt(0).toUpperCase() + size.slice(1)}
+                          {getOptionDisplayText(size)}
                         </button>
                       ))}
                     </div>
@@ -453,10 +549,10 @@ const QuickMatchPage: React.FC = () => {
                             setWinningScore(val);
                           }
                         }}
-                        className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-9 p-2 pl-3 pr-20 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <span className="text-gray-400">{t('quickMatch.points')}</span>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-8 pointer-events-none">
+                        <span className="text-gray-400 text-sm">{t('quickMatch.points')}</span>
                       </div>
                     </div>
                   </div>

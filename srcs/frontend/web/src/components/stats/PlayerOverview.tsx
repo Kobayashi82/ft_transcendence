@@ -32,23 +32,23 @@ const PlayerOverview: React.FC<PlayerOverviewProps> = ({ playerStats }) => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6">
 		  <div className="bg-gray-700/40 rounded-lg p-4 text-center">
-            <p className="text-sm text-gray-400">{t('rankings.gamesPlayed')}</p>
+            <p className="text-sm text-gray-400">{t('stats.gamesPlayed')}</p>
             <p className="text-2xl font-bold text-white">{playerStats.total_games ?? 0}</p>
           </div>
           <div className="bg-gray-700/40 rounded-lg p-4 text-center">
-            <p className="text-sm text-gray-400">{t('rankings.gamesWin')}</p>
+            <p className="text-sm text-gray-400">{t('stats.gamesWin')}</p>
             <p className="text-2xl font-bold text-white">{playerStats.wins ?? 0}</p>
           </div>
           <div className="bg-gray-700/40 rounded-lg p-4 text-center">
-            <p className="text-sm text-gray-400">{t('rankings.winRate')}</p>
+            <p className="text-sm text-gray-400">{t('stats.winRate')}</p>
             <p className="text-2xl font-bold text-white">{playerStats.win_rate.toFixed(1) ?? 0}%</p>
           </div>
           <div className="bg-gray-700/40 rounded-lg p-4 text-center">
-            <p className="text-sm text-gray-400">{t('rankings.tournaments')}</p>
+            <p className="text-sm text-gray-400">{t('stats.tournaments')}</p>
             <p className="text-2xl font-bold text-white">{playerStats.total_tournaments ?? 0}</p>
           </div>
           <div className="bg-gray-700/40 rounded-lg p-4 text-center">
-            <p className="text-sm text-gray-400">{t('rankings.tournamentWins')}</p>
+            <p className="text-sm text-gray-400">{t('stats.tournamentWins')}</p>
             <p className="text-2xl font-bold text-white">{playerStats.tournament_wins ?? 0}</p>
           </div>
         </div>

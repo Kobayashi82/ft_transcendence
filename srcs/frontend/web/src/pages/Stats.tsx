@@ -239,9 +239,9 @@ const RankingsPage: React.FC = () => {
       
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error(t('rankings.userNotFound'));
+          throw new Error(t('stats.userNotFound'));
         }
-        throw new Error(`${t('rankings.errorFetchingStats')}: ${response.status}`);
+        throw new Error(`${t('stats.errorFetchingStats')}: ${response.status}`);
       }
       
       const data: PlayerStats = await response.json();
@@ -255,7 +255,7 @@ const RankingsPage: React.FC = () => {
       
     } catch (err) {
       console.error("Failed to fetch user stats:", err);
-      setError(err instanceof Error ? err.message : t('rankings.unknownError'));
+      setError(err instanceof Error ? err.message : t('stats.unknownError'));
       setPlayerStats(null);
     } finally {
       setIsLoading(false);
@@ -315,10 +315,10 @@ const RankingsPage: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
 		<h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 leading-[1.3] pb-4">
-            {t('rankings.title')}
+            {t('stats.title')}
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            {t('rankings.subtitle')}
+            {t('stats.subtitle')}
           </p>
         </div>
 
@@ -334,7 +334,7 @@ const RankingsPage: React.FC = () => {
                   type="text"
                   value={userId}
                   onChange={handleInputChange}
-                  placeholder={t('rankings.searchPlaceholder')}
+                  placeholder={t('stats.searchPlaceholder')}
                   spellCheck="false"
                   className="block w-full pl-10 pr-12 py-3 border border-gray-600 rounded-lg bg-gray-700/50 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -357,7 +357,7 @@ const RankingsPage: React.FC = () => {
                 {isLoading ? (
                   <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
                 ) : (
-                  t('rankings.search')
+                  t('stats.search')
                 )}
               </button>
             </div>
@@ -371,7 +371,7 @@ const RankingsPage: React.FC = () => {
                 value=""
               >
                 <option value="" disabled>
-                  {t('rankings.selectUser')}
+                  {t('stats.selectUser')}
                 </option>
                 {usersList.map(user => (
                   <option key={user.id || user.user_id} value={user.user_id}>
@@ -416,8 +416,8 @@ const RankingsPage: React.FC = () => {
         {!isLoading && !playerStats && !error && (
           <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl p-8 text-center">
             <Info className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-white mb-2">{t('rankings.searchForPlayer')}</h3>
-            <p className="text-gray-400 mb-6">{t('rankings.enterUserIdToView')}</p>
+            <h3 className="text-xl font-medium text-white mb-2">{t('stats.searchForPlayer')}</h3>
+            <p className="text-gray-400 mb-6">{t('stats.enterUserIdToView')}</p>
           </div>
         )}
       </div>

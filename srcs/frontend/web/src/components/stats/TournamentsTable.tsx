@@ -67,18 +67,18 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
     const endTime = new Date(end).getTime();
     const durationMs = endTime - startTime;
     const minutes = Math.round(durationMs / (1000 * 60));
-    return `${minutes} ${t('rankings.minutes')}`;
+    return `${minutes} ${t('stats.minutes')}`;
   };
 
   // Get position text
   const getPositionText = (position: number | null) => {
-    if (!position) return t('rankings.unknown');
+    if (!position) return t('stats.unknown');
     
     switch (position) {
-      case 1: return t('rankings.first');
-      case 2: return t('rankings.second');
-      case 3: return t('rankings.third');
-      case 4: return t('rankings.third');
+      case 1: return t('stats.first');
+      case 2: return t('stats.second');
+      case 3: return t('stats.third');
+      case 4: return t('stats.third');
       default: return position.toString();
     }
   };
@@ -86,7 +86,7 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
   // Get winner of tournament
   const getTournamentWinner = (tournament: TournamentDetails) => {
     const winner = tournament.players.find(player => player.final_position === 1);
-    return winner ? winner.user_id : t('rankings.unknown');
+    return winner ? winner.user_id : t('stats.unknown');
   };
 
   // Format participants list
@@ -100,7 +100,7 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
       <div className="p-6">
         <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
           <Trophy className="mr-2 h-6 w-6 text-amber-400" />
-          {t('rankings.tournaments')}
+          {t('stats.tournaments')}
         </h2>
         
         <div className="overflow-x-auto">
@@ -109,22 +109,22 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
               <tr className="text-left border-b border-gray-700">
                 <th className="pb-3 px-4 text-gray-400 font-medium" style={{ width: '40px' }}></th>
                 <th className="pb-3 px-4 text-gray-400 font-medium">
-                  {t('rankings.tournamentName')}
+                  {t('stats.tournamentName')}
                 </th>
                 <th className="pb-3 px-4 text-gray-400 font-medium">
-                  {t('rankings.date')}
+                  {t('stats.date')}
                 </th>
                 <th className="pb-3 px-4 text-gray-400 font-medium">
-                  {t('rankings.participants')}
+                  {t('stats.participants')}
                 </th>
                 <th className="pb-3 px-4 text-gray-400 font-medium">
-                  {t('rankings.winner')}
+                  {t('stats.winner')}
                 </th>
                 <th className="pb-3 px-4 text-gray-400 font-medium">
-                  {t('rankings.playerPosition')}
+                  {t('stats.playerPosition')}
                 </th>
                 <th className="pb-3 px-4 text-gray-400 font-medium">
-                  {t('rankings.settings')}
+                  {t('stats.settings')}
                 </th>
               </tr>
             </thead>
@@ -159,8 +159,8 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                     </td>
                     <td className="py-4 px-4 text-gray-300">
                       <div className="text-sm">
-                        <p>{t('rankings.format')}: {tournament.settings.format || "-"}</p>
-                        <p>{t('rankings.pointsToWin')}: {tournament.settings.pointsToWin || "-"}</p>
+                        <p>{t('stats.format')}: {tournament.settings.format || "-"}</p>
+                        <p>{t('stats.pointsToWin')}: {tournament.settings.pointsToWin || "-"}</p>
                       </div>
                     </td>
                   </tr>
@@ -171,23 +171,23 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                       <td colSpan={7} className="py-0 px-0">
                         <div className="bg-gray-700/30 p-4">
                           <h4 className="text-white font-medium mb-3 pl-8">
-                            {t('rankings.tournamentGames')}
+                            {t('stats.tournamentGames')}
                           </h4>
                           <div className="overflow-x-auto pl-8 pr-4">
                             <table className="w-full border-collapse">
                               <thead>
                                 <tr className="text-left border-b border-gray-600">
                                   <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
-                                    {t('rankings.round')}
+                                    {t('stats.round')}
                                   </th>
                                   <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
-                                    {t('rankings.players')}
+                                    {t('stats.players')}
                                   </th>
                                   <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
-                                    {t('rankings.score')}
+                                    {t('stats.score')}
                                   </th>
                                   <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
-                                    {t('rankings.duration')}
+                                    {t('stats.duration')}
                                   </th>
                                 </tr>
                               </thead>
@@ -195,7 +195,7 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                                 {tournament.games.map((game, index) => (
                                   <tr key={game.id} className="hover:bg-gray-600/30">
                                     <td className="py-3 px-4 text-gray-300">
-                                      {t('rankings.round')} {index + 1}
+                                      {t('stats.round')} {index + 1}
                                     </td>
                                     <td className="py-3 px-4 text-gray-300">
                                       {game.players.map(p => p.user_id).join(" 🆚 ")}
@@ -220,7 +220,7 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                                 {tournament.games.length === 0 && (
                                   <tr>
                                     <td colSpan={4} className="py-4 text-center text-gray-400">
-                                      {t('rankings.noGamesInTournament')}
+                                      {t('stats.noGamesInTournament')}
                                     </td>
                                   </tr>
                                 )}
@@ -237,7 +237,7 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
               {tournaments.length === 0 && (
                 <tr>
                   <td colSpan={7} className="py-6 text-center text-gray-400">
-                    {t('rankings.noTournamentsFound')}
+                    {t('stats.noTournamentsFound')}
                   </td>
                 </tr>
               )}

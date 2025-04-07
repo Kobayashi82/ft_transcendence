@@ -7,6 +7,7 @@ interface LanguageContextType {
   setLanguage: (language: LanguageCode) => void;
   t: (key: string) => string;
   isUserSelected: boolean;
+  isLoaded: boolean; // Añadimos un estado para saber si las traducciones están cargadas
 }
 
 const LanguageContext = createContext<LanguageContextType>({
@@ -14,6 +15,7 @@ const LanguageContext = createContext<LanguageContextType>({
   setLanguage: () => {},
   t: () => '',
   isUserSelected: false,
+  isLoaded: false,
 });
 
 interface LanguageProviderProps {
@@ -50,13 +52,20 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   const [language, setLanguageState] = useState<LanguageCode>(initialLanguageData.code);
   const [isUserSelected, setIsUserSelected] = useState<boolean>(initialLanguageData.isUserSelected);
   const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   const setLanguage = (newLanguage: LanguageCode) => {
-    setLanguageState(newLanguage);
-    setIsUserSelected(true);
-    localStorage.setItem('language', newLanguage);
-    localStorage.setItem('hasUserSelectedLanguage', 'true');
-    document.documentElement.lang = newLanguage;
+    // Marcamos las traducciones como no cargadas
+    setIsLoaded(false);
+    
+    // Pequeño timeout para asegurar que los componentes reaccionan al cambio de isLoaded
+    setTimeout(() => {
+      setLanguageState(newLanguage);
+      setIsUserSelected(true);
+      localStorage.setItem('language', newLanguage);
+      localStorage.setItem('hasUserSelectedLanguage', 'true');
+      document.documentElement.lang = newLanguage;
+    }, 10);
   };
 
   useEffect(() => {
@@ -64,12 +73,21 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       try {
         const translationsModule = await import(`../translations/${language}.ts`);
         setTranslations(translationsModule.default);
+        
+        // Pequeño delay para asegurar que todo está listo
+        setTimeout(() => {
+          setIsLoaded(true);
+        }, 50);
       } catch (error) {
         console.error(`Failed to load translations for ${language}:`, error);
 
         if (language !== 'en') {
           const fallbackModule = await import('../translations/en.ts');
           setTranslations(fallbackModule.default);
+          
+          setTimeout(() => {
+            setIsLoaded(true);
+          }, 50);
         }
       }
     };
@@ -78,10 +96,17 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   }, [language]);
 
   useEffect(() => { document.documentElement.lang = language; }, [language]);
-  const t = (key: string): string => { return translations[key] || key; };
+  
+  const t = (key: string): string => { 
+    // Mostrar un espacio en blanco mientras se cargan las traducciones
+    if (!isLoaded) {
+      return ' ';
+    }
+    return translations[key] || key; 
+  };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, isUserSelected }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, isUserSelected, isLoaded }}>
       {children}
     </LanguageContext.Provider>
   );

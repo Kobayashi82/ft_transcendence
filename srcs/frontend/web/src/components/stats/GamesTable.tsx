@@ -50,13 +50,13 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
     const endTime = new Date(end).getTime();
     const durationMs = endTime - startTime;
     const minutes = Math.round(durationMs / (1000 * 60));
-    return `${minutes} ${t('rankings.minutes')}`;
+    return `${minutes} ${t('stats.minutes')}`;
   };
 
   // Get opponent for a game
   const getOpponent = (game: GameDetails, playerUserId: string) => {
     const opponent = game.players.find(player => player.user_id !== playerUserId);
-    return opponent ? opponent.user_id : t('rankings.unknown');
+    return opponent ? opponent.user_id : t('stats.unknown');
   };
   
   // Get game result text (win or loss)
@@ -67,11 +67,11 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
     if (!player || !opponent) return '';
     
     if (player.score > opponent.score) {
-      return `${t('rankings.win')}`;
+      return `${t('stats.win')}`;
     } else if (player.score < opponent.score) {
-      return `${t('rankings.loss')}`;
+      return `${t('stats.loss')}`;
     } else {
-      return `${t('rankings.draw')}`;
+      return `${t('stats.draw')}`;
     }
   };
 
@@ -92,7 +92,7 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
       <div className="h-2 bg-gradient-to-r from-purple-600 to-pink-600"></div>
       <div className="p-6">
         <h2 className="text-2xl font-bold text-white mb-4">
-          {t('rankings.recentGames')}
+          {t('stats.recentGames')}
         </h2>
         
         <div className="overflow-x-auto">
@@ -102,22 +102,22 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
                 <th className="pb-3 px-4 text-gray-400 font-medium">
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 mr-2" />
-                    {t('rankings.date')}
+                    {t('stats.date')}
                   </div>
                 </th>
                 <th className="pb-3 px-4 text-gray-400 font-medium">
-                  {t('rankings.duration')}
+                  {t('stats.duration')}
                 </th>
                 <th className="pb-3 px-4 text-gray-400 font-medium">
-                  {t('rankings.opponent')}
+                  {t('stats.opponent')}
                 </th>
                 <th className="pb-3 px-4 text-gray-400 font-medium">
-                  {t('rankings.score')}
+                  {t('stats.score')}
                 </th>
                 <th className="pb-3 px-4 text-gray-400 font-medium">
                   <div className="flex items-center">
                     <Settings className="h-4 w-4 mr-2" />
-                    {t('rankings.settings')}
+                    {t('stats.settings')}
                   </div>
                 </th>
               </tr>
@@ -149,8 +149,8 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
                           </span>
                           <span className="ml-3 px-2 py-1 text-xs rounded-full bg-opacity-20 font-medium whitespace-nowrap"
                             style={{
-                              backgroundColor: getGameResult(details, userId).includes(t('rankings.win')) ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                              color: getGameResult(details, userId).includes(t('rankings.win')) ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)'
+                              backgroundColor: getGameResult(details, userId).includes(t('stats.win')) ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                              color: getGameResult(details, userId).includes(t('stats.win')) ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)'
                             }}
                           >
                             {getGameResult(details, userId)}
@@ -161,10 +161,10 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
                     <td className="py-4 px-4 text-gray-300">
                       {details && details.settings ? (
                         <div className="text-sm">
-                          <p>{t('rankings.ballSpeed')}: {details.settings.ballSpeed || "-"}</p>
-                          <p>{t('rankings.paddleSize')}: {details.settings.paddleSize || "-"}</p>
-                          <p>{t('rankings.speedIncrement')}: {details.settings.speedIncrement || "-"}</p>
-                          <p>{t('rankings.pointsToWin')}: {details.settings.pointsToWin || "-"}</p>
+                          <p>{t('stats.ballSpeed')}: {details.settings.ballSpeed || "-"}</p>
+                          <p>{t('stats.paddleSize')}: {details.settings.paddleSize || "-"}</p>
+                          <p>{t('stats.speedIncrement')}: {details.settings.speedIncrement || "-"}</p>
+                          <p>{t('stats.pointsToWin')}: {details.settings.pointsToWin || "-"}</p>
                         </div>
                       ) : "-"}
                     </td>
@@ -175,7 +175,7 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
               {games.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-6 text-center text-gray-400">
-                    {t('rankings.noGamesFound')}
+                    {t('stats.noGamesFound')}
                   </td>
                 </tr>
               )}
