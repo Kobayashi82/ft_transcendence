@@ -39,8 +39,7 @@ const translations = {
   'quickMatch.title': 'Quick Match',
   'quickMatch.subtitle': 'Challenge another player in a 1 versus 1 match',
   'quickMatch.settings': 'Game Settings',
-  'quickMatch.player1': 'Player 1',
-  'quickMatch.player2': 'Player 2',
+  'quickMatch.player': 'Player',
   'quickMatch.ballSpeed': 'Ball Speed',
   'quickMatch.slow': 'Slow',
   'quickMatch.medium': 'Medium',
@@ -84,6 +83,12 @@ const translations = {
   "quickMatch.returnToMenu": "Return to Menu",
   "quickMatch.waitingToStart": "Waiting to Start",
   "quickMatch.pressToResume": "Press to Resume",
+
+  // Tournament
+  'tournament.title': 'Torneo',
+  'tournament.subtitle': 'Participa en un torneo',
+  'tournament.settings': 'Configuración del Torneo',
+  'tournament.gameHelp': 'Configura los ajustes del juego arriba. La velocidad de la bola afecta cuán rápido se mueve, el tamaño de la paleta cambia la altura de tu paleta, y puedes establecer cuántos puntos se necesitan para ganar. Habilitar el incremento de velocidad hará que la bola se acelere después de cada golpe, haciendo el juego cada vez más desafiante.',
 
   // Stats
   'stats.title': 'Player Rankings',

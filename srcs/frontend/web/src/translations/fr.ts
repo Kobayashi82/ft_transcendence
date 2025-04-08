@@ -35,12 +35,17 @@ const translations = {
   'gameMode.status.title': 'État du serveur',
   'gameMode.status.description': 'Consultez l\'état du serveur.',
 
+  // Tournament
+  'tournament.title': 'Torneo',
+  'tournament.subtitle': 'Participa en un torneo',
+  'tournament.settings': 'Configuración del Torneo',
+  'tournament.gameHelp': 'Configura los ajustes del juego arriba. La velocidad de la bola afecta cuán rápido se mueve, el tamaño de la paleta cambia la altura de tu paleta, y puedes establecer cuántos puntos se necesitan para ganar. Habilitar el incremento de velocidad hará que la bola se acelere después de cada golpe, haciendo el juego cada vez más desafiante.',  
+
   // Quick Match
   'quickMatch.title': 'Partie rapide',
   'quickMatch.subtitle': 'Défiez un autre joueur en un 1 contre 1',
   'quickMatch.settings': 'Paramètres du Jeu',
-  'quickMatch.player1': 'Joueur 1',
-  'quickMatch.player2': 'Joueur 2',
+  'quickMatch.player': 'Joueur',
   'quickMatch.ballSpeed': 'Vitesse de la Balle',
   'quickMatch.slow': 'Lente',
   'quickMatch.medium': 'Moyenne',

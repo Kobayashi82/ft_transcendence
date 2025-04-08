@@ -281,7 +281,7 @@ const TournamentPage: React.FC = () => {
                 <div className="p-6 flex-1 flex flex-col">
                   <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
                     <Users className="mr-2 h-6 w-6 text-purple-400" />
-                    {t('tournament.players')}
+                    {t('quickMatch.humanPlayers')}
                   </h2>
                   
                   <div className="flex-1 flex flex-col justify-between">
@@ -290,7 +290,7 @@ const TournamentPage: React.FC = () => {
                       {[0, 1, 2, 3].map((index) => (
                         <div key={index} className="mb-4">
                           <label className="block text-gray-300 text-sm font-medium mb-2">
-                            {t('tournament.player')} {index + 1}
+                            {t('quickMatch.player')} {index + 1}
                           </label>
                           <div className="relative" ref={(el) => (dropdownRefs.current[index] = el)}>
                             <input
@@ -301,7 +301,7 @@ const TournamentPage: React.FC = () => {
                                 newSelectedPlayers[index] = e.target.value;
                                 setSelectedPlayers(newSelectedPlayers);
                               }}
-                              placeholder={t('tournament.selectPlayer')}
+                              placeholder={t('quickMatch.selectPlayer')}
                               spellCheck="false"
                               className="w-full pr-10 p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                               onClick={() => setShowAIList(null)}
@@ -362,7 +362,7 @@ const TournamentPage: React.FC = () => {
                       {/* Info text */}
                       <div className="mt-3 p-3 pt-1">
                         <p className="text-gray-500 text-sm">
-                          {t('tournament.playerHelp')}
+                          {t('quickMatch.playerHelp')}
                         </p>
                       </div>
                     </div>
@@ -377,7 +377,7 @@ const TournamentPage: React.FC = () => {
                         }`}
                       >
                         <Trophy className="mr-2 h-5 w-5" />
-                        {t('tournament.startTournament')}
+                        {t('home.playNow')}
                       </button>
                     </div>
                   </div>
@@ -506,7 +506,7 @@ const TournamentPage: React.FC = () => {
                     <div className="flex items-start">
                       <Info className="h-5 w-5 text-purple-400 mt-0.5 mr-2 flex-shrink-0" />
                       <p className="text-gray-300 text-sm">
-                        {t('tournament.tournamentHelp')}
+                        {t('tournament.gameHelp')}
                       </p>
                     </div>
                   </div>
