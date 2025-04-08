@@ -5,50 +5,7 @@ const fp = require('fastify-plugin');
 async function statsRoutes(fastify, options) {
   const { db } = fastify;
 
-  // Get global stats
-  fastify.get('/stats', async (request, reply) => {
-    try {
-      const totalGames = db.prepare('SELECT COUNT(*) as count FROM games').get().count;
-      const totalTournaments = db.prepare('SELECT COUNT(*) as count FROM tournaments').get().count;
-      const totalPlayers = db.prepare('SELECT COUNT(*) as count FROM players').get().count;
-      
-      // Get average players per game
-      const avgPlayersPerGame = db.prepare(`
-        SELECT AVG(player_count) as avg
-        FROM (
-          SELECT game_id, COUNT(*) as player_count
-          FROM game_players
-          GROUP BY game_id
-        ) as game_counts
-      `).get().avg || 0;
-      
-      // Get average score
-      const avgScore = db.prepare('SELECT AVG(score) as avg FROM game_players').get().avg || 0;
-      
-      // Get average games per player
-      const avgGamesPerPlayer = totalPlayers > 0 ? 
-        (db.prepare('SELECT COUNT(*) as count FROM game_players').get().count / totalPlayers) : 0;
-      
-      // Get average tournaments per player
-      const avgTournamentsPerPlayer = totalPlayers > 0 ? 
-        (db.prepare('SELECT COUNT(*) as count FROM tournament_players').get().count / totalPlayers) : 0;
-      
-      return {
-        totalGames,
-        totalTournaments,
-        totalPlayers,
-        avgPlayersPerGame,
-        avgScore,
-        avgGamesPerPlayer,
-        avgTournamentsPerPlayer
-      };
-    } catch (err) {
-      request.log.error(err);
-      return reply.code(500).send({ error: 'Failed to get stats' });
-    }
-  });
-
-  // Get leaderboard by most wins
+  // MOST WINS
   fastify.get('/stats/leaderboard/wins', {
     schema: {
       querystring: {
@@ -94,7 +51,7 @@ async function statsRoutes(fastify, options) {
     }
   });
 
-  // Get leaderboard by best win rate (minimum 5 games)
+  // WIN RATE
   fastify.get('/stats/leaderboard/winrate', {
     schema: {
       querystring: {
@@ -143,7 +100,7 @@ async function statsRoutes(fastify, options) {
     }
   });
 
-  // Get leaderboard by tournament wins
+  // TOURNAMENT WINS
   fastify.get('/stats/leaderboard/tournaments', {
     schema: {
       querystring: {
@@ -178,7 +135,7 @@ async function statsRoutes(fastify, options) {
     }
   });
 
-  // Get leaderboard by total games played
+  // TOTAL GAMES
   fastify.get('/stats/leaderboard/totalgames', {
     schema: {
       querystring: {
@@ -215,7 +172,7 @@ async function statsRoutes(fastify, options) {
     }
   });
 
-  // Get leaderboard by fastest wins
+  // FASTEST WINS
   fastify.get('/stats/leaderboard/fastest', {
     schema: {
       querystring: {
@@ -270,7 +227,7 @@ async function statsRoutes(fastify, options) {
     }
   });
 
-  // Get user statistics by user ID
+  // USER STATS
   fastify.get('/stats/user/:userId', {
     schema: {
       params: {
@@ -357,7 +314,4 @@ async function statsRoutes(fastify, options) {
   });
 }
 
-module.exports = fp(statsRoutes, {
-  name: 'stats-routes',
-  dependencies: ['db']
-});
+module.exports = fp(statsRoutes, { name: 'stats-routes', dependencies: ['db'] });

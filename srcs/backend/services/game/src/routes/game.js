@@ -23,7 +23,12 @@ async function routes(fastify, options) {
 
   // CREATE
   fastify.post('/create', { schema: schemas.createGame }, async (request, reply) => {
-    const { player1Name, player2Name, isPlayer1AI, isPlayer2AI } = request.body;
+    const { players, settings } = request.body;
+    const [player1Name, player2Name] = players;
+    
+    // Determine AI status
+    const isPlayer1AI = player1Name.startsWith('AI_');
+    const isPlayer2AI = player2Name.startsWith('AI_');
 
     // Validate players
     let message = null;
@@ -42,10 +47,10 @@ async function routes(fastify, options) {
 
     // Set options
     const options = {
-      ballSpeed: request.body.ballSpeed || fastify.config.game.defaults.ballSpeed,
-      winningScore: request.body.winningScore || fastify.config.game.defaults.winningScore,
-      accelerationEnabled: request.body.accelerationEnabled || fastify.config.game.defaults.accelerationEnabled,
-      paddleSize: request.body.paddleSize || fastify.config.game.defaults.paddleSize
+      ballSpeed: settings.ballSpeed || fastify.config.game.defaults.ballSpeed,
+      winningScore: settings.winningScore || fastify.config.game.defaults.winningScore,
+      accelerationEnabled: settings.accelerationEnabled || fastify.config.game.defaults.accelerationEnabled,
+      paddleSize: settings.paddleSize || fastify.config.game.defaults.paddleSize
     }
 
     // Create game

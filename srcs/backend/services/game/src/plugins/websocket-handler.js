@@ -2,6 +2,7 @@
 
 const fp = require('fastify-plugin');
 const gameManager = require('./game-manager');
+const tournamentManager = require('./tournament-manager');
 const { v4: uuidv4 } = require('uuid');
 
 function websocketHandler(fastify, options, done) {
@@ -76,7 +77,6 @@ function websocketHandler(fastify, options, done) {
         sendError(ws, 'Invalid message format');
       }
     });
-
 
     // START
     function handleStart(data, clientId, ws) {
@@ -165,17 +165,36 @@ function websocketHandler(fastify, options, done) {
         return sendError(ws, 'Missing gameId in state message');
       }
       
-      // Register this client with the game manager so it receives updates
-      gameManager.registerClient(data.gameId, clientId, ws, data.playerName);
+      let gameId = data.gameId;
       
-      const gameState = gameManager.getGameState(data.gameId);     
+      // First, check if this is a tournament match ID
+      const matchDetails = tournamentManager.matches.get(gameId);
+      
+      if (matchDetails && matchDetails.gameId) {
+        // If it's a tournament match, use the actual game ID
+        gameId = matchDetails.gameId;
+      }
+      
+      // Validate game exists
+      const gameState = gameManager.getGameState(gameId);
+      
       if (gameState) {
+        // Register this client with the game manager so it receives updates
+        gameManager.registerClient(gameId, clientId, ws, data.playerName);
+        
         ws.send(JSON.stringify({
           type: 'state',
-          gameId: data.gameId,
+          gameId: data.gameId, // Send back original match/game ID
           data: gameState
         }));
-      } else sendError(ws, `Game not found: ${data.gameId}`);
+      } else {
+        // If game is not found, it might be a tournament match not yet created
+        if (matchDetails) {
+          sendError(ws, `Tournament match not yet started: ${data.gameId}`);
+        } else {
+          sendError(ws, `Game not found: ${data.gameId}`);
+        }
+      }
     }
 
   });

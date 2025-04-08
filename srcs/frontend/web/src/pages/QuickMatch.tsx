@@ -36,14 +36,11 @@ const QuickMatchPage: React.FC = () => {
   
   // State for player selection
   const [players, setPlayers] = useState<Player[]>([]);
-  const [player1, setPlayer1] = useState<string>("");
-  const [player2, setPlayer2] = useState<string>("");
-  const [showAIList1, setShowAIList1] = useState<boolean>(false);
-  const [showAIList2, setShowAIList2] = useState<boolean>(false);
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>(["", ""]);
+  const [showAIList, setShowAIList] = useState<number | null>(null);
 
   // Refs for dropdown areas
-  const dropdownRef1 = React.useRef<HTMLDivElement>(null);
-  const dropdownRef2 = React.useRef<HTMLDivElement>(null);
+  const dropdownRefs = React.useRef<(HTMLDivElement | null)[]>([null, null]);
 
   // State for game settings
   const [ballSpeed, setBallSpeed] = useState<string>("medium");
@@ -116,15 +113,9 @@ const QuickMatchPage: React.FC = () => {
     fetchPlayers();
   }, []);
 
-  // Check if a player is an AI
-  const isPlayerAI = (playerName: string): boolean => {
-    const aiOpponents = getAIOpponents().map(name => name.toLowerCase());
-    return aiOpponents.includes(playerName.toLowerCase());
-  };
-
   // Create a new game
   const createGame = async () => {
-    if (!player1 || !player2) {
+    if (!selectedPlayers[0] || !selectedPlayers[1]) {
       setError(t('quickMatch.error.selectBothPlayers'));
       return;
     }
@@ -133,20 +124,15 @@ const QuickMatchPage: React.FC = () => {
       setLoading(true);
       setError(null);
       setSuccess(null);
-      
-      // Check if players are AI
-      const isPlayer1AI = isPlayerAI(player1);
-      const isPlayer2AI = isPlayerAI(player2);
-      
+    
       const gameData = {
-        player1Name: player1,
-        player2Name: player2,
-        isPlayer1AI: isPlayer1AI,
-        isPlayer2AI: isPlayer2AI,
-        ballSpeed,
-        paddleSize,
-        winningScore: Number(winningScore),
-        accelerationEnabled
+        players: selectedPlayers,
+        settings: {
+          ballSpeed,
+          paddleSize,
+          winningScore: Number(winningScore),
+          accelerationEnabled
+        }
       };
       
       console.log("Creating game with data:", gameData);
@@ -167,11 +153,7 @@ const QuickMatchPage: React.FC = () => {
       const data = await response.json();
       console.log("Game created:", data);
       
-      // Store the game ID and show success message
       setGameId(data.gameId);
-      //setSuccess(`Game created successfully with ID: ${data.gameId}`);
-      
-      // Open the game modal
       setIsGameModalOpen(true);
       
     } catch (err) {
@@ -186,32 +168,25 @@ const QuickMatchPage: React.FC = () => {
   const handleCloseGame = () => {
     setIsGameModalOpen(false);
     setGameId(null);
-    setPlayer1("");
-    setPlayer2("");
   };
 
   // Toggle AI list display
-  const toggleAIList = (playerNum: number) => {
-    if (playerNum === 1) {
-      setShowAIList1(!showAIList1);
-      setShowAIList2(false);
+  const toggleAIList = (playerIndex: number) => {
+    if (showAIList === playerIndex) {
+      setShowAIList(null);
     } else {
-      setShowAIList2(!showAIList2);
-      setShowAIList1(false);
+      setShowAIList(playerIndex);
     }
   };
   
   // Click outside handler for dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // For dropdown 1
-      if (dropdownRef1.current && !dropdownRef1.current.contains(event.target as Node)) {
-        setShowAIList1(false);
-      }
-      
-      // For dropdown 2
-      if (dropdownRef2.current && !dropdownRef2.current.contains(event.target as Node)) {
-        setShowAIList2(false);
+      if (showAIList !== null) {
+        const ref = dropdownRefs.current[showAIList];
+        if (ref && !ref.contains(event.target as Node)) {
+          setShowAIList(null);
+        }
       }
     };
     
@@ -222,20 +197,14 @@ const QuickMatchPage: React.FC = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [showAIList]);
 
   // Select a player
-  const selectPlayer = (playerNum: number, userId: string) => {
-    // The userId is already the name we want to use
-    const playerName = userId;
-    
-    if (playerNum === 1) {
-      setPlayer1(playerName);
-      setShowAIList1(false);
-    } else {
-      setPlayer2(playerName);
-      setShowAIList2(false);
-    }
+  const selectPlayer = (playerIndex: number, userId: string) => {
+    const newSelectedPlayers = [...selectedPlayers];
+    newSelectedPlayers[playerIndex] = userId;
+    setSelectedPlayers(newSelectedPlayers);
+    setShowAIList(null);
   };
 
   // Get AI opponents from options
@@ -315,143 +284,84 @@ const QuickMatchPage: React.FC = () => {
                 
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
-                    {/* Player 1 Selection */}
-                    <div className="mb-6">
-                      <label className="block text-gray-300 text-sm font-medium mb-2">
-                        {t('quickMatch.player1')}
-                      </label>
-                      <div className="relative" ref={dropdownRef1}>
-                        <input
-                          type="text"
-                          value={player1}
-                          onChange={(e) => setPlayer1(e.target.value)}
-                          placeholder={t('quickMatch.selectPlayer')}
-                          spellCheck="false"
-                          className="w-full pr-10 p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                          onClick={() => setShowAIList1(false)}
-                        />
-                        <button 
-                          onClick={() => toggleAIList(1)}
-                          className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-white"
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </button>
-                        {showAIList1 && (
-                          <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                            <div className="flex h-40  mb-1">
-                              {/* AI Opponents Column */}
-                              <div className="w-1/2 border-r border-gray-700 overflow-y-auto">
-                                <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
-                                  <div className="font-medium text-blue-400 px-2 py-1 text-sm">{t('quickMatch.aiOpponents')}</div>
-                                </div>
-                                <div className="p-2">
-                                  {getAIOpponents().map((ai) => (
-                                    <div
-                                      key={`ai-${ai}`}
-                                      className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
-                                      onClick={() => selectPlayer(1, ai)}
-                                    >
-                                      {ai}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                              
-                              {/* Human Players Column */}
-                              <div className="w-1/2 overflow-y-auto">
-                                <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
-                                  <div className="font-medium text-blue-400 px-2 py-1 text-sm">{t('quickMatch.humanPlayers')}</div>
-                                </div>
-                                <div className="p-2">
-                                  {players.map((player) => (
-                                    <div
-                                      key={player.id}
-                                      className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
-                                      onClick={() => selectPlayer(1, player.user_id)}
-                                    >
-                                      {player.user_id}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Player 2 Selection */}
-                    <div className="mb-4">
-                      <label className="block text-gray-300 text-sm font-medium mb-2">
-                        {t('quickMatch.player2')}
-                      </label>
-                      <div className="relative" ref={dropdownRef2}>
-                        <input
-                          type="text"
-                          value={player2}
-                          onChange={(e) => setPlayer2(e.target.value)}
-                          placeholder={t('quickMatch.selectPlayer')}
-                          spellCheck="false"
-                          className="w-full pr-10 p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                          onClick={() => setShowAIList2(false)}
-                        />
-                        <button 
-                          onClick={() => toggleAIList(2)}
-                          className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-white"
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </button>
-                        {showAIList2 && (
-                          <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                            <div className="flex h-32">
-                              {/* AI Opponents Column */}
-                              <div className="w-1/2 border-r border-gray-700 overflow-y-auto">
-                                <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
-                                  <div className="font-medium text-blue-400 px-2 py-1 text-sm">{t('quickMatch.aiOpponents')}</div>
-                                </div>
-                                <div className="p-2">
-                                  {getAIOpponents().map((ai) => (
-                                    <div
-                                      key={`ai-${ai}`}
-                                      className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
-                                      onClick={() => selectPlayer(2, ai)}
-                                    >
-                                      {ai}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                              
-                              {/* Human Players Column */}
-                              <div className="w-1/2 overflow-y-auto">
-                                <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
-                                  <div className="font-medium text-blue-400 px-2 py-1 text-sm">{t('quickMatch.humanPlayers')}</div>
-                                </div>
-                                <div className="p-2">
-                                  {players
-                                    .filter(player => player.user_id !== player1)
-                                    .map((player) => (
+                    {/* Player selections */}
+                    {[0, 1].map((index) => (
+                      <div key={index} className="mb-4">
+                        <label className="block text-gray-300 text-sm font-medium mb-2">
+                          {t('quickMatch.player')} {index + 1}
+                        </label>
+                        <div className="relative" ref={(el) => (dropdownRefs.current[index] = el)}>
+                          <input
+                            type="text"
+                            value={selectedPlayers[index]}
+                            onChange={(e) => {
+                              const newSelectedPlayers = [...selectedPlayers];
+                              newSelectedPlayers[index] = e.target.value;
+                              setSelectedPlayers(newSelectedPlayers);
+                            }}
+                            placeholder={t('quickMatch.selectPlayer')}
+                            spellCheck="false"
+                            className="w-full pr-10 p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            onClick={() => setShowAIList(null)}
+                          />
+                          <button 
+                            onClick={() => toggleAIList(index)}
+                            className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-white"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </button>
+                          {showAIList === index && (
+                            <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                              <div className="flex h-40 mb-1">
+                                {/* AI Opponents Column */}
+                                <div className="w-1/2 border-r border-gray-700 overflow-y-auto">
+                                  <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
+                                    <div className="font-medium text-blue-400 px-2 py-1 text-sm">{t('quickMatch.aiOpponents')}</div>
+                                  </div>
+                                  <div className="p-2">
+                                    {getAIOpponents().map((ai) => (
                                       <div
-                                        key={player.id}
+                                        key={`ai-${ai}`}
                                         className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
-                                        onClick={() => selectPlayer(2, player.user_id)}
+                                        onClick={() => selectPlayer(index, ai)}
                                       >
-                                        {player.user_id}
+                                        {ai}
                                       </div>
                                     ))}
+                                  </div>
+                                </div>
+                                
+                                {/* Human Players Column */}
+                                <div className="w-1/2 overflow-y-auto">
+                                  <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
+                                    <div className="font-medium text-blue-400 px-2 py-1 text-sm">{t('quickMatch.humanPlayers')}</div>
+                                  </div>
+                                  <div className="p-2">
+                                    {players
+                                      .filter(player => index === 0 || player.user_id !== selectedPlayers[0])
+                                      .map((player) => (
+                                        <div
+                                          key={player.id}
+                                          className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
+                                          onClick={() => selectPlayer(index, player.user_id)}
+                                        >
+                                          {player.user_id}
+                                        </div>
+                                      ))}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
-                      
-                      {/* Info text */}
-                      <div className="mt-3 p-3 pt-1">
-                        <p className="text-gray-500 text-sm">
-                          {t('quickMatch.playerHelp')}
-                        </p>
-                      </div>
+                    ))}
+                    
+                    {/* Info text */}
+                    <div className="mt-3 p-3 pt-1">
+                      <p className="text-gray-500 text-sm">
+                        {t('quickMatch.playerHelp')}
+                      </p>
                     </div>
                   </div>
                   
@@ -459,9 +369,9 @@ const QuickMatchPage: React.FC = () => {
                   <div className="mt-auto pt-0">
                     <button
                       onClick={createGame}
-                      disabled={loading || !player1 || !player2}
+                      disabled={loading || !selectedPlayers[0] || !selectedPlayers[1]}
                       className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center ${
-                        (loading || !player1 || !player2) ? 'opacity-50 cursor-not-allowed' : ''
+                        (loading || !selectedPlayers[0] || !selectedPlayers[1]) ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
                       <Gamepad2 className="mr-2 h-5 w-5" />
@@ -608,8 +518,8 @@ const QuickMatchPage: React.FC = () => {
       {isGameModalOpen && gameId && (
         <GameModal
           gameId={gameId}
-          player1={player1}
-          player2={player2}
+          player1={selectedPlayers[0]}
+          player2={selectedPlayers[1]}
           ballSpeed={ballSpeed}
           paddleSize={paddleSize}
           winningScore={winningScore}

@@ -1,7 +1,7 @@
 "use strict";
 
-// Schema definitions 
 const schemas = {
+
   // Schema for options
   gameOptions: {
     response: {
@@ -25,7 +25,7 @@ const schemas = {
               winningScore: { type: 'integer' },
               accelerationEnabled: { type: 'boolean' },
               paddleSize: { type: 'string' },
-              ai_opponents: { type: 'array', items: { type: 'string' } },
+              ai_opponents: { type: 'array', items: { type: 'string' } }
             }
           }
         }
@@ -33,19 +33,29 @@ const schemas = {
     }
   },
 
-  // Schema for new game
+  // Schema for create game
   createGame: {
     body: {
       type: 'object',
       properties: {
-        player1Name: { type: 'string', minLength: 1 },
-        player2Name: { type: 'string', minLength: 1 },
-        ballSpeed: { type: 'string', enum: ['slow', 'medium', 'fast'] },
-        winningScore: { type: 'integer', minimum: 1, maximum: 20 },
-        accelerationEnabled: { type: 'boolean' },
-        paddleSize: { type: 'string', enum: ['short', 'medium', 'long'] }
+        players: { 
+          type: 'array', 
+          items: { type: 'string', minLength: 1 },
+          minItems: 2,
+          maxItems: 2
+        },
+        settings: {
+          type: 'object',
+          properties: {
+            ballSpeed: { type: 'string', enum: ['slow', 'medium', 'fast'] },
+            winningScore: { type: 'integer', minimum: 1, maximum: 20 },
+            accelerationEnabled: { type: 'boolean' },
+            paddleSize: { type: 'string', enum: ['short', 'medium', 'long'] }
+          },
+          required: ['ballSpeed', 'winningScore', 'accelerationEnabled', 'paddleSize']
+        }
       },
-      required: ['player1Name', 'player2Name']
+      required: ['players', 'settings']
     },
     response: {
       200: {
@@ -65,6 +75,85 @@ const schemas = {
         }
       },
       409: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          message: { type: 'string' }
+        }
+      }
+    }
+  },
+
+  // Schema for create a tournament
+  createTournament: {
+    body: {
+      type: 'object',
+      properties: {
+        players: { 
+          type: 'array', 
+          items: { type: 'string' },
+          minItems: 4,
+          maxItems: 4
+        },
+        settings: {
+          type: 'object',
+          properties: {
+            ballSpeed: { type: 'string', enum: ['slow', 'medium', 'fast'] },
+            winningScore: { type: 'integer', minimum: 1, maximum: 20 },
+            accelerationEnabled: { type: 'boolean' },
+            paddleSize: { type: 'string', enum: ['short', 'medium', 'long'] }
+          }
+        }
+      },
+      required: ['players', 'settings']
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          tournamentId: { type: 'string' },
+          firstMatchId: { type: 'string' },
+          semifinal2Id: { type: 'string' },
+          finalId: { type: 'string' },
+          settings: { type: 'object' }
+        }
+      },
+      409: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          message: { type: 'string' }
+        }
+      }
+    }
+  },
+
+  // Schema for cancel a tournament
+  cancelTournament: {
+    params: {
+      type: 'object',
+      properties: {
+        tournamentId: { type: 'string' }
+      },
+      required: ['tournamentId']
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          message: { type: 'string' }
+        }
+      },
+      400: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          message: { type: 'string' }
+        }
+      },
+      404: {
         type: 'object',
         properties: {
           success: { type: 'boolean' },
@@ -203,7 +292,7 @@ const schemas = {
         }
       }
     }
-  },
+  }
 };
 
 module.exports = schemas;

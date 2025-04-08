@@ -302,9 +302,6 @@ class PongGame {
       this.player2Y = Math.min(this.height - this.paddleHeight - this.edgePadding, this.player2Y + paddleSpeed);
     }
     
-    // Store previous ball position to detect boundary crossing
-    const prevBallX = this.ballX;
-    
     // For very large dt values, step the ball movement gradually
     if (dt > 1.5) {
       const steps = Math.ceil(dt / 1.0); // Break into steps of 1.0 or smaller
@@ -359,16 +356,8 @@ class PongGame {
   // WIN CHECK
   checkWinCondition() {
     if (this.player1Score >= this.winningScore || this.player2Score >= this.winningScore) {
-      // In tournament mode, set state to 'next' to await confirmation to proceed
-      if (this.tournamentMode) {
-        this.gameState = 'next';
-      } else {
-        this.gameState = 'finished';
-      }
-      
-      // TODO: Send game results to stats service
-      // This would be implemented in the game manager
-      // gameManager.sendGameResultsToStats(gameId, this.getState());
+      if (this.tournamentMode)  this.gameState = 'next';
+      else                      this.gameState = 'finished';
     }
   }
   

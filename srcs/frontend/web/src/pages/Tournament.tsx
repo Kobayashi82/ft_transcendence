@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Trophy, Users, Settings, Info, Check, ChevronDown } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import GameModal from "../components/game/GameModal";
-import { useSearchParams } from "react-router-dom";
 
 // Default game options type
 interface GameOptions {
@@ -28,7 +27,6 @@ interface Player {
 
 const TournamentPage: React.FC = () => {
   const { t } = useLanguage();
-  const [searchParams] = useSearchParams();
   
   // State for game configuration
   const [options, setOptions] = useState<GameOptions | null>(null);
@@ -92,7 +90,7 @@ const TournamentPage: React.FC = () => {
     
     const fetchPlayers = async () => {
       try {
-        const response = await fetch("/api/game/stats/players");
+        const response = await fetch("/api/stats/players");
         
         if (!response.ok) {
           throw new Error(`Error fetching players: ${response.status}`);
@@ -115,15 +113,8 @@ const TournamentPage: React.FC = () => {
     fetchPlayers();
   }, []);
 
-  // Check if a player is an AI
-  const isPlayerAI = (playerName: string): boolean => {
-    const aiOpponents = getAIOpponents().map(name => name.toLowerCase());
-    return aiOpponents.includes(playerName.toLowerCase());
-  };
-
   // Create a tournament
   const createTournament = async () => {
-    // Check if we have exactly 4 players
     if (selectedPlayers.filter(p => p !== "").length !== 4) {
       setError(t('tournament.error.selectExactlyFourPlayers'));
       return;
@@ -134,8 +125,6 @@ const TournamentPage: React.FC = () => {
       setError(null);
       setSuccess(null);
       
-      // The backend will create the entire tournament and its matches
-      // We only need to send the 4 players and the game configuration
       const tournamentData = {
         players: selectedPlayers,
         settings: {
@@ -155,23 +144,15 @@ const TournamentPage: React.FC = () => {
         },
         body: JSON.stringify(tournamentData),
       });
-      
-      // Parse the response
-      const data = await response.json();
-      
+                  
       if (!response.ok) {
-        // Handle specific conflict error with player conflicts
-        if (response.status === 409) {
-          throw new Error(data.message || "Some players are already in another game");
-        }
-        throw new Error(data.message || `Error creating tournament: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error creating game: ${response.status}`);
       }
-      
+
+      const data = await response.json();
       console.log("Tournament created:", data);
-      
-      // Store the first match ID and open the game modal
-      // The rest of the tournament flow will be handled by the GameModal
-      // and the WebSocket connection
+
       setGameId(data.firstMatchId);
       setIsGameModalOpen(true);
       
@@ -219,13 +200,7 @@ const TournamentPage: React.FC = () => {
   }, [showAIList]);
 
   // Select a player
-  const selectPlayer = (playerIndex: number, userId: string) => {
-    // Check if this player is already selected
-    if (selectedPlayers.includes(userId)) {
-      setError(t('tournament.error.playerAlreadySelected'));
-      return;
-    }
-    
+  const selectPlayer = (playerIndex: number, userId: string) => {   
     const newSelectedPlayers = [...selectedPlayers];
     newSelectedPlayers[playerIndex] = userId;
     setSelectedPlayers(newSelectedPlayers);

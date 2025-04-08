@@ -2,7 +2,7 @@
 
 async function routes(fastify, options) {
   fastify.register(require("./health"));
-  fastify.register(require("./pong"));
+  fastify.register(require("./game"));
   fastify.register(require("./tournament"));
 }
 

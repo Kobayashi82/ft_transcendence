@@ -10,9 +10,16 @@ class GameManager {
     this.games = new Map();
     this.clients = new Map();
     this.players = new Map(); // Maps player names to gameIds
+    this.tournaments = new Map(); // Track tournaments
     
-    setInterval(() => this.updateGames(), 16); // 60 fps
-    setInterval(() => this.cleanupInactiveGames(), 60000);
+    // Bind methods to ensure proper 'this' context
+    this.updateGames = this.updateGames.bind(this);
+    this.cleanupInactiveGames = this.cleanupInactiveGames.bind(this);
+    this.sendGameResultsToStats = this.sendGameResultsToStats.bind(this);
+    
+    // Use correct syntax for interval setup
+    this.updateGamesInterval = setInterval(this.updateGames, 16); // 60 fps
+    this.cleanupGamesInterval = setInterval(this.cleanupInactiveGames, 60000);
   }
 
   // CREATE
@@ -24,7 +31,8 @@ class GameManager {
       game,
       clients: new Set(),
       lastActivity: Date.now(),
-      disconnectedPlayers: new Map() // Initialize this Map
+      disconnectedPlayers: new Map(), // Initialize this Map
+      startTime: Date.now() // Add start time tracking
     });
     
     console.log(`Game created: ${gameId}`);
@@ -72,8 +80,6 @@ class GameManager {
     return gameEntry.disconnectedPlayers.size > 0;
   }
   
-  // ------------------ WEBSOCKETS ------------------
-
   // Register a WebSocket client
   registerClient(gameId, clientId, ws, playerName = null, isSpectator = false) {
     const gameEntry = this.games.get(gameId);
@@ -157,8 +163,6 @@ class GameManager {
       }
     }
   }
-  
-  // ------------------ WEBSOCKETS ------------------
 
   // START
   startGame(gameId) {
@@ -241,29 +245,35 @@ class GameManager {
     return true;
   }
   
-  // UPDATE
+  // UPDATE GAMES - GAME LOOP
   updateGames() {
     for (const [gameId, gameEntry] of this.games.entries()) {
+      // Only update playing games
       if (gameEntry.game.gameState !== 'playing') continue;
       
       // Update game
       gameEntry.game.update();
       
       // If game just finished, send results to stats service
-      if (gameEntry.game.gameState === 'finished') this.sendGameResultsToStats(gameId);
+      if (gameEntry.game.gameState === 'finished') {
+        this.sendGameResultsToStats(gameId);
+      }
      
       // Broadcast updated state to clients
       this.broadcastGameState(gameId);
     }
   }
   
-  // CLEAN UP
+  // CLEAN UP INACTIVE GAMES
   cleanupInactiveGames() {
     const now = Date.now();
     
     for (const [gameId, gameEntry] of this.games.entries()) {
       // Remove games that have been inactive for over an hour
       if (now - gameEntry.lastActivity > 1000 * 60 * 60) {
+        // Check if it's a tournament game
+        const matchInfo = this.findMatchInfoForGame(gameId);
+        
         // Remove all clients from this game
         for (const clientId of gameEntry.clients) {
           this.clients.delete(clientId);
@@ -275,6 +285,12 @@ class GameManager {
         
         // Remove game
         this.games.delete(gameId);
+        
+        // Handle tournament game cleanup if applicable
+        if (matchInfo) {
+          this.handleTournamentGameCleanup(matchInfo.tournamentId, gameId);
+        }
+        
         console.log(`Game ${gameId} removed due to inactivity`);
       }
     }
@@ -287,19 +303,20 @@ class GameManager {
     
     console.log(`Sending game results for ${gameId} to stats service`);
 
+    const gameEntry = this.games.get(gameId);
     const statsService = config.services.stats;
     const now = Date.now();
-    const startTime = this.games.get(gameId).startTime || (now - 60000); // Default to 1 minute ago if startTime not set
+    const startTime = gameEntry.startTime || (now - 60000);
     
     try {
-      // Format data according to what the /games endpoint expects
-      const response = await axios.post(`${statsService.url}/games`, {
-        // Required fields according to the POST /games schema
+      // Check if this is a tournament game
+      const matchInfo = this.findMatchInfoForGame(gameId);
+      
+      const gamePayload = {
         start_time: new Date(startTime).toISOString(),
         end_time: new Date(now).toISOString(),
         settings: gameState.settings || {},
         players: [
-          // Convert player1 and player2 into the expected players array format
           {
             user_id: gameState.player1.name,
             score: gameState.player1.score
@@ -309,7 +326,15 @@ class GameManager {
             score: gameState.player2.score
           }
         ]
-      }, {
+      };
+
+      // If it's a tournament game, add tournament information
+      if (matchInfo) {
+        gamePayload.tournament_id = matchInfo.tournamentId;
+        gamePayload.tournament_round = matchInfo.round;
+      }
+      
+      const response = await axios.post(`${statsService.url}/games`, gamePayload, {
         headers: {
           'Content-Type': 'application/json'
         },
@@ -317,14 +342,58 @@ class GameManager {
       });
       
       console.log(`Game results sent to stats service: ${gameId}`);
+      return response.data;
     } catch (error) {
       console.error(`Failed to send game results to stats service: ${error.message}`);
       // Log more detailed error information if available
       if (error.response) {
         console.error(`Status: ${error.response.status}, Data:`, error.response.data);
       }
+      throw error;
     }
+  }
+
+  // Helper method to find tournament match information
+  findMatchInfoForGame(gameId) {
+    for (const [tournamentId, tournament] of this.tournaments.entries()) {
+      const matchInfo = tournament.matches.find(match => match.gameId === gameId);
+
+      if (matchInfo) {
+        return { 
+          tournamentId, 
+          round: matchInfo.round 
+        };
+      }
+    }
+    
+    return null;
+  }
+
+  // Add method to register tournament
+  registerTournament(tournamentId, tournamentData) {
+    this.tournaments.set(tournamentId, tournamentData);
+  }
+
+  // Tournament game cleanup
+  handleTournamentGameCleanup(tournamentId, gameId) {
+    const tournament = this.tournaments.get(tournamentId);
+    if (!tournament) return;
+    
+    // Remove the game from tournament matches
+    tournament.matches = tournament.matches.filter(match => match.gameId !== gameId);
+    
+    // If no matches left, remove tournament
+    if (tournament.matches.length === 0) {
+      this.tournaments.delete(tournamentId);
+    }
+  }
+
+  // Cleanup method to stop intervals when needed
+  cleanup() {
+    clearInterval(this.updateGamesInterval);
+    clearInterval(this.cleanupGamesInterval);
   }
 }
 
+// Export a singleton instance
 module.exports = new GameManager();
