@@ -3,10 +3,15 @@ import { X, Play, Pause, AlertTriangle, XCircle } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import PongGame from "../../components/game/PongGame";
 
+// Actualiza la interfaz para incluir todas las propiedades que están siendo pasadas
 interface GameModalProps {
   gameId: string;
   player1: string;
   player2: string;
+  ballSpeed?: string;
+  paddleSize?: string;
+  winningScore?: number;
+  accelerationEnabled?: boolean;
   onClose: () => void;
 }
 
@@ -58,16 +63,26 @@ const GameModal: React.FC<GameModalProps> = ({
   gameId,
   player1,
   player2,
+  // El backend ya recibe estos valores durante la creación del juego,
+  // así que son opcionales aquí y no los usamos directamente
+  ballSpeed,
+  paddleSize,
+  winningScore,
+  accelerationEnabled,
   onClose 
 }) => {
   const { t } = useLanguage();
   const wsRef = useRef<WebSocket | null>(null);
+  const pingIntervalRef = useRef<number | null>(null);
   
   // State
   const [gameState, setGameState] = useState<GameStateData | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
+  const [connectionLost, setConnectionLost] = useState<boolean>(false);
+  const [persistentConnectionLost, setPersistentConnectionLost] = useState<boolean>(false);
+  const connectionLostTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -82,21 +97,38 @@ const GameModal: React.FC<GameModalProps> = ({
       console.log("WebSocket connection established");
       setIsConnected(true);
       setError(null);
+      setConnectionLost(false);
+      setPersistentConnectionLost(false);
+      
+      // Cancelar cualquier timeout de conexión perdida
+      if (connectionLostTimeoutRef.current) {
+        clearTimeout(connectionLostTimeoutRef.current);
+        connectionLostTimeoutRef.current = null;
+      }
 
-      // Request the current game state
-      const stateRequest = { type: "state", gameId: gameId };
+      // Request the current game state with player name
+      const stateRequest = { 
+        type: "state", 
+        gameId: gameId,
+        playerName: player1 // Identify which player this client represents
+      };
       ws.send(JSON.stringify(stateRequest));
 
       // Send ping every 30 seconds to keep connection alive
-      const pingInterval = setInterval(() => {
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+      }
+      
+      pingIntervalRef.current = window.setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: "ping" }));
         } else {
-          clearInterval(pingInterval);
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = null;
+          }
         }
       }, 30000);
-
-      return () => clearInterval(pingInterval);
     };
     
     // Handle messages from server
@@ -118,14 +150,14 @@ const GameModal: React.FC<GameModalProps> = ({
           case "resumed":
             setGameState(message.gameState);
             break;            
-          case "cancel":
+          case "cancelled":
             setGameState(message.gameState);
             break;                
           case "pong":
             break;
           case "error":
             console.error("Error message received:", message);
-            setError(message.message);
+            //setError(message.message);
             break;            
           default:
         }
@@ -141,30 +173,57 @@ const GameModal: React.FC<GameModalProps> = ({
       
       if (event.code === 1006) {
         console.error("Abnormal closure - the server closed the connection unexpectedly");
-        setError("Could not establish connection to game server. Please try again later.");
+        
+        // Marcar la conexión como perdida temporalmente 
+        setConnectionLost(true);
+        
+        // Si la desconexión persiste por más de 5 segundos, marcarla como permanente
+        connectionLostTimeoutRef.current = window.setTimeout(() => {
+          setPersistentConnectionLost(true);
+        }, 5000); 
       }
     };
     
     // Handle connection error
     ws.onerror = (error) => {
       console.error("WebSocket error:", error);
-      setError("WebSocket connection error. Check your network connection and try again.");
+      //setError("WebSocket connection error. Check your network connection and try again.");
+      setConnectionLost(true);
     };
 
-    // // Cleanup function when component unmounts
-    // return () => {
-    //   console.log("Component unmounted, cleaning up WebSocket connection");
+    // Cleanup function when component unmounts
+    return () => {
+      console.log("Component unmounted, cleaning up WebSocket connection");
       
-    //   if (wsRef.current) {
-    //     console.log("Closing WebSocket connection");
-    //     try {
-    //       wsRef.current.close(1000, "Component unmounted");
-    //     } catch (e) {
-    //       console.error("Error closing WebSocket:", e);
-    //     }
-    //     wsRef.current = null;
-    //   }
-    // };
+      // Limpiar timeout de conexión perdida
+      if (connectionLostTimeoutRef.current) {
+        clearTimeout(connectionLostTimeoutRef.current);
+        connectionLostTimeoutRef.current = null;
+      }
+      
+      // Limpiar ping interval
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+        pingIntervalRef.current = null;
+      }
+      
+      if (wsRef.current) {
+        console.log("Closing WebSocket connection");
+        try {
+          // Send cancel message before closing to ensure proper cleanup
+          if (wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+              type: "cancel",
+              gameId
+            }));
+          }
+          wsRef.current.close(1000, "Component unmounted");
+        } catch (e) {
+          console.error("Error closing WebSocket:", e);
+        }
+        wsRef.current = null;
+      }
+    };
   }, [gameId, player1, player2]);
 
   // Start the game
@@ -237,7 +296,6 @@ const GameModal: React.FC<GameModalProps> = ({
         togglePause();
       }
       
-
       if (gameState?.gameState !== "playing") return;
       
       // Player 1 controls (W, S keys)
@@ -304,6 +362,12 @@ const GameModal: React.FC<GameModalProps> = ({
   
   // Handle closing the modal
   const handleCloseClick = () => {
+    // Si la conexión se perdió permanentemente, permitir cerrar sin confirmación
+    if (persistentConnectionLost) {
+      onClose();
+      return;
+    }
+    
     // If game is in progress, show confirmation dialog
     if (gameState && ["waiting", "playing", "paused"].includes(gameState.gameState)) {
       if (gameState?.gameState === "playing") togglePause();
@@ -314,8 +378,20 @@ const GameModal: React.FC<GameModalProps> = ({
     }
   };
   
+  // Handle connection loss - cerrar después de 15 segundos de pérdida de conexión persistente
+  useEffect(() => {
+    if (persistentConnectionLost) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 15000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [persistentConnectionLost, onClose]);
+  
   // Render game status text
   const getStatusText = () => {
+    if (persistentConnectionLost) return t('quickMatch.connectionLost');
     if (!gameState) return t('quickMatch.connecting');
     
     switch (gameState.gameState) {
@@ -349,13 +425,15 @@ const GameModal: React.FC<GameModalProps> = ({
     return gameState && 
            gameState.gameState === "waiting" && 
            gameState.player1.name && 
-           gameState.player2.name;
+           gameState.player2.name &&
+           !persistentConnectionLost;
   };
   
   // Determine if the game can be paused/resumed
   const canPauseGame = () => {
     return gameState && 
-           (gameState.gameState === "playing" || gameState.gameState === "paused");
+           (gameState.gameState === "playing" || gameState.gameState === "paused") &&
+           !persistentConnectionLost;
   };
 
   return (
@@ -366,7 +444,10 @@ const GameModal: React.FC<GameModalProps> = ({
             <h3 className="text-xl font-bold text-white">
               {player1} 🆚 {player2 || t('quickMatch.waiting')}
             </h3>
-            <p className="text-gray-400 text-sm">{getStatusText()}</p>
+            <p className="text-gray-400 text-sm flex items-center">
+              {!isConnected && <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 mr-2 animate-pulse"></span>}
+              {getStatusText()}
+            </p>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -414,8 +495,27 @@ const GameModal: React.FC<GameModalProps> = ({
           </div>
         </div>
         
+        {/* Connection lost message - solo mostrar si la pérdida es persistente */}
+        {persistentConnectionLost && (
+          <div className="bg-red-900/40 border border-red-500/50 text-red-100 px-4 py-3 m-4 rounded-lg">
+            <div className="flex">
+              <AlertTriangle className="h-5 w-5 text-red-300 mr-2 flex-shrink-0" />
+              <div>
+                <p className="font-medium">{t('quickMatch.connectionLostTitle')}</p>
+                <p>{t('quickMatch.connectionLostMessage')}</p>
+                <button 
+                  onClick={onClose}
+                  className="mt-3 px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded-lg"
+                >
+                  {t('quickMatch.returnToMenu')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Error display */}
-        {error && (
+        {error && !persistentConnectionLost && (
           <div className="bg-red-900/40 border border-red-500/50 text-red-100 px-4 py-3 m-4 rounded-lg">
             <div className="flex">
               <AlertTriangle className="h-5 w-5 text-red-300 mr-2 flex-shrink-0" />
@@ -429,12 +529,20 @@ const GameModal: React.FC<GameModalProps> = ({
           {gameState ? (
             <PongGame
               gameState={gameState}
+              playerNumber={1} // Default to player 1
               onMove={handleMove}
               onSetPosition={handleSetPosition}
             />
           ) : (
             <div className="flex items-center justify-center h-full bg-gray-900">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              {persistentConnectionLost ? (
+                <div className="text-center">
+                  <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                  <p className="text-lg text-gray-300">{t('quickMatch.connectionLostMessage')}</p>
+                </div>
+              ) : (
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              )}
             </div>
           )}
         </div>

@@ -1,6 +1,8 @@
 "use strict";
 
+const config = require('../config');
 const PongGame = require('./game-logic');
+const axios = require("axios");
 const { v4: uuidv4 } = require('uuid');
 
 class GameManager {
@@ -56,6 +58,11 @@ class GameManager {
   // PLAYER PLAYING
   isPlayerInGame(playerName) {
     return this.players.has(playerName);
+  }
+  
+  // Get client information
+  getClientInfo(clientId) {
+    return this.clients.get(clientId);
   }
   
   // Check if game has disconnected players
@@ -114,6 +121,17 @@ class GameManager {
           gameEntry.game.pause();
           this.broadcastGameState(clientEntry.gameId);
         }
+      }
+      
+      // If no clients are connected, clean up player data
+      if (gameEntry.clients.size === 0 && 
+         ['playing', 'paused', 'waiting'].includes(gameEntry.game.gameState)) {
+        // Remove players from the game
+        if (gameEntry.game.player1) this.players.delete(gameEntry.game.player1);
+        if (gameEntry.game.player2) this.players.delete(gameEntry.game.player2);
+        
+        // Mark game as cancelled
+        gameEntry.game.cancel();
       }
     }
     
@@ -263,44 +281,49 @@ class GameManager {
   }
   
   // RESULTS
-  sendGameResultsToStats(gameId) {
+  async sendGameResultsToStats(gameId) {
     const gameState = this.getGameState(gameId);
     if (!gameState) return;
     
     console.log(`Sending game results for ${gameId} to stats service`);
-    
-    // This would be implemented as a service call when the stats service is ready
-    /*
+
     const statsService = config.services.stats;
+    const now = Date.now();
+    const startTime = this.games.get(gameId).startTime || (now - 60000); // Default to 1 minute ago if startTime not set
     
     try {
-      // You would use a HTTP client like axios or node-fetch here
-      const response = await fetch(`${statsService.url}/game-result`, {
-        method: 'POST',
+      // Format data according to what the /games endpoint expects
+      const response = await axios.post(`${statsService.url}/games`, {
+        // Required fields according to the POST /games schema
+        start_time: new Date(startTime).toISOString(),
+        end_time: new Date(now).toISOString(),
+        settings: gameState.settings || {},
+        players: [
+          // Convert player1 and player2 into the expected players array format
+          {
+            user_id: gameState.player1.name,
+            score: gameState.player1.score
+          },
+          {
+            user_id: gameState.player2.name,
+            score: gameState.player2.score
+          }
+        ]
+      }, {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          gameId,
-          player1: {
-            name: gameState.player1.name,
-            score: gameState.player1.score
-          },
-          player2: {
-            name: gameState.player2.name,
-            score: gameState.player2.score
-          },
-          duration: Date.now() - this.games.get(gameId).startTime,
-          settings: gameState.settings
-        }),
         timeout: statsService.timeout
       });
       
       console.log(`Game results sent to stats service: ${gameId}`);
     } catch (error) {
       console.error(`Failed to send game results to stats service: ${error.message}`);
+      // Log more detailed error information if available
+      if (error.response) {
+        console.error(`Status: ${error.response.status}, Data:`, error.response.data);
+      }
     }
-    */
   }
 }
 

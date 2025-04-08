@@ -22,6 +22,7 @@ interface GameConfig {
   paddleWidth: number;
   ballSize: number;
   winningScore: number;
+  edgePadding?: number;
 }
 
 interface GameSettings {
@@ -42,8 +43,8 @@ interface GameStateData {
 interface PongGameProps {
   gameState: GameStateData;
   playerNumber: number;
-  onMove: (direction: 'up' | 'down' | 'stop', player?: number) => void;
-  onSetPosition: (y: number, player?: number) => void;
+  onMove: (direction: 'up' | 'down' | 'stop', player: number) => void;
+  onSetPosition: (y: number, player: number) => void;
 }
 
 const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, onSetPosition }) => {
@@ -53,7 +54,20 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
   const mouseIsDownRef = useRef<boolean>(false);
   const lastRenderedStateRef = useRef<GameStateData | null>(null);
   
-  // Referencias para el control táctil
+  // Add scaleFactor reference
+  const scaleFactor = useRef(1);
+  
+  // For tracking device orientation
+  const orientationRef = useRef<'portrait' | 'landscape'>('landscape');
+  
+  // Performance detection
+  const isLowPerformanceDevice = useRef(false);
+  
+  // For ball hit effect
+  const ballHitEffectTimer = useRef<number | null>(null);
+  const ballHitColor = useRef("#ffffff");
+  
+  // References for touch control
   const touchTargetsRef = useRef<{[key: number]: number}>({});
   
   // Colors
@@ -63,10 +77,32 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     net: "rgba(255, 255, 255, 0.2)",
     paddle: "#6366f1", // Indigo
     ball: "#ffffff",
+    ballHit: "#a5f3fc", // Light blue when ball hits paddle
     score: "rgba(255, 255, 255, 0.7)",
     scoreHighlight: "#6366f1", // Indigo
     activePlayer: "#60a5fa", // Lighter blue for active player's paddle
   };
+  
+  // Initialize and handle device detection
+  useEffect(() => {
+    // Detect low performance devices
+    isLowPerformanceDevice.current = 
+      window.navigator.hardwareConcurrency < 4 || 
+      !!navigator.userAgent.match(/mobile|android/i);
+    
+    // Initial orientation detection
+    orientationRef.current = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+    
+    // Initialize ball color
+    ballHitColor.current = colors.ball;
+    
+    // Clean up any existing timers on unmount
+    return () => {
+      if (ballHitEffectTimer.current !== null) {
+        clearTimeout(ballHitEffectTimer.current);
+      }
+    };
+  }, []);
   
   // Draw function
   const drawGame = () => {
@@ -81,141 +117,159 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     
     const { config, player1, player2, ball } = gameState;
     
-    // Calc scaler for canvas/game dimensions
+    // Get the edge padding from config or use default
+    const edgePadding = config.edgePadding || 20;
+    
+    // Calculate scaler for canvas/game dimensions
     const scaleX = canvas.width / config.width;
     const scaleY = canvas.height / config.height;
-
+    
+    // Calculate a consistent padding value scaled to screen size
+    const scaledPadding = Math.max(5, Math.floor(edgePadding * Math.min(scaleX, scaleY)));
+    
     // Scale game dimensions to canvas size
     const scaledBall = {
       x: ball.x * scaleX,
       y: ball.y * scaleY,
-      size: config.ballSize * Math.min(scaleX, scaleY)
+      // Apply a more appropriate ball size with scaling
+      size: Math.max(3, Math.floor(config.ballSize * Math.min(scaleX, scaleY) * 0.4))
     };
     
+    // Scale paddle dimensions based on screen size
+    const paddleWidth = Math.max(4, Math.floor(config.paddleWidth * scaleX));
+    const paddleHeight = Math.max(20, Math.floor(config.paddleHeight * scaleY));
+    
+    // Left paddle position (player 1)
     const scaledPaddle1 = {
-      x: config.paddleWidth * scaleX, // Left paddle x position scaled
+      x: scaledPadding, // Position with consistent padding
       y: player1.y * scaleY,
-      width: config.paddleWidth * scaleX,
-      height: config.paddleHeight * scaleY
+      width: paddleWidth,
+      height: paddleHeight
     };
     
+    // Right paddle position (player 2)
     const scaledPaddle2 = {
-      x: canvas.width - (config.paddleWidth * scaleX),
+      x: canvas.width - paddleWidth - scaledPadding, // Position with consistent padding
       y: player2.y * scaleY,
-      width: config.paddleWidth * scaleX,
-      height: config.paddleHeight * scaleY
+      width: paddleWidth,
+      height: paddleHeight
     };
     
     // Clear canvas
     ctx.fillStyle = colors.background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Draw border
+    // Draw border with scaled width
+    const borderWidth = Math.max(1, Math.floor(2 * scaleFactor.current));
     ctx.strokeStyle = colors.border;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+    ctx.lineWidth = borderWidth;
+    ctx.strokeRect(
+      scaledPadding, 
+      scaledPadding, 
+      canvas.width - (scaledPadding * 2), 
+      canvas.height - (scaledPadding * 2)
+    );
     
     // Draw dividing line for touch areas (only during game play)
     if (gameState.gameState === "playing") {
       // Vertical center line to indicate sides for touch control
       ctx.beginPath();
-      ctx.setLineDash([5, 5]); // Dashed line
-      ctx.moveTo(canvas.width / 2, 10);
-      ctx.lineTo(canvas.width / 2, canvas.height - 10);
+      ctx.setLineDash([Math.max(3, 5 * scaleFactor.current), Math.max(3, 5 * scaleFactor.current)]); // Scaled dashed line
+      ctx.moveTo(canvas.width / 2, scaledPadding);
+      ctx.lineTo(canvas.width / 2, canvas.height - scaledPadding);
       ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
       ctx.stroke();
       ctx.setLineDash([]); // Reset to solid line
     }
     
-    // Draw net
-    const netWidth = 2;
+    // Draw net with scaled dimensions
+    const netWidth = Math.max(1, Math.floor(2 * scaleFactor.current));
     const netX = canvas.width / 2 - netWidth / 2;
-    const netSegmentHeight = 10;
-    const netGap = 5;
+    const netSegmentHeight = Math.max(5, Math.floor(10 * scaleFactor.current));
+    const netGap = Math.max(3, Math.floor(5 * scaleFactor.current));
     
     ctx.fillStyle = colors.net;
-    for (let y = 15; y < canvas.height - 15; y += netSegmentHeight + netGap) {
+    for (let y = scaledPadding + 5; y < canvas.height - scaledPadding - 5; y += netSegmentHeight + netGap) {
       ctx.fillRect(netX, y, netWidth, netSegmentHeight);
     }
     
-    // Draw center circle
+    // Draw center circle with scaled radius
+    const circleRadius = Math.max(10, Math.floor(20 * scaleFactor.current));
     ctx.beginPath();
-    ctx.arc(canvas.width / 2, canvas.height / 2, 20, 0, Math.PI * 2);
+    ctx.arc(canvas.width / 2, canvas.height / 2, circleRadius, 0, Math.PI * 2);
     ctx.strokeStyle = colors.net;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = Math.max(1, Math.floor(1 * scaleFactor.current));
     ctx.stroke();
     
-    // Draw player 1 paddle
-    const paddleRadius = 4;
+    // Draw player 1 paddle with scaled corners
+    const paddleRadius = Math.max(2, Math.floor(4 * scaleFactor.current));
     ctx.fillStyle = playerNumber === 1 ? colors.activePlayer : colors.paddle;
     
     // Left paddle with rounded corners
     ctx.beginPath();
-    ctx.moveTo(scaledPaddle1.width + paddleRadius, scaledPaddle1.y);
-    ctx.arcTo(0, scaledPaddle1.y, 0, scaledPaddle1.y + paddleRadius, paddleRadius);
-    ctx.arcTo(0, scaledPaddle1.y + scaledPaddle1.height, paddleRadius, scaledPaddle1.y + scaledPaddle1.height, paddleRadius);
-    ctx.arcTo(scaledPaddle1.width, scaledPaddle1.y + scaledPaddle1.height, scaledPaddle1.width, scaledPaddle1.y + scaledPaddle1.height - paddleRadius, paddleRadius);
-    ctx.arcTo(scaledPaddle1.width, scaledPaddle1.y, scaledPaddle1.width - paddleRadius, scaledPaddle1.y, paddleRadius);
+    ctx.moveTo(scaledPaddle1.x + scaledPaddle1.width - paddleRadius, scaledPaddle1.y);
+    ctx.arcTo(scaledPaddle1.x + scaledPaddle1.width, scaledPaddle1.y, scaledPaddle1.x + scaledPaddle1.width, scaledPaddle1.y + paddleRadius, paddleRadius);
+    ctx.arcTo(scaledPaddle1.x + scaledPaddle1.width, scaledPaddle1.y + scaledPaddle1.height, scaledPaddle1.x + scaledPaddle1.width - paddleRadius, scaledPaddle1.y + scaledPaddle1.height, paddleRadius);
+    ctx.arcTo(scaledPaddle1.x, scaledPaddle1.y + scaledPaddle1.height, scaledPaddle1.x, scaledPaddle1.y + scaledPaddle1.height - paddleRadius, paddleRadius);
+    ctx.arcTo(scaledPaddle1.x, scaledPaddle1.y, scaledPaddle1.x + paddleRadius, scaledPaddle1.y, paddleRadius);
     ctx.closePath();
     ctx.fill();
     
-    // Draw player 2 paddle
+    // Draw player 2 paddle with scaled corners
     ctx.fillStyle = playerNumber === 2 ? colors.activePlayer : colors.paddle;
     
     // Right paddle with rounded corners
     ctx.beginPath();
-    ctx.moveTo(scaledPaddle2.x - paddleRadius, scaledPaddle2.y);
-    ctx.arcTo(canvas.width, scaledPaddle2.y, canvas.width, scaledPaddle2.y + paddleRadius, paddleRadius);
-    ctx.arcTo(canvas.width, scaledPaddle2.y + scaledPaddle2.height, canvas.width - paddleRadius, scaledPaddle2.y + scaledPaddle2.height, paddleRadius);
+    ctx.moveTo(scaledPaddle2.x + paddleRadius, scaledPaddle2.y);
+    ctx.arcTo(scaledPaddle2.x + scaledPaddle2.width, scaledPaddle2.y, scaledPaddle2.x + scaledPaddle2.width, scaledPaddle2.y + paddleRadius, paddleRadius);
+    ctx.arcTo(scaledPaddle2.x + scaledPaddle2.width, scaledPaddle2.y + scaledPaddle2.height, scaledPaddle2.x + scaledPaddle2.width - paddleRadius, scaledPaddle2.y + scaledPaddle2.height, paddleRadius);
     ctx.arcTo(scaledPaddle2.x, scaledPaddle2.y + scaledPaddle2.height, scaledPaddle2.x, scaledPaddle2.y + scaledPaddle2.height - paddleRadius, paddleRadius);
     ctx.arcTo(scaledPaddle2.x, scaledPaddle2.y, scaledPaddle2.x + paddleRadius, scaledPaddle2.y, paddleRadius);
     ctx.closePath();
     ctx.fill();
     
-    // Draw ball
+    // Draw ball with scaled glow effect - use current ball color (changes on hit)
     ctx.beginPath();
     ctx.arc(scaledBall.x, scaledBall.y, scaledBall.size, 0, Math.PI * 2);
-    ctx.fillStyle = colors.ball;
+    ctx.fillStyle = ballHitColor.current;
     ctx.fill();
     
-    // Add a subtle glow to the ball
-    const gradient = ctx.createRadialGradient(
-      scaledBall.x, scaledBall.y, 0,
-      scaledBall.x, scaledBall.y, scaledBall.size * 2
-    );
-    gradient.addColorStop(0, "rgba(255, 255, 255, 0.2)");
-    gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(scaledBall.x, scaledBall.y, scaledBall.size * 2, 0, Math.PI * 2);
-    ctx.fill();
+    // Only add glow on higher performance devices
+    if (!isLowPerformanceDevice.current) {
+      // Add a subtle glow to the ball
+      const gradient = ctx.createRadialGradient(
+        scaledBall.x, scaledBall.y, 0,
+        scaledBall.x, scaledBall.y, scaledBall.size * 2
+      );
+      gradient.addColorStop(0, "rgba(255, 255, 255, 0.2)");
+      gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(scaledBall.x, scaledBall.y, scaledBall.size * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
     
-    // // Draw scores
-    // ctx.fillStyle = colors.score;
-    // ctx.font = "bold 48px Arial";
-    // ctx.textAlign = "center";
-    
-    // // Player 1 score
-    // ctx.fillStyle = playerNumber === 1 ? colors.scoreHighlight : colors.score;
-    // ctx.fillText(player1.score.toString(), canvas.width / 4, 60);
-    
-    // // Player 2 score
-    // ctx.fillStyle = playerNumber === 2 ? colors.scoreHighlight : colors.score;
-    // ctx.fillText(player2.score.toString(), (canvas.width / 4) * 3, 60);
-    
-    // // Draw player names
-    // ctx.font = "14px Arial";
-    // ctx.fillStyle = colors.score;
-    
-    // if (player1.name) {
-    //   ctx.fillStyle = playerNumber === 1 ? colors.scoreHighlight : colors.score;
-    //   ctx.fillText(player1.name, canvas.width / 4, 90);
-    // }
-    
-    // if (player2.name) {
-    //   ctx.fillStyle = playerNumber === 2 ? colors.scoreHighlight : colors.score;
-    //   ctx.fillText(player2.name, (canvas.width / 4) * 3, 90);
-    // }
+    // Draw scores at the top of the screen
+    if (player1.score > 0 || player2.score > 0) {
+      // Calculate font size based on canvas width and orientation
+      const scoreFontSize = Math.max(12, Math.floor(24 * scaleFactor.current));
+      
+      // Draw scores
+      ctx.font = `bold ${scoreFontSize}px Arial`;
+      ctx.fillStyle = colors.score;
+      ctx.textAlign = "center";
+      
+      // Scale positioning based on canvas size
+      const scoreY = Math.max(scaledPadding / 2, 25 * scaleFactor.current);
+      
+      // Player 1 score (left)
+      ctx.fillStyle = playerNumber === 1 ? colors.scoreHighlight : colors.score;
+      ctx.fillText(player1.score.toString(), canvas.width / 4, scoreY);
+      
+      // Player 2 score (right)
+      ctx.fillStyle = playerNumber === 2 ? colors.scoreHighlight : colors.score;
+      ctx.fillText(player2.score.toString(), (canvas.width / 4) * 3, scoreY);
+    }
     
     // If game is not playing, show overlay message
     if (gameState.gameState !== "playing") {
@@ -225,11 +279,11 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       switch (gameState.gameState) {
         case "waiting":
           message = t('quickMatch.waiting');
-          subtext = t('quickMatch.waiting');
+          subtext = t('quickMatch.waitingToStart');
           break;
         case "paused":
           message = t('quickMatch.paused');
-          subtext = "";
+          subtext = t('quickMatch.pressToResume');
           break;
         case "finished":
           const winner = player1.score > player2.score ? player1.name : player2.name;
@@ -245,17 +299,22 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Draw message
-      ctx.font = "bold 32px Arial";
+      // Calculate scaled font sizes
+      const isPortrait = orientationRef.current === 'portrait';
+      const mainFontSize = Math.max(16, Math.floor((isPortrait ? 24 : 32) * scaleFactor.current));
+      const subFontSize = Math.max(8, Math.floor((isPortrait ? 12 : 16) * scaleFactor.current));
+      
+      // Draw message with scaled font
+      ctx.font = `bold ${mainFontSize}px Arial`;
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
       ctx.fillText(message, canvas.width / 2, canvas.height / 2);
       
-      // Draw subtext
+      // Draw subtext with scaled font
       if (subtext) {
-        ctx.font = "16px Arial";
+        ctx.font = `${subFontSize}px Arial`;
         ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-        ctx.fillText(subtext, canvas.width / 2, canvas.height / 2 + 40);
+        ctx.fillText(subtext, canvas.width / 2, canvas.height / 2 + mainFontSize + 8);
       }
     }
   };
@@ -277,17 +336,68 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     };
   }, [gameState]);
   
+  // Ball hit effect - watch for ball position changes
+  useEffect(() => {
+    const lastState = lastRenderedStateRef.current;
+    if (!lastState || !gameState || gameState.gameState !== 'playing') return;
+    
+    // Check if ball position changed significantly (possible hit)
+    const ballVelocityX = gameState.ball.x - lastState.ball.x;
+    
+    // Detect when the ball changes horizontal direction (paddle hit)
+    if (lastState.ball.x !== gameState.ball.x && 
+       (Math.sign(ballVelocityX) !== Math.sign(ballVelocityX) || Math.abs(ballVelocityX) > 5)) {
+      
+      // Flash the ball color
+      ballHitColor.current = colors.ballHit;
+      
+      // Reset color after a short delay
+      if (ballHitEffectTimer.current !== null) {
+        clearTimeout(ballHitEffectTimer.current);
+      }
+      
+      ballHitEffectTimer.current = window.setTimeout(() => {
+        ballHitColor.current = colors.ball;
+        ballHitEffectTimer.current = null;
+      }, 100) as unknown as number;
+    }
+  }, [gameState?.ball.x, gameState?.ball.y]);
+  
   // Resize canvas effect
   useEffect(() => {
     const handleResize = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       
+      // Determine orientation
+      const isPortrait = window.innerHeight > window.innerWidth;
+      orientationRef.current = isPortrait ? 'portrait' : 'landscape';
+      
       // Set canvas size to match parent container
       const parent = canvas.parentElement;
       if (parent) {
-        canvas.width = parent.clientWidth;
-        canvas.height = parent.clientHeight;
+        const displayWidth = parent.clientWidth;
+        const displayHeight = parent.clientHeight;
+        
+        // Calculate scale factor based on orientation
+        if (isPortrait) {
+          // In portrait mode, scale based on width
+          scaleFactor.current = Math.max(0.2, Math.min(1, displayWidth / 400));
+        } else {
+          // In landscape mode, scale based on height
+          scaleFactor.current = Math.max(0.2, Math.min(1, displayHeight / 300));
+        }
+        
+        // Scale display based on device capabilities
+        const deviceScale = isLowPerformanceDevice.current ? 0.75 : 1.0;
+        
+        // Set display dimensions to maintain visual size
+        canvas.width = displayWidth * deviceScale;
+        canvas.height = displayHeight * deviceScale;
+        
+        // Set CSS dimensions to maintain visual size
+        canvas.style.width = `${displayWidth}px`;
+        canvas.style.height = `${displayHeight}px`;
       }
       
       // Force redraw after resize
@@ -298,8 +408,15 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     handleResize();
     window.addEventListener("resize", handleResize);
     
+    // Handle orientation changes with a delay to ensure device has completed rotation
+    window.addEventListener("orientationchange", () => {
+      // Short delay to ensure dimensions are updated after rotation
+      setTimeout(handleResize, 300);
+    });
+    
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
     };
   }, [gameState]);
   
@@ -318,9 +435,17 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       const scaleX = gameState.config.width / canvas.width;
       const scaleY = gameState.config.height / canvas.height;
       
+      // Get padding from config
+      const edgePadding = gameState.config.edgePadding || 20;
+      const scaledPadding = Math.max(5, Math.floor(edgePadding * Math.min(scaleX, scaleY)));
+      
+      // Adjust for padding in the calculation
+      const adjustedCanvasX = Math.max(0, Math.min(canvasX, canvas.width));
+      const adjustedCanvasY = Math.max(scaledPadding, Math.min(canvasY, canvas.height - scaledPadding));
+      
       // Convert to game coordinates
-      const gameX = canvasX * scaleX;
-      const gameY = canvasY * scaleY;
+      const gameX = adjustedCanvasX * scaleX;
+      const gameY = adjustedCanvasY * scaleY;
       
       return { x: gameX, y: gameY };
     };
@@ -350,7 +475,7 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       
       // Get position based on event type
       let clientX: number, clientY: number;
-      let playerId = 0;
+      let playerId = playerNumber; // Default to controlling assigned player
       
       if ('touches' in event) {
         // Touch event - handle multiple touches
@@ -506,9 +631,10 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     const handleEnd = () => {
       mouseIsDownRef.current = false;
       
-      // Stop movement for both players
-      onMove('stop', 1);
-      onMove('stop', 2);
+      // Stop movement for active players
+      Object.keys(touchTargetsRef.current).forEach(key => {
+        onMove('stop', parseInt(key));
+      });
       
       // Clear target positions
       touchTargetsRef.current = {};
@@ -534,7 +660,7 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       window.removeEventListener("mouseup", handleEnd);
       window.removeEventListener("touchend", handleEnd);
     };
-  }, [gameState, onMove, onSetPosition]);
+  }, [gameState, onMove, onSetPosition, playerNumber]);
   
   return (
     <canvas 

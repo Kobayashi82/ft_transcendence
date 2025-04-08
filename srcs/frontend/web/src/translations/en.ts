@@ -77,6 +77,13 @@ const translations = {
   'quickMatch.controls': 'Use {up_keys} to move up, {down_keys} to move down.',
   'quickMatch.error.selectPlayer1': 'Please select Player 1',
   'quickMatch.error.selectPlayer2': 'Please select Player 2 and ensure a game is created',
+  "quickMatch.connectionLostTitle": "Connection Lost",
+  "quickMatch.connectionLost": "Connection Lost",
+  "quickMatch.connectionLostMessage": "The connection to the game server was lost. The match has been cancelled.",
+  "quickMatch.loading": "Loading...",
+  "quickMatch.returnToMenu": "Return to Menu",
+  "quickMatch.waitingToStart": "Waiting to Start",
+  "quickMatch.pressToResume": "Press to Resume",
 
   // Stats
   'stats.title': 'Player Rankings',

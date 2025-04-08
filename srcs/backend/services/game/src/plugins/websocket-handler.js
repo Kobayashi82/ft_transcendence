@@ -16,6 +16,15 @@ function websocketHandler(fastify, options, done) {
     // DISCONNECT
     ws.on('close', () => {
       console.log(`WebSocket connection closed: ${clientId}`);
+      // Find game associated with this client and cancel it if not already finished
+      const clientEntry = gameManager.getClientInfo(clientId);
+      if (clientEntry && clientEntry.gameId) {
+        const game = gameManager.getGame(clientEntry.gameId);
+        if (game && ['playing', 'paused', 'waiting'].includes(game.gameState)) {
+          console.log(`Cancelling game ${clientEntry.gameId} due to websocket disconnect`);
+          gameManager.cancelGame(clientEntry.gameId);
+        }
+      }
       gameManager.unregisterClient(clientId);
     });
 
@@ -115,13 +124,13 @@ function websocketHandler(fastify, options, done) {
 
     // CANCEL
     function handleCancel(data, clientId, ws) {
-      if (!data.gameId) return sendError(ws, 'Missing gameId in resume message');
+      if (!data.gameId) return sendError(ws, 'Missing gameId in cancel message');
       
       const success = gameManager.cancelGame(data.gameId);
       
       if (success) {
         ws.send(JSON.stringify({
-          type: 'cancel',
+          type: 'cancelled',
           gameId: data.gameId,
           gameState: gameManager.getGameState(data.gameId)
         }));
@@ -157,7 +166,7 @@ function websocketHandler(fastify, options, done) {
       }
       
       // Register this client with the game manager so it receives updates
-      gameManager.registerClient(data.gameId, clientId, ws);
+      gameManager.registerClient(data.gameId, clientId, ws, data.playerName);
       
       const gameState = gameManager.getGameState(data.gameId);     
       if (gameState) {

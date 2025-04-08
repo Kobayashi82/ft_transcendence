@@ -77,6 +77,13 @@ const translations = {
   'quickMatch.controls': 'Utilisez {up_keys} pour monter, {down_keys} pour descendre.',
   'quickMatch.error.selectPlayer1': 'Veuillez sélectionner le Joueur 1',
   'quickMatch.error.selectPlayer2': 'Veuillez sélectionner le Joueur 2 et vous assurer qu\'une partie a été créée',
+  "quickMatch.connectionLostTitle": "Connexion perdue",
+  "quickMatch.connectionLost": "Connexion perdue",
+  "quickMatch.connectionLostMessage": "La connexion avec le serveur de jeu a été perdue. La partie a été annulée.",
+  "quickMatch.loading": "Chargement...",
+  "quickMatch.returnToMenu": "Retour au menu",
+  "quickMatch.waitingToStart": "En attente de démarrage",
+  "quickMatch.pressToResume": "Appuyez pour reprendre",
 
   // Stats
   'stats.title': 'Classement des Joueurs',
