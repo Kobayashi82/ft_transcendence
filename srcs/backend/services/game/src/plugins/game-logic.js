@@ -10,6 +10,10 @@ class PongGame {
     this.accelerationEnabled = options.accelerationEnabled || config.game.defaults.accelerationEnabled;
     this.paddleSize = options.paddleSize || config.game.defaults.paddleSize;
     
+    // Tournament mode settings
+    this.tournamentMode = options.tournamentMode || false;
+    this.tournamentRound = options.tournamentRound || 0;
+    
     // Game dimensions
     this.width = config.game.width;
     this.height = config.game.height;
@@ -55,7 +59,7 @@ class PongGame {
     this.resetBall();
     
     // Game state
-    this.gameState = 'waiting'; // 'waiting', 'playing', 'paused', 'finished', 'cancelled'
+    this.gameState = 'waiting'; // 'waiting', 'playing', 'paused', 'finished', 'next', 'cancelled'
     this.lastUpdate = Date.now();
     
     // Status flags
@@ -69,33 +73,32 @@ class PongGame {
   }
 
   // RESET BALL
-// In the resetBall method
-resetBall() {
-  // Center the ball
-  this.ballX = this.width / 2;
-  this.ballY = this.height / 2;
-  
-  // Random angle between -45 and 45 degrees
-  const angle = (Math.random() * 90 - 45) * Math.PI / 180;
-  
-  // Random direction (left or right)
-  const direction = Math.random() > 0.5 ? 1 : -1;
-  
-  // Modified velocity calculation to maintain consistent horizontal speed
-  // Horizontal speed is always consistent
-  this.ballVelX = direction * this.initialBallVelocity;
-  
-  // Vertical velocity is scaled by tangent of angle
-  this.ballVelY = this.ballVelX * Math.tan(angle);
-  
-  // Ensure minimum vertical velocity to avoid horizontal stalling
-  if (Math.abs(this.ballVelY) < 2) {
-    this.ballVelY = (Math.random() > 0.5 ? 1 : -1) * 2;
+  resetBall() {
+    // Center the ball
+    this.ballX = this.width / 2;
+    this.ballY = this.height / 2;
+    
+    // Random angle between -45 and 45 degrees
+    const angle = (Math.random() * 90 - 45) * Math.PI / 180;
+    
+    // Random direction (left or right)
+    const direction = Math.random() > 0.5 ? 1 : -1;
+    
+    // Modified velocity calculation to maintain consistent horizontal speed
+    // Horizontal speed is always consistent
+    this.ballVelX = direction * this.initialBallVelocity;
+    
+    // Vertical velocity is scaled by tangent of angle
+    this.ballVelY = this.ballVelX * Math.tan(angle);
+    
+    // Ensure minimum vertical velocity to avoid horizontal stalling
+    if (Math.abs(this.ballVelY) < 2) {
+      this.ballVelY = (Math.random() > 0.5 ? 1 : -1) * 2;
+    }
+    
+    // Reset hit flag
+    this.ballHitRecently = false;
   }
-  
-  // Reset hit flag
-  this.ballHitRecently = false;
-}
   
   // START
   start() {
@@ -356,7 +359,12 @@ resetBall() {
   // WIN CHECK
   checkWinCondition() {
     if (this.player1Score >= this.winningScore || this.player2Score >= this.winningScore) {
-      this.gameState = 'finished';
+      // In tournament mode, set state to 'next' to await confirmation to proceed
+      if (this.tournamentMode) {
+        this.gameState = 'next';
+      } else {
+        this.gameState = 'finished';
+      }
       
       // TODO: Send game results to stats service
       // This would be implemented in the game manager
@@ -394,7 +402,9 @@ resetBall() {
       settings: {
         ballSpeed: this.ballSpeed,
         accelerationEnabled: this.accelerationEnabled,
-        paddleSize: this.paddleSize
+        paddleSize: this.paddleSize,
+        tournamentMode: this.tournamentMode,
+        tournamentRound: this.tournamentRound
       }
     };
   }

@@ -50,6 +50,16 @@ module.exports = {
       path: "/:gameId",
       rateLimit: { max: 20, timeWindow: 5 }
     },
+    "/tournament/create": {
+      method: ["POST"],
+      path: "/tournament/create",
+      rateLimit: { max: 5, timeWindow: 10 }
+    },
+    "/tournament/:tournamentId/cancel": {
+      method: ["POST"],
+      path: "/tournament/:tournamentId/cancel",
+      rateLimit: { max: 5, timeWindow: 10 }
+    },
 
     "/ws/pong": {
       method: ["GET"],

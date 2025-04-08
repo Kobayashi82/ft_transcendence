@@ -4,7 +4,8 @@ import Header from "./components/layout/Header";
 import ScrollToTop from "./components/ScrollToTop";
 import Home from "./pages/Home";
 import QuickMatch from "./pages/QuickMatch";
-import UnderConstruction from "./components/UnderConstruction";
+import Tournament from "./pages/Tournament";
+// import UnderConstruction from "./components/UnderConstruction";
 import StatsPage from "./pages/Stats";
 import LeaderboardPage from "./pages/Leaderboard";
 import AboutPage from "./pages/About";
@@ -27,7 +28,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/quick" element={<QuickMatch />} />
-          <Route path="/tournament" element={<UnderConstruction />} />
+          <Route path="/tournament" element={<Tournament />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/about" element={<AboutPage />} />
