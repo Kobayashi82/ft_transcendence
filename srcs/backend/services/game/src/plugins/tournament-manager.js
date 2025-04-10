@@ -37,6 +37,8 @@ class TournamentManager {
     
     const semifinal1Id = this.createMatch(tournamentId, 1, shuffledPlayers[0], shuffledPlayers[1], settings);
     const semifinal2Id = this.createMatch(tournamentId, 1, shuffledPlayers[2], shuffledPlayers[3], settings);
+    
+    // Create final match with placeholder players (will be determined by semifinal winners)
     const finalId = uuidv4();
     
     // Store match IDs in tournament
@@ -60,6 +62,15 @@ class TournamentManager {
       player1Position: 2,
       player1: shuffledPlayers[2],
       player2: shuffledPlayers[3]
+    });
+    
+    // Also store the final match in the matches map with placeholder values
+    this.matches.set(finalId, {
+      tournamentId,
+      round: 2,
+      player1: null, // Will be determined by semifinal winners
+      player2: null, // Will be determined by semifinal winners
+      gameId: null
     });
     
     // Store tournament
@@ -107,6 +118,36 @@ class TournamentManager {
       throw new Error('Match not found');
     }
     match.gameId = gameId;
+  }
+  
+  // Get tournament data
+  getTournament(tournamentId) {
+    return this.tournaments.get(tournamentId);
+  }
+  
+  // Find the other semifinal match in the same tournament
+  getOtherSemifinal(matchId) {
+    const match = this.matches.get(matchId);
+    if (!match || match.round !== 1) {
+      return null;
+    }
+    
+    const tournamentData = this.tournaments.get(match.tournamentId);
+    if (!tournamentData) {
+      return null;
+    }
+    
+    // Find the other semifinal (both have round 1)
+    const otherSemifinalId = tournamentData.matches.find(id => {
+      const m = this.matches.get(id);
+      return m && m.round === 1 && id !== matchId;
+    });
+    
+    if (!otherSemifinalId) {
+      return null;
+    }
+    
+    return this.matches.get(otherSemifinalId);
   }
   
   // CANCEL

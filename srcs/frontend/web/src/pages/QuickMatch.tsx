@@ -525,6 +525,7 @@ const QuickMatchPage: React.FC = () => {
           winningScore={winningScore}
           accelerationEnabled={accelerationEnabled}
           onClose={handleCloseGame}
+          isTournament={false}
         />
       )}
     </div>

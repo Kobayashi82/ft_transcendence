@@ -28,7 +28,10 @@ async function routes(fastify, options) {
         ballSpeed: settings.ballSpeed || fastify.config.game.defaults.ballSpeed,
         winningScore: settings.winningScore || fastify.config.game.defaults.winningScore,
         accelerationEnabled: settings.accelerationEnabled || fastify.config.game.defaults.accelerationEnabled,
-        paddleSize: settings.paddleSize || fastify.config.game.defaults.paddleSize
+        paddleSize: settings.paddleSize || fastify.config.game.defaults.paddleSize,
+        // Add tournament mode flag
+        tournamentMode: true,
+        tournamentRound: 1
       };
 
       // Create the first match (semifinal 1)

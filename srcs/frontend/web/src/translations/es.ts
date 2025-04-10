@@ -86,9 +86,25 @@ const translations = {
 
   // Tournament
   'tournament.title': 'Torneo',
-  'tournament.subtitle': 'Participa en un torneo',
+  'tournament.subtitle': 'Participa en un torneo con cuatro jugadores',
   'tournament.settings': 'Configuración del Torneo',
-  'tournament.gameHelp': 'Configura los ajustes del juego arriba. La velocidad de la bola afecta cuán rápido se mueve, el tamaño de la paleta cambia la altura de tu paleta, y puedes establecer cuántos puntos se necesitan para ganar. Habilitar el incremento de velocidad hará que la bola se acelere después de cada golpe, haciendo el juego cada vez más desafiante.',
+  'tournament.gameHelp': 'Configura los ajustes del juego arriba. El torneo consta de dos partidas de semifinales seguidas de una final. Los ganadores de cada semifinal competirán en la final para determinar el campeón del torneo.',
+  'tournament.aiOpponents': 'Oponentes IA',
+  'tournament.humanPlayers': 'Jugadores humanos',
+  'tournament.error.selectExactlyFourPlayers': 'Por favor selecciona exactamente 4 jugadores para el torneo',
+  'tournament.round': 'Ronda',
+  'tournament.final': 'Final',
+  'tournament.roundCompleted': 'Ronda completada',
+  'tournament.roundCompletedTitle': '¡Partida completada!',
+  'tournament.firstSemifinalCompleted': 'Primera semifinal completada. Procede a la segunda semifinal.',
+  'tournament.secondSemifinalCompleted': 'Segunda semifinal completada. Procede a la final.',
+  'tournament.semifinalCompleted': 'Semifinal completada. Procede a la siguiente ronda.',
+  'tournament.finalCompleted': '¡El torneo ha finalizado! ¡Felicidades al ganador!',
+  'tournament.proceedToSecondSemifinal': 'Proceder a segunda semifinal',
+  'tournament.proceedToFinal': 'Proceder a la final',
+  'tournament.closeTournament': 'Cerrar torneo',
+  'tournament.nextRound': 'Siguiente ronda',
+  'tournament.confirmCancelText': 'Estás a punto de abandonar el torneo. Esto cancelará el torneo actual. ¿Estás seguro?',
 
   // Stats
   'stats.title': 'Clasificación de Jugadores',
