@@ -29,7 +29,7 @@ interface GameSettings {
   ballSpeed: string;
   accelerationEnabled: boolean;
   paddleSize: string;
-}
+  }
 
 interface GameStateData {
   gameState: GameState;

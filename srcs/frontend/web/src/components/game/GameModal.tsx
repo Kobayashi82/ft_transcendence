@@ -659,7 +659,7 @@ const GameModal: React.FC<GameModalProps> = ({
                     onClick={handleNextRound}
                     className="mt-3 px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg"
                   >
-                    {gameState && gameState.settings?.isSecondSemifinal === true ? 
+                    {gameState?.settings?.isSecondSemifinal ? 
                       t('tournament.proceedToFinal') : 
                       t('tournament.proceedToSecondSemifinal')}
                   </button>

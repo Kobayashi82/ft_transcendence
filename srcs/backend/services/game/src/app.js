@@ -4,6 +4,13 @@ const config = require("./config");
 const fastify = require("fastify");
 const app = fastify();
 
+// Resolvemos la dependencia circular entre game-manager y tournament-manager
+const gameManager = require('./plugins/game-manager');
+const tournamentManager = require('./plugins/tournament-manager');
+// Establecemos la referencia cruzada
+tournamentManager.setGameManager(gameManager);
+console.log('Initialized game-manager and tournament-manager with cross-references');
+
 app.decorate("config", config);
 app.register(require('@fastify/websocket'));
 app.register(require("./plugins/error-handler"));

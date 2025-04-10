@@ -1,12 +1,20 @@
 "use strict";
 
-const gameManager = require('./game-manager');
+// Evitamos la importación directa al inicio
+// const gameManager = require('./game-manager');
 const { v4: uuidv4 } = require('uuid');
 
 class TournamentManager {
   constructor() {
     this.tournaments = new Map();
     this.matches = new Map();
+    // Vamos a añadir una referencia a gameManager que se establecerá más tarde
+    this.gameManager = null;
+  }
+  
+  // Nuevo método para establecer la referencia a gameManager
+  setGameManager(gameManager) {
+    this.gameManager = gameManager;
   }
   
   // Shuffle array
@@ -75,6 +83,15 @@ class TournamentManager {
     
     // Store tournament
     this.tournaments.set(tournamentId, tournament);
+    
+    // IMPORTANTE: Registrar este torneo en el gameManager para que pueda ser referenciado
+    // solo si tenemos acceso a gameManager
+    if (this.gameManager && typeof this.gameManager.registerTournament === 'function') {
+      this.gameManager.registerTournament(tournamentId, tournament);
+      console.log(`Tournament ${tournamentId} registered in gameManager with ${tournament.matches.length} matches`);
+    } else {
+      console.log(`Warning: gameManager not available or registerTournament is not a function. Tournament ${tournamentId} not registered in gameManager.`);
+    }
     
     return {
       tournamentId,
@@ -159,7 +176,7 @@ class TournamentManager {
     for (const matchId of tournament.matches) {
       const match = this.matches.get(matchId);
       if (match && match.gameId) {
-        gameManager.cancelGame(match.gameId);
+        this.gameManager.cancelGame(match.gameId);
       }
     }
     
@@ -167,6 +184,127 @@ class TournamentManager {
     this.tournaments.delete(tournamentId);
     
     return true;
+  }
+  
+  // Avanzar a la siguiente ronda del torneo tras completar una partida
+  advanceToNextRound(matchId, winnerId) {
+    try {
+      // Get match details
+      const match = this.matches.get(matchId);
+      if (!match) {
+        throw new Error(`Match not found: ${matchId}`);
+      }
+      
+      console.log(`Tournament match ${matchId} completed, winner: ${winnerId}`);
+      
+      // Verify this match is part of a tournament and has a next match
+      if (!match.nextMatchId) {
+        console.log(`Match ${matchId} has no next match - this must be the final`);
+        return null;
+      }
+      
+      // Get the next match
+      const nextMatch = this.matches.get(match.nextMatchId);
+      if (!nextMatch) {
+        throw new Error(`Next match not found: ${match.nextMatchId}`);
+      }
+      
+      console.log(`Advancing winner ${winnerId} to match ${match.nextMatchId}`);
+      
+      // Update next match with this match's winner
+      if (match.player1Position === 1) {
+        nextMatch.player1 = winnerId;
+      } else {
+        nextMatch.player2 = winnerId;
+      }
+      
+      // Check if both players for next match are ready
+      if (nextMatch.player1 && nextMatch.player2) {
+        console.log(`Next match ${match.nextMatchId} is ready to start with players ${nextMatch.player1} and ${nextMatch.player2}`);
+        return {
+          matchId: match.nextMatchId,
+          player1: nextMatch.player1,
+          player2: nextMatch.player2,
+          round: nextMatch.round
+        };
+      }
+      
+      console.log(`Waiting for other semifinal to complete before starting next match`);
+      return null;
+    } catch (error) {
+      console.error(`Error advancing to next round: ${error.message}`);
+      return null;
+    }
+  }
+  
+  // Método para crear un juego para una ronda específica del torneo
+  // IMPORTANTE: Cada juego debe tener sus propios tiempos independientes
+  createGameForMatch(matchId, gameSettings) {
+    try {
+      // Get match details
+      const match = this.matches.get(matchId);
+      if (!match) {
+        throw new Error(`Match not found: ${matchId}`);
+      }
+      
+      const tournamentId = match.tournamentId;
+      const tournament = this.tournaments.get(tournamentId);
+      
+      // Identificar si es segunda semifinal basado en la posición del match en el array
+      const isSecondSemifinal = match.round === 1 && 
+        tournament && 
+        tournament.matches.indexOf(matchId) === 1;
+      
+      // Merge settings with tournament round info
+      const settings = {
+        ...gameSettings,
+        tournamentMode: true,
+        tournamentRound: match.round,
+        isSecondSemifinal: isSecondSemifinal
+      };
+      
+      console.log(`Creating game for tournament match ${matchId} with settings:`, settings);
+      console.log(`Match round: ${match.round}, isSecondSemifinal: ${isSecondSemifinal}`);
+      
+      // Create a new game with FRESH timers
+      const gameId = this.gameManager.createGame(settings);
+      
+      // Update match with game ID
+      match.gameId = gameId;
+      console.log(`Game ${gameId} created for match ${matchId}`);
+      
+      // Add players to the game
+      this.gameManager.addPlayer(gameId, match.player1, 1);
+      this.gameManager.addPlayer(gameId, match.player2, 2);
+      
+      // CRÍTICO: Garantizar que este juego tenga un tiempo inicial independiente
+      const gameEntry = this.gameManager.games.get(gameId);
+      if (gameEntry) {
+        // Reiniciar completamente todos los tiempos para esta partida
+        const freshStartTime = Date.now();
+        gameEntry.startTime = freshStartTime;
+        gameEntry.finishTime = null;
+        gameEntry.lastActivity = freshStartTime;
+        
+        // Reiniciar también los tiempos en el objeto PongGame
+        const game = gameEntry.game;
+        if (game) {
+          game.lastUpdate = freshStartTime;
+          game.gameCreatedAt = freshStartTime;
+          game.gameStartedAt = null; // Se establecerá cuando inicie el juego
+          game.totalPausedTime = 0;
+          game.pauseIntervals = [];
+          
+          console.log(`Game ${gameId} initialized with fresh timestamps at ${new Date(freshStartTime).toISOString()}`);
+          console.log(`Tournament round ${match.round}, ${isSecondSemifinal ? 'Second semifinal' : (match.round === 2 ? 'Final' : 'First semifinal')}`);
+        }
+      }
+      
+      return gameId;
+    } catch (error) {
+      console.error(`Error creating game for match: ${error.message}`);
+      return null;
+    }
   }
 }
 

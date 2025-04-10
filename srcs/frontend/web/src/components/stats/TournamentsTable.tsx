@@ -9,8 +9,11 @@ interface TournamentDetails {
   start_time: string;
   end_time: string | null;
   settings: {
-    format: string;
-    pointsToWin: number;
+    ballSpeed?: string;
+    paddleSize?: string;
+    speedIncrement?: boolean;
+    pointsToWin?: number;
+    format?: string;
     [key: string]: any;
   };
   status: string;
@@ -61,13 +64,19 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
   };
 
-  // Calculate game duration in minutes
+  // Calculate game duration in mm:ss format
   const calculateDuration = (start: string, end: string) => {
     const startTime = new Date(start).getTime();
     const endTime = new Date(end).getTime();
-    const durationMs = endTime - startTime;
-    const minutes = Math.round(durationMs / (1000 * 60));
-    return `${minutes} ${t('stats.minutes')}`;
+    const durationMs = Math.max(0, endTime - startTime); // Evitar duraciones negativas
+    
+    // Calculate minutes and seconds
+    const totalSeconds = Math.floor(durationMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    // Format as mm:ss
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   // Get position text
@@ -92,6 +101,47 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
   // Format participants list
   const formatParticipants = (players: { user_id: string }[]) => {
     return players.map(player => player.user_id).join(", ");
+  };
+
+  // Format settings uniformly
+  const formatSettings = (settings: TournamentDetails['settings']) => {
+    if (!settings) return [];
+    
+    const formattedSettings = [];
+    
+    // Ball Speed
+    if (settings.ballSpeed) {
+      formattedSettings.push({
+        key: t('stats.ballSpeed'),
+        value: settings.ballSpeed
+      });
+    }
+    
+    // Paddle Size
+    if (settings.paddleSize) {
+      formattedSettings.push({
+        key: t('stats.paddleSize'),
+        value: settings.paddleSize
+      });
+    }
+    
+    // Speed Increment (acceleration)
+    if (settings.speedIncrement !== undefined) {
+      formattedSettings.push({
+        key: t('stats.speedIncrement'),
+        value: settings.speedIncrement ? t('stats.yes') : t('stats.no')
+      });
+    }
+    
+    // Points to Win
+    if (settings.pointsToWin) {
+      formattedSettings.push({
+        key: t('stats.pointsToWin'),
+        value: settings.pointsToWin.toString()
+      });
+    }
+    
+    return formattedSettings;
   };
 
   return (
@@ -159,8 +209,12 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                     </td>
                     <td className="py-4 px-4 text-gray-300">
                       <div className="text-sm">
-                        <p>{t('stats.format')}: {tournament.settings.format || "-"}</p>
-                        <p>{t('stats.pointsToWin')}: {tournament.settings.pointsToWin || "-"}</p>
+                        {formatSettings(tournament.settings).map((setting, idx) => (
+                          <p key={idx}>{setting.key}: {setting.value}</p>
+                        ))}
+                        {formatSettings(tournament.settings).length === 0 && (
+                          <p>{t('stats.noSettingsAvailable')}</p>
+                        )}
                       </div>
                     </td>
                   </tr>

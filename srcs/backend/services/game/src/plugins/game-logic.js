@@ -13,6 +13,7 @@ class PongGame {
     // Tournament mode settings
     this.tournamentMode = options.tournamentMode || false;
     this.tournamentRound = options.tournamentRound || 0;
+    this.isSecondSemifinal = options.isSecondSemifinal || false; // Añadimos esta propiedad explícitamente
     
     // Game dimensions
     this.width = config.game.width;
@@ -60,10 +61,27 @@ class PongGame {
     
     // Game state
     this.gameState = 'waiting'; // 'waiting', 'playing', 'paused', 'finished', 'next', 'cancelled'
-    this.lastUpdate = Date.now();
+    
+    // CRÍTICO: Inicializar timestamp del último update con el tiempo actual
+    const now = Date.now();
+    this.lastUpdate = now;
+    this.gameCreatedAt = now; // Nuevo: Guardar cuándo se creó el juego
+    this.gameStartedAt = null; // Nuevo: Se establecerá cuando inicie el juego
+    this.gameStateChangeTime = now; // Nuevo: Registrar cambios de estado
     
     // Status flags
     this.ballHitRecently = false;
+
+    // Timing related properties - CRÍTICO: Inicializar todos los contadores de tiempo
+    this.pauseTime = null; // Timestamp when the game was paused
+    this.totalPausedTime = 0; // Total time spent in pause (ms)
+    this.pauseIntervals = []; // Track all pause intervals [start, end]
+    
+    // Log para debugging
+    console.log(`Nuevo juego creado a las ${new Date(now).toISOString()}`);
+    if (this.tournamentMode) {
+      console.log(`Modo torneo: Ronda ${this.tournamentRound}, ${this.isSecondSemifinal ? 'Segunda semifinal' : (this.tournamentRound === 2 ? 'Final' : 'Primera semifinal')}`);
+    }
   }
 
   // PLAYER NAME
@@ -114,6 +132,8 @@ class PongGame {
   pause() {
     if (this.gameState === 'playing') {
       this.gameState = 'paused';
+      this.pauseTime = Date.now(); // Record when we paused
+      console.log(`Game paused at ${new Date(this.pauseTime).toISOString()}`);
       return true;
     }
     return false;
@@ -122,8 +142,23 @@ class PongGame {
   // RESUME
   resume() {
     if (this.gameState === 'paused') {
+      const now = Date.now();
+      const pauseDuration = now - this.pauseTime;
+      
+      // Track this pause interval
+      this.pauseIntervals.push({
+        start: this.pauseTime,
+        end: now,
+        duration: pauseDuration
+      });
+      
+      // Accumulate total paused time
+      this.totalPausedTime += pauseDuration;
+      
+      console.log(`Game resumed after ${pauseDuration}ms pause. Total paused time: ${this.totalPausedTime}ms`);
+      
       this.gameState = 'playing';
-      this.lastUpdate = Date.now();
+      this.lastUpdate = now; // Update last update time to now
       return true;
     }
     return false;
@@ -363,6 +398,8 @@ class PongGame {
   
   // STATE
   getState() {
+    const now = Date.now();
+    
     return {
       gameState: this.gameState,
       player1: {
@@ -393,9 +430,32 @@ class PongGame {
         accelerationEnabled: this.accelerationEnabled,
         paddleSize: this.paddleSize,
         tournamentMode: this.tournamentMode,
-        tournamentRound: this.tournamentRound
+        tournamentRound: this.tournamentRound,
+        isSecondSemifinal: this.isSecondSemifinal || false
+      },
+      timing: {
+        totalPausedTime: this.totalPausedTime,
+        pauseIntervals: this.pauseIntervals,
+        lastUpdate: this.lastUpdate,
+        currentTime: now, // Añadimos el tiempo actual para cálculos de cliente
+        gameStateChangeTime: this.gameStateChangeTime || now // Tiempo de último cambio de estado
       }
     };
+  }
+
+  // Calculate the effective playing time (excluding pauses)
+  getPlayingTime() {
+    const now = Date.now();
+    const totalElapsedTime = now - this.lastUpdate;
+    
+    // If we're currently paused, don't count time since pause began
+    let currentPauseTime = 0;
+    if (this.gameState === 'paused' && this.pauseTime) {
+      currentPauseTime = now - this.pauseTime;
+    }
+    
+    // Return effective playing time
+    return totalElapsedTime - this.totalPausedTime - currentPauseTime;
   }
 }
 

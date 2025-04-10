@@ -44,13 +44,19 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
   };
 
-  // Calculate game duration in minutes
+  // Calculate game duration in mm:ss format
   const calculateDuration = (start: string, end: string) => {
     const startTime = new Date(start).getTime();
     const endTime = new Date(end).getTime();
-    const durationMs = endTime - startTime;
-    const minutes = Math.round(durationMs / (1000 * 60));
-    return `${minutes} ${t('stats.minutes')}`;
+    const durationMs = Math.max(0, endTime - startTime); // Prevenir duraciones negativas
+    
+    // Calculate minutes and seconds
+    const totalSeconds = Math.floor(durationMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    // Format as mm:ss
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   // Get opponent for a game
@@ -58,14 +64,14 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
     const opponent = game.players.find(player => player.user_id !== playerUserId);
     return opponent ? opponent.user_id : t('stats.unknown');
   };
-  
+
   // Get game result text (win or loss)
   const getGameResult = (game: GameDetails, playerUserId: string) => {
     const player = game.players.find(p => p.user_id === playerUserId);
     const opponent = game.players.find(p => p.user_id !== playerUserId);
-    
+
     if (!player || !opponent) return '';
-    
+
     if (player.score > opponent.score) {
       return `${t('stats.win')}`;
     } else if (player.score < opponent.score) {
@@ -87,6 +93,63 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
     return opponent ? opponent.score : 0;
   };
 
+  // Format settings uniformly
+  const formatSettings = (settings: GameDetails['settings']) => {
+    if (!settings) return [];
+
+    const formattedSettings = [];
+
+    // Ball Speed
+    if (settings.ballSpeed !== undefined) {
+      let ballSpeedValue = settings.ballSpeed;
+      // Convert numeric value to string label if needed
+      if (typeof ballSpeedValue === 'number') {
+        if (ballSpeedValue <= 3) ballSpeedValue = 'slow';
+        else if (ballSpeedValue <= 5) ballSpeedValue = 'medium';
+        else ballSpeedValue = 'fast';
+      }
+
+      formattedSettings.push({
+        key: t('stats.ballSpeed'),
+        value: ballSpeedValue
+      });
+    }
+
+    // Paddle Size
+    if (settings.paddleSize !== undefined) {
+      let paddleSizeValue = settings.paddleSize;
+      // Convert numeric value to string label if needed
+      if (typeof paddleSizeValue === 'number') {
+        if (paddleSizeValue <= 60) paddleSizeValue = 'short';
+        else if (paddleSizeValue <= 90) paddleSizeValue = 'medium';
+        else paddleSizeValue = 'long';
+      }
+
+      formattedSettings.push({
+        key: t('stats.paddleSize'),
+        value: paddleSizeValue
+      });
+    }
+
+    // Speed Increment (acceleration)
+    if (settings.speedIncrement !== undefined) {
+      formattedSettings.push({
+        key: t('stats.speedIncrement'),
+        value: settings.speedIncrement ? t('stats.yes') : t('stats.no')
+      });
+    }
+
+    // Points to Win
+    if (settings.pointsToWin) {
+      formattedSettings.push({
+        key: t('stats.pointsToWin'),
+        value: settings.pointsToWin.toString()
+      });
+    }
+
+    return formattedSettings;
+  };
+
   return (
     <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl">
       <div className="h-2 bg-gradient-to-r from-purple-600 to-pink-600"></div>
@@ -94,7 +157,7 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
         <h2 className="text-2xl font-bold text-white mb-4">
           {t('stats.recentGames')}
         </h2>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -125,7 +188,7 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
             <tbody className="divide-y divide-gray-700">
               {games.map(game => {
                 const details = gameDetails[game.id];
-                
+
                 return (
                   <tr key={game.id} className="hover:bg-gray-700/30">
                     <td className="py-4 px-4 text-gray-300">
@@ -161,17 +224,19 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
                     <td className="py-4 px-4 text-gray-300">
                       {details && details.settings ? (
                         <div className="text-sm">
-                          <p>{t('stats.ballSpeed')}: {details.settings.ballSpeed || "-"}</p>
-                          <p>{t('stats.paddleSize')}: {details.settings.paddleSize || "-"}</p>
-                          <p>{t('stats.speedIncrement')}: {details.settings.speedIncrement || "-"}</p>
-                          <p>{t('stats.pointsToWin')}: {details.settings.pointsToWin || "-"}</p>
+                          {formatSettings(details.settings).map((setting, idx) => (
+                            <p key={idx}>{setting.key}: {setting.value}</p>
+                          ))}
+                          {formatSettings(details.settings).length === 0 && (
+                            <p>{t('stats.noSettingsAvailable')}</p>
+                          )}
                         </div>
                       ) : "-"}
                     </td>
                   </tr>
                 );
               })}
-              
+
               {games.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-6 text-center text-gray-400">

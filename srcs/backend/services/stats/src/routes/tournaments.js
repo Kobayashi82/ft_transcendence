@@ -164,6 +164,61 @@ async function tournamentRoutes(fastify, options) {
       return reply.code(500).send({ error: 'Failed to get tournament' });
     }
   });
+
+  // Update tournament results
+  fastify.post('/tournaments/:id/results', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'integer' }
+        }
+      },
+      body: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['user_id', 'position'],
+          properties: {
+            user_id: { type: 'string' },
+            position: { type: 'integer', minimum: 1 }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const id = parseInt(request.params.id);
+      
+      if (isNaN(id)) {
+        return reply.code(400).send({ error: 'Invalid tournament ID' });
+      }
+      
+      // Ensure positions are integers
+      const results = request.body.map(result => ({
+        ...result,
+        position: parseInt(result.position)
+      }));
+      
+      const tournament = tournamentModel.getTournamentById(id);
+      
+      if (!tournament) {
+        return reply.code(404).send({ error: 'Tournament not found' });
+      }
+      
+      const success = tournamentModel.updateTournamentResults(id, results);
+      
+      if (!success) {
+        return reply.code(400).send({ error: 'Failed to update tournament results' });
+      }
+      
+      return { success: true };
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Failed to update tournament results' });
+    }
+  });
 }
 
 module.exports = fp(tournamentRoutes, { name: 'tournament-routes', dependencies: ['tournament-model'] });
