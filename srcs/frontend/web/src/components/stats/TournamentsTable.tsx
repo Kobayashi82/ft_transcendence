@@ -111,17 +111,29 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
     
     // Ball Speed
     if (settings.ballSpeed) {
+      const speedKey = {
+        slow: t('stats.slow'),
+        medium: t('stats.medium'),
+        fast: t('stats.fast')
+      }[settings.ballSpeed];
+	
       formattedSettings.push({
         key: t('stats.ballSpeed'),
-        value: settings.ballSpeed
+        value: speedKey || settings.ballSpeed
       });
     }
     
     // Paddle Size
     if (settings.paddleSize) {
+      const sizeKey = {
+        slow: t('stats.slow'),
+        medium: t('stats.medium'),
+        fast: t('stats.fast')
+      }[settings.paddleSize];
+
       formattedSettings.push({
         key: t('stats.paddleSize'),
-        value: settings.paddleSize
+        value: sizeKey || settings.paddleSize
       });
     }
     

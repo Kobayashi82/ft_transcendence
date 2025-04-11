@@ -5,7 +5,6 @@ import ScrollToTop from "./components/ScrollToTop";
 import Home from "./pages/Home";
 import QuickMatch from "./pages/QuickMatch";
 import Tournament from "./pages/Tournament";
-// import UnderConstruction from "./components/UnderConstruction";
 import StatsPage from "./pages/Stats";
 import LeaderboardPage from "./pages/Leaderboard";
 import AboutPage from "./pages/About";

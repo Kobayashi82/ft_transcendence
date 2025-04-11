@@ -100,34 +100,30 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
     const formattedSettings = [];
 
     // Ball Speed
-    if (settings.ballSpeed !== undefined) {
-      let ballSpeedValue = settings.ballSpeed;
-      // Convert numeric value to string label if needed
-      if (typeof ballSpeedValue === 'number') {
-        if (ballSpeedValue <= 3) ballSpeedValue = 'slow';
-        else if (ballSpeedValue <= 5) ballSpeedValue = 'medium';
-        else ballSpeedValue = 'fast';
-      }
-
+    if (settings.ballSpeed) {
+      const speedKey = {
+        slow: t('stats.slow'),
+        medium: t('stats.medium'),
+        fast: t('stats.fast')
+      }[settings.ballSpeed];
+      
       formattedSettings.push({
         key: t('stats.ballSpeed'),
-        value: ballSpeedValue
+        value: speedKey || settings.ballSpeed
       });
     }
 
     // Paddle Size
-    if (settings.paddleSize !== undefined) {
-      let paddleSizeValue = settings.paddleSize;
-      // Convert numeric value to string label if needed
-      if (typeof paddleSizeValue === 'number') {
-        if (paddleSizeValue <= 60) paddleSizeValue = 'short';
-        else if (paddleSizeValue <= 90) paddleSizeValue = 'medium';
-        else paddleSizeValue = 'long';
-      }
+    if (settings.paddleSize) {
+      const sizeKey = {
+        slow: t('stats.slow'),
+        medium: t('stats.medium'),
+        fast: t('stats.fast')
+      }[settings.paddleSize];
 
       formattedSettings.push({
         key: t('stats.paddleSize'),
-        value: paddleSizeValue
+        value: sizeKey || settings.paddleSize
       });
     }
 

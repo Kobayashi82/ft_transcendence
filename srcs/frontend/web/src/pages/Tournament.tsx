@@ -216,15 +216,15 @@ const TournamentPage: React.FC = () => {
   const getOptionDisplayText = (option: string) => {
     switch(option.toLowerCase()) {
       case 'slow':
-        return t('quickMatch.slow');
+        return t('tournament.slow');
       case 'medium':
-        return t('quickMatch.medium');
+        return t('tournament.medium');
       case 'fast':
-        return t('quickMatch.fast');
+        return t('tournament.fast');
       case 'short':
-        return t('quickMatch.short');
+        return t('tournament.short');
       case 'long':
-        return t('quickMatch.long');
+        return t('tournament.long');
       default:
         return option.charAt(0).toUpperCase() + option.slice(1);
     }
@@ -281,7 +281,7 @@ const TournamentPage: React.FC = () => {
                 <div className="p-6 flex-1 flex flex-col">
                   <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
                     <Users className="mr-2 h-6 w-6 text-purple-400" />
-                    {t('quickMatch.humanPlayers')}
+                    {t('tournament.humanPlayers')}
                   </h2>
                   
                   <div className="flex-1 flex flex-col justify-between">
@@ -290,7 +290,7 @@ const TournamentPage: React.FC = () => {
                       {[0, 1, 2, 3].map((index) => (
                         <div key={index} className="mb-4">
                           <label className="block text-gray-300 text-sm font-medium mb-2">
-                            {t('quickMatch.player')} {index + 1}
+                            {t('tournament.player')} {index + 1}
                           </label>
                           <div className="relative" ref={(el) => (dropdownRefs.current[index] = el)}>
                             <input
@@ -301,7 +301,7 @@ const TournamentPage: React.FC = () => {
                                 newSelectedPlayers[index] = e.target.value;
                                 setSelectedPlayers(newSelectedPlayers);
                               }}
-                              placeholder={t('quickMatch.selectPlayer')}
+                              placeholder={t('tournament.selectPlayer')}
                               spellCheck="false"
                               className="w-full pr-10 p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                               onClick={() => setShowAIList(null)}
@@ -362,7 +362,7 @@ const TournamentPage: React.FC = () => {
                       {/* Info text */}
                       <div className="mt-3 p-3 pt-1">
                         <p className="text-gray-500 text-sm">
-                          {t('quickMatch.playerHelp')}
+                          {t('tournament.playerHelp')}
                         </p>
                       </div>
                     </div>
@@ -399,7 +399,7 @@ const TournamentPage: React.FC = () => {
                     {/* Ball Speed */}
                     <div>
                       <label className="block text-gray-300 text-sm font-medium mb-2">
-                        {t('quickMatch.ballSpeed')}
+                        {t('tournament.ballSpeed')}
                       </label>
                       <div className="flex space-x-2">
                         {options?.ballSpeed.map((speed) => (
@@ -422,7 +422,7 @@ const TournamentPage: React.FC = () => {
                     {/* Paddle Size */}
                     <div>
                       <label className="block text-gray-300 text-sm font-medium mb-2">
-                        {t('quickMatch.paddleSize')}
+                        {t('tournament.paddleSize')}
                       </label>
                       <div className="flex space-x-2">
                         {options?.paddleSize.map((size) => (
@@ -445,7 +445,7 @@ const TournamentPage: React.FC = () => {
                     {/* Winning Score */}
                     <div>
                       <label className="block text-gray-300 text-sm font-medium mb-2">
-                        {t('quickMatch.winningScore')}
+                        {t('tournament.winningScore')}
                       </label>
                       <div className="relative">
                         <input
@@ -464,7 +464,7 @@ const TournamentPage: React.FC = () => {
                           className="w-full h-9 p-2 pl-3 pr-20 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-8 pointer-events-none">
-                          <span className="text-gray-400 text-sm">{t('quickMatch.points')}</span>
+                          <span className="text-gray-400 text-sm">{t('tournament.points')}</span>
                         </div>
                       </div>
                     </div>
@@ -472,7 +472,7 @@ const TournamentPage: React.FC = () => {
                     {/* Acceleration Enabled */}
                     <div>
                       <label className="block text-gray-300 text-sm font-medium mb-2">
-                        {t('quickMatch.acceleration')}
+                        {t('tournament.acceleration')}
                       </label>
                       <div className="flex space-x-2">
                         <button
@@ -484,7 +484,7 @@ const TournamentPage: React.FC = () => {
                               : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                           }`}
                         >
-                          {t('quickMatch.enabled')}
+                          {t('tournament.enabled')}
                         </button>
                         <button
                           type="button"
@@ -495,7 +495,7 @@ const TournamentPage: React.FC = () => {
                               : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                           }`}
                         >
-                          {t('quickMatch.disabled')}
+                          {t('tournament.disabled')}
                         </button>
                       </div>
                     </div>

@@ -279,7 +279,7 @@ const QuickMatchPage: React.FC = () => {
               <div className="p-6 flex-1 flex flex-col">
                 <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
                   <Users className="mr-2 h-6 w-6 text-blue-400" />
-                  {t('stats.players')}
+                  {t('quickMatch.players')}
                 </h2>
                 
                 <div className="flex-1 flex flex-col justify-between">
@@ -375,7 +375,7 @@ const QuickMatchPage: React.FC = () => {
                       }`}
                     >
                       <Gamepad2 className="mr-2 h-5 w-5" />
-                      {t('home.playNow')}
+                      {t('quickMatch.playNow')}
                     </button>
                   </div>
                 </div>

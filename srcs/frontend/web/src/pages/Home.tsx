@@ -67,14 +67,6 @@ const Home: React.FC = () => {
       color: "from-purple-600 to-pink-700",
       link: "/tournament"
     },
-	{
-	  id: "status",
-	  title: t('gameMode.status.title'),
-	  description: t('gameMode.status.description'),
-	  icon: <ActivitySquare className="w-8 h-8" />,
-	  color: "from-gray-700 to-zinc-900",
-	  link: "/status"
-	},
     {
       id: "stats",
       title: t('gameMode.stats.title'),
@@ -98,7 +90,15 @@ const Home: React.FC = () => {
       icon: <Info className="w-8 h-8" />,
       color: "from-sky-500 to-cyan-700",
       link: "/about"
-    }
+    },
+	{
+	  id: "status",
+	  title: t('gameMode.status.title'),
+	  description: t('gameMode.status.description'),
+	  icon: <ActivitySquare className="w-8 h-8" />,
+	  color: "from-gray-700 to-zinc-900",
+	  link: "/status"
+	}
   ];
 
   return (

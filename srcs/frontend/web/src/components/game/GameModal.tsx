@@ -504,35 +504,35 @@ const GameModal: React.FC<GameModalProps> = ({
     }
   }, [persistentConnectionLost, onClose]);
   
-  const getStatusText = () => {
-    if (persistentConnectionLost) return t('quickMatch.connectionLost');
-    if (!gameState) return t('quickMatch.connecting');
+//   const getStatusText = () => {
+//     if (persistentConnectionLost) return t('quickMatch.connectionLost');
+//     if (!gameState) return t('quickMatch.connecting');
     
-    const isTournamentMode = gameState.settings?.tournamentMode;
-    const round = gameState.settings?.tournamentRound || 1;
-    const tournamentPrefix = isTournamentMode ? 
-      (round === 2 ? `${t('tournament.final')}: ` : `${t('tournament.round')} ${round}: `) : '';
+//     const isTournamentMode = gameState.settings?.tournamentMode;
+//     const round = gameState.settings?.tournamentRound || 1;
+//     const tournamentPrefix = isTournamentMode ? 
+//       (round === 2 ? `${t('tournament.final')}: ` : `${t('tournament.round')} ${round}: `) : '';
     
-    switch (gameState.gameState) {
-      case "waiting":
-        return `${tournamentPrefix}${t('quickMatch.waiting')}`;
-      case "playing":
-        return `${tournamentPrefix}${t('quickMatch.inProgress')}`;
-      case "paused":
-        return `${tournamentPrefix}${t('quickMatch.paused')}`;
-      case "next":
-        return `${tournamentPrefix}${t('tournament.roundCompleted')}`;
-      case "finished":
-        const winner = gameState.player1.score > gameState.player2.score 
-          ? gameState.player1.name 
-          : gameState.player2.name;
-        return `${tournamentPrefix}${winner} ${t('quickMatch.wins')}`;
-      case "cancelled":
-        return `${tournamentPrefix}${t('quickMatch.cancelled')}`;
-      default:
-        return "Unknown state";
-    }
-  };
+//     switch (gameState.gameState) {
+//       case "waiting":
+//         return `${tournamentPrefix}${t('quickMatch.waiting')}`;
+//       case "playing":
+//         return `${tournamentPrefix}${t('quickMatch.inProgress')}`;
+//       case "paused":
+//        return `${tournamentPrefix}${t('quickMatch.paused')}`;
+//       case "next":
+//         return `${tournamentPrefix}${t('tournament.roundCompleted')}`;
+//       case "finished":
+//         const winner = gameState.player1.score > gameState.player2.score 
+//           ? gameState.player1.name 
+//           : gameState.player2.name;
+//         return `${tournamentPrefix}${winner} ${t('quickMatch.wins')}`;
+//       case "cancelled":
+//         return `${tournamentPrefix}${t('quickMatch.cancelled')}`;
+//       default:
+//         return "Unknown state";
+//     }
+//   };
   
   const getScoreText = () => {
     if (!gameState) return "";
@@ -576,7 +576,7 @@ const GameModal: React.FC<GameModalProps> = ({
             </h3>
             <p className="text-gray-400 text-sm flex items-center">
               {!isConnected && <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 mr-2 animate-pulse"></span>}
-              {getStatusText()}
+              {/* {getStatusText()} */}
             </p>
           </div>
           
@@ -592,7 +592,7 @@ const GameModal: React.FC<GameModalProps> = ({
                 <button
                   onClick={gameState?.gameState === "next" ? handleNextRound : startGame}
                   className={`${gameState?.gameState === "next" ? "bg-purple-600 hover:bg-purple-700" : "bg-green-600 hover:bg-green-700"} text-white p-2 rounded-lg`}
-                  title={gameState?.gameState === "next" ? t('tournament.nextRound') : t('quickMatch.startGame')}
+                  title={t('quickMatch.startGame')}
                 >
                   <Play className="h-5 w-5" />
                 </button>
@@ -646,7 +646,6 @@ const GameModal: React.FC<GameModalProps> = ({
             <div className="flex">
               <Trophy className="h-5 w-5 text-purple-300 mr-2 flex-shrink-0" />
               <div>
-                <p className="font-medium">{t('tournament.roundCompletedTitle')}</p>
                 <p>
                   {currentRound === 1 ? 
                     (gameState && gameState.settings?.isSecondSemifinal ? 
