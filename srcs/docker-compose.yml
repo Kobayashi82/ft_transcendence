@@ -22,8 +22,6 @@ services:
     build:
       context: ./frontend/web
       dockerfile: Dockerfile.dev
-      args:
-        - API_URL=${VITE_API_URL-http://gateway:3000/api}
     volumes:
       - ./frontend/web:/app
     networks:

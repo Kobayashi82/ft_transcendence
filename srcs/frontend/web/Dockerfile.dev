@@ -2,19 +2,15 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN npm install -g vite typescript
-
 COPY package*.json ./
 # RUN npm install
 
 COPY . .
 
-ARG API_URL
-ENV VITE_API_URL=${API_URL}
 ENV NODE_ENV=development
 ENV CHOKIDAR_USEPOLLING=true
 ENV WATCHPACK_POLLING=true
 
 EXPOSE 80
 
-CMD ["vite"]
+CMD ["node_modules/.bin/vite"]

@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build
+FROM node:23-alpine AS build
 
 WORKDIR /app
 
@@ -6,9 +6,6 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-
-ARG API_URL
-ENV VITE_API_URL=${API_URL}
 
 RUN npm run build
 
