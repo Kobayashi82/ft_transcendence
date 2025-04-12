@@ -155,7 +155,16 @@ class GameManager {
       gameEntry.clients.delete(clientId);
       
       if (clientEntry.playerName) {
+        // Agregar a la lista de jugadores desconectados con timestamp
         gameEntry.disconnectedPlayers.set(clientEntry.playerName, Date.now());
+        
+        // Liberar al jugador del mapa de jugadores si el juego no está en curso
+        if (!['playing', 'paused', 'waiting'].includes(gameEntry.game.gameState)) {
+          console.log(`Liberando al jugador ${clientEntry.playerName} por desconexión en estado ${gameEntry.game.gameState}`);
+          this.players.delete(clientEntry.playerName);
+        } else {
+          console.log(`Marcando jugador ${clientEntry.playerName} como desconectado temporalmente`);
+        }
         
         // Pause the game if it was playing
         if (gameEntry.game.gameState === 'playing') {
@@ -164,18 +173,54 @@ class GameManager {
         }
       }
       
-      // If no clients are connected, clean up player data
-      if (gameEntry.clients.size === 0 && 
-         ['playing', 'paused', 'waiting'].includes(gameEntry.game.gameState)) {
-        if (gameEntry.game.player1) this.players.delete(gameEntry.game.player1);
-        if (gameEntry.game.player2) this.players.delete(gameEntry.game.player2);
+      // Si no quedan clientes conectados, liberar todos los jugadores y cancelar el juego
+      if (gameEntry.clients.size === 0) {
+        console.log(`No quedan clientes conectados para el juego ${clientEntry.gameId}, liberando jugadores`);
         
-        gameEntry.game.cancel();
+        // Liberar jugadores explícitamente del mapa de jugadores
+        if (gameEntry.game.player1) {
+          console.log(`Liberando jugador 1: ${gameEntry.game.player1}`);
+          this.players.delete(gameEntry.game.player1);
+        }
+        
+        if (gameEntry.game.player2) {
+          console.log(`Liberando jugador 2: ${gameEntry.game.player2}`);
+          this.players.delete(gameEntry.game.player2);
+        }
+        
+        // Si el juego estaba en progreso (o esperando), cancelarlo
+        if (['playing', 'paused', 'waiting'].includes(gameEntry.game.gameState)) {
+          console.log(`Cancelando juego ${clientEntry.gameId} por desconexión de todos los clientes`);
+          gameEntry.game.cancel();
+        }
+      } else {
+        // Todavía hay clientes conectados, verificar si todos los jugadores están desconectados
+        console.log(`Quedan ${gameEntry.clients.size} clientes conectados para el juego ${clientEntry.gameId}`);
+        
+        // Si todos los jugadores están desconectados por más de 30 segundos, liberar y cancelar
+        const now = Date.now();
+        const allPlayersDisconnected = (gameEntry.game.player1 && gameEntry.disconnectedPlayers.has(gameEntry.game.player1)) &&
+                                      (gameEntry.game.player2 && gameEntry.disconnectedPlayers.has(gameEntry.game.player2));
+        
+        const oldestDisconnection = Math.min(
+          ...[...gameEntry.disconnectedPlayers.values()]
+        );
+        
+        // Si todos los jugadores están desconectados por más de 30 segundos, liberar y cancelar
+        if (allPlayersDisconnected && now - oldestDisconnection > 30000) {
+          console.log(`Todos los jugadores desconectados por más de 30 segundos, liberando y cancelando juego ${clientEntry.gameId}`);
+          
+          if (gameEntry.game.player1) this.players.delete(gameEntry.game.player1);
+          if (gameEntry.game.player2) this.players.delete(gameEntry.game.player2);
+          
+          gameEntry.game.cancel();
+          this.broadcastGameState(clientEntry.gameId);
+        }
       }
     }
     
     this.clients.delete(clientId);
-    console.log(`Client ${clientId} unregistered`);
+    console.log(`Cliente ${clientId} desregistrado`);
   }
   
   // Broadcast game state to all connected clients
