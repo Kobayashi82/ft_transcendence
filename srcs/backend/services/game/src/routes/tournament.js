@@ -9,7 +9,7 @@ async function routes(fastify, options) {
   // Create a tournament
   fastify.post('/tournament/create', { schema: schemas.createTournament }, async (request, reply) => {
     try {
-      const { players, settings } = request.body;      
+      const { players, settings, name } = request.body;      
       const playerConflicts = players.filter(playerName => gameManager.isPlayerInGame(playerName));
       
       if (playerConflicts.length > 0) {
@@ -20,8 +20,18 @@ async function routes(fastify, options) {
         };
       }
       
-      // Create tournament
-      const tournament = tournamentManager.createTournament(players, settings);
+      // Validar que se proporciona un nombre para el torneo
+      const tournamentName = name ? name.trim() : "";
+      if (!tournamentName) {
+        reply.code(400);
+        return {
+          success: false,
+          message: "Tournament name is required"
+        };
+      }
+      
+      // Create tournament with name
+      const tournament = tournamentManager.createTournament(players, settings, tournamentName);
       
       // Prepare match creation with proper game settings
       const firstMatchSettings = {
@@ -31,7 +41,8 @@ async function routes(fastify, options) {
         paddleSize: settings.paddleSize || fastify.config.game.defaults.paddleSize,
         // Add tournament mode flag
         tournamentMode: true,
-        tournamentRound: 1
+        tournamentRound: 1,
+        tournamentName: tournamentName // Añadir el nombre del torneo
       };
 
       // Create the first match (semifinal 1)
@@ -46,9 +57,21 @@ async function routes(fastify, options) {
       // Update match with gameId
       tournamentManager.updateMatchGameId(firstMatchId, gameId);
       
+      // Guardar la configuración del torneo para todas las rondas
+      if (settings.useConfigForAllRounds) {
+        tournamentManager.setTournamentSettings(tournament.tournamentId, {
+          ballSpeed: settings.ballSpeed || fastify.config.game.defaults.ballSpeed,
+          winningScore: settings.winningScore || fastify.config.game.defaults.winningScore,
+          accelerationEnabled: settings.accelerationEnabled || fastify.config.game.defaults.accelerationEnabled,
+          paddleSize: settings.paddleSize || fastify.config.game.defaults.paddleSize,
+          tournamentName: tournamentName
+        });
+      }
+      
       return {
         success: true,
         tournamentId: tournament.tournamentId,
+        tournamentName: tournamentName,
         firstMatchId: tournament.firstMatchId,
         firstMatchGameId: gameId,
         semifinal2Id: tournament.semifinal2Id,

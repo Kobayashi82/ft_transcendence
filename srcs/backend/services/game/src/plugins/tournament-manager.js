@@ -8,6 +8,8 @@ class TournamentManager {
   constructor() {
     this.tournaments = new Map();
     this.matches = new Map();
+    // Añadimos una estructura para guardar la configuración por torneo
+    this.tournamentSettings = new Map();
     // Vamos a añadir una referencia a gameManager que se establecerá más tarde
     this.gameManager = null;
   }
@@ -27,8 +29,19 @@ class TournamentManager {
     return shuffled;
   }
   
+  // Método para guardar la configuración para todas las rondas del torneo
+  setTournamentSettings(tournamentId, settings) {
+    this.tournamentSettings.set(tournamentId, settings);
+    console.log(`Saved tournament settings for all rounds of tournament ${tournamentId}:`, settings);
+  }
+  
+  // Método para obtener la configuración guardada del torneo
+  getTournamentSettings(tournamentId) {
+    return this.tournamentSettings.get(tournamentId) || null;
+  }
+  
   // CREATE
-  createTournament(players, settings) {
+  createTournament(players, settings, tournamentName) {
     if (players.length !== 4) {
       throw new Error('Tournament requires exactly 4 players');
     }
@@ -37,6 +50,7 @@ class TournamentManager {
     const tournamentId = uuidv4();   
     const tournament = {
       id: tournamentId,
+      name: tournamentName || `Tournament ${tournamentId.substring(0, 8)}`, // Usar el nombre proporcionado o uno generado
       createdAt: new Date(),
       settings: settings,
       players: shuffledPlayers,
@@ -95,6 +109,7 @@ class TournamentManager {
     
     return {
       tournamentId,
+      tournamentName: tournament.name,
       firstMatchId: semifinal1Id,
       semifinal2Id: semifinal2Id,
       finalId: finalId,
@@ -182,6 +197,8 @@ class TournamentManager {
     
     // Remove tournament
     this.tournaments.delete(tournamentId);
+    // Limpiar la configuración del torneo
+    this.tournamentSettings.delete(tournamentId);
     
     return true;
   }
@@ -255,13 +272,28 @@ class TournamentManager {
         tournament && 
         tournament.matches.indexOf(matchId) === 1;
       
-      // Merge settings with tournament round info
-      const settings = {
-        ...gameSettings,
-        tournamentMode: true,
-        tournamentRound: match.round,
-        isSecondSemifinal: isSecondSemifinal
-      };
+      // Obtener la configuración guardada del torneo si existe
+      let settings = gameSettings;
+      const savedSettings = this.getTournamentSettings(tournamentId);
+      
+      if (savedSettings) {
+        console.log(`Using saved tournament settings for match ${matchId} in tournament ${tournamentId}`);
+        // Usar la configuración guardada para todas las rondas
+        settings = {
+          ...savedSettings,
+          tournamentMode: true,
+          tournamentRound: match.round,
+          isSecondSemifinal: isSecondSemifinal
+        };
+      } else {
+        // Merge settings with tournament round info
+        settings = {
+          ...gameSettings,
+          tournamentMode: true,
+          tournamentRound: match.round,
+          isSecondSemifinal: isSecondSemifinal
+        };
+      }
       
       console.log(`Creating game for tournament match ${matchId} with settings:`, settings);
       console.log(`Match round: ${match.round}, isSecondSemifinal: ${isSecondSemifinal}`);

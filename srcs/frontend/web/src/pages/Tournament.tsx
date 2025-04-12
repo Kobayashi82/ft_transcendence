@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Users, Settings, Info, Check, ChevronDown } from "lucide-react";
+import { Trophy, Users, Settings, Info, Check, ChevronDown, Type } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import GameModal from "../components/game/GameModal";
 
@@ -43,6 +43,7 @@ const TournamentPage: React.FC = () => {
   const dropdownRefs = React.useRef<(HTMLDivElement | null)[]>([null, null, null, null]);
 
   // State for game settings
+  const [tournamentName, setTournamentName] = useState<string>("");
   const [ballSpeed, setBallSpeed] = useState<string>("medium");
   const [paddleSize, setPaddleSize] = useState<string>("medium");
   const [winningScore, setWinningScore] = useState<number>(5);
@@ -126,18 +127,26 @@ const TournamentPage: React.FC = () => {
       return;
     }
     
+    // Verificar que se ha proporcionado un nombre de torneo válido
+    if (!tournamentName.trim()) {
+      setError(t('tournament.error.provideTournamentName'));
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);
       setSuccess(null);
       
       const tournamentData = {
+        name: tournamentName.trim(),
         players: selectedPlayers,
         settings: {
           ballSpeed,
           paddleSize,
           winningScore: Number(winningScore),
-          accelerationEnabled
+          accelerationEnabled,
+          useConfigForAllRounds: true // Añadir flag para usar la misma configuración en todas las rondas
         }
       };
       
@@ -253,6 +262,15 @@ const TournamentPage: React.FC = () => {
       setWinningScore(val);
     }
   };
+  
+  // Manejar cuando el input pierde el foco
+  const handleWinningScoreBlur = () => {
+    // Si el valor es 0, restaurar al mínimo permitido
+    if (winningScore === 0) {
+      const min = options?.winningScore?.min || 1;
+      setWinningScore(min);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-950 to-indigo-950 py-12 px-4 sm:px-6 lg:px-8">
@@ -292,6 +310,33 @@ const TournamentPage: React.FC = () => {
             >
               {t('common.clear')}
             </button>
+          </div>
+        )}
+        
+        {/* Tournament Name Card - Moved outside of player selection */}
+        {!isGameModalOpen && (
+          <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl mb-8">
+            <div className="h-2 bg-gradient-to-r from-pink-600 to-purple-700"></div>
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
+                <Type className="mr-2 h-6 w-6 text-pink-400" />
+                {t('tournament.name')}
+              </h2>
+              
+              <div>
+                <input
+                  type="text"
+                  value={tournamentName}
+                  onChange={(e) => setTournamentName(e.target.value)}
+                  placeholder={t('tournament.enterTournamentName')}
+                  spellCheck="false"
+                  className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"
+                />
+                <p className="mt-2 text-gray-400 text-sm">
+                  {t('tournament.nameHelp')}
+                </p>
+              </div>
+            </div>
           </div>
         )}
         
@@ -395,13 +440,13 @@ const TournamentPage: React.FC = () => {
                     <div className="mt-auto pt-4">
                       <button
                         onClick={createTournament}
-                        disabled={loading || selectedPlayers.filter(p => p.trim() !== "").length !== 4}
+                        disabled={loading || selectedPlayers.filter(p => p.trim() !== "").length !== 4 || !tournamentName.trim()}
                         className={`w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center ${
-                          (loading || selectedPlayers.filter(p => p.trim() !== "").length !== 4) ? 'opacity-50 cursor-not-allowed' : ''
+                          (loading || selectedPlayers.filter(p => p.trim() !== "").length !== 4 || !tournamentName.trim()) ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
                         <Trophy className="mr-2 h-5 w-5" />
-                        {t('home.playNow')}
+                        {t('tournament.startTournament')}
                       </button>
                     </div>
                   </div>
@@ -478,6 +523,7 @@ const TournamentPage: React.FC = () => {
                           max={options?.winningScore?.max || 20}
                           value={winningScore}
                           onChange={handleWinningScoreChange}
+                          onBlur={handleWinningScoreBlur}
                           className="w-full h-9 p-2 pl-3 pr-20 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-8 pointer-events-none">
@@ -546,6 +592,7 @@ const TournamentPage: React.FC = () => {
           accelerationEnabled={accelerationEnabled}
           onClose={handleCloseGame}
           isTournament={true}
+          tournamentName={tournamentName}
           tournamentRound={1} // Initial round
         />
       )}

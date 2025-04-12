@@ -252,6 +252,15 @@ const QuickMatchPage: React.FC = () => {
       setWinningScore(val);
     }
   };
+  
+  // Manejar cuando el input pierde el foco
+  const handleWinningScoreBlur = () => {
+    // Si el valor es 0, restaurar al mínimo permitido
+    if (winningScore === 0) {
+      const min = options?.winningScore?.min || 1;
+      setWinningScore(min);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-indigo-950 py-12 px-4 sm:px-6 lg:px-8">
@@ -475,6 +484,7 @@ const QuickMatchPage: React.FC = () => {
                         max={options?.winningScore?.max || 20}
                         value={winningScore}
                         onChange={handleWinningScoreChange}
+                        onBlur={handleWinningScoreBlur}
                         className="w-full h-9 p-2 pl-3 pr-20 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-8 pointer-events-none">
