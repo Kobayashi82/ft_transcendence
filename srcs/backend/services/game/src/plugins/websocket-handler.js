@@ -126,9 +126,18 @@ function websocketHandler(fastify, options, done) {
         pointsToWin: tournament.settings?.winningScore || 5
       };
       
+      // Obtenemos el nombre real del torneo que fue configurado
+      // Usar el nombre guardado en el objeto del torneo o una configuración existente, o generar uno como fallback
+      const tournamentName = tournament.name || // Si se guardó directamente en el objeto del torneo
+                             tournament.tournamentName || // O si está en la propiedad tournamentName
+                             tournamentManager.getTournamentSettings(tournamentId)?.tournamentName || // O en los settings guardados
+                             `Tournament ${tournamentId.substring(0, 8)}`; // Fallback
+      
+      console.log(`Using tournament name: ${tournamentName}`);
+      
       // Create tournament result payload - match format to what the model expects
       const tournamentPayload = {
-        name: `Tournament ${tournamentId.substring(0, 8)}`, // Generating a name based on ID
+        name: tournamentName, // Usamos el nombre real del torneo
         start_time: new Date(tournament.createdAt).toISOString(),
         end_time: new Date().toISOString(),
         settings: tournamentSettings,

@@ -51,6 +51,7 @@ class TournamentManager {
     const tournament = {
       id: tournamentId,
       name: tournamentName || `Tournament ${tournamentId.substring(0, 8)}`, // Usar el nombre proporcionado o uno generado
+      tournamentName: tournamentName, // Almacenar explícitamente el nombre del torneo para referencia
       createdAt: new Date(),
       settings: settings,
       players: shuffledPlayers,
