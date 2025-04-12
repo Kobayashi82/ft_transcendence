@@ -66,7 +66,7 @@ const translations = {
   'tournament.title': 'Torneo',
   'tournament.subtitle': 'Participa en un torneo con cuatro jugadores',
 
-  'tournament.name': 'Nombre',
+  'tournament.name': 'Nombre del torneo',
   'tournament.enterTournamentName': 'Introduce el nombre del torneo...',
 
   'tournament.settings': 'Configuración del Torneo',
