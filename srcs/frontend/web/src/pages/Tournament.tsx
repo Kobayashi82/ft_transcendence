@@ -340,11 +340,12 @@ const TournamentPage: React.FC = () => {
                               value={selectedPlayers[index]}
                               onChange={(e) => {
                                 const newSelectedPlayers = [...selectedPlayers];
-                                newSelectedPlayers[index] = e.target.value;
+                                newSelectedPlayers[index] = e.target.value.slice(0, 20);
                                 setSelectedPlayers(newSelectedPlayers);
                               }}
                               placeholder={t('tournament.selectPlayer')}
                               spellCheck="false"
+                              maxLength={20}
                               className="w-full pr-10 p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                               onClick={() => setShowAIList(null)}
                             />
@@ -442,9 +443,10 @@ const TournamentPage: React.FC = () => {
                     <input
                       type="text"
                       value={tournamentName}
-                      onChange={(e) => setTournamentName(e.target.value)}
+                      onChange={(e) => setTournamentName(e.target.value.slice(0, 30))}
                       placeholder={t('tournament.enterTournamentName')}
                       spellCheck="false"
+                      maxLength={30}
                       className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"
                     />
                     <p className="mt-2 text-gray-400 text-sm">

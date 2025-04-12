@@ -328,11 +328,12 @@ const QuickMatchPage: React.FC = () => {
                             value={selectedPlayers[index]}
                             onChange={(e) => {
                               const newSelectedPlayers = [...selectedPlayers];
-                              newSelectedPlayers[index] = e.target.value;
+                              newSelectedPlayers[index] = e.target.value.slice(0, 20);
                               setSelectedPlayers(newSelectedPlayers);
                             }}
                             placeholder={t('quickMatch.selectPlayer')}
                             spellCheck="false"
+                            maxLength={20}
                             className="w-full pr-10 p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                             onClick={() => setShowAIList(null)}
                           />
