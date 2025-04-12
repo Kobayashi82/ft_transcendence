@@ -165,17 +165,17 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
                     {t('stats.date')}
                   </div>
                 </th>
-                <th className="pb-3 px-4 text-gray-400 font-medium">
+                <th className="pb-3 px-4 text-gray-400 font-medium text-center">
                   {t('stats.duration')}
                 </th>
-                <th className="pb-3 px-4 text-gray-400 font-medium">
+                <th className="pb-3 px-4 text-gray-400 font-medium text-center">
                   {t('stats.opponent')}
                 </th>
-                <th className="pb-3 px-4 text-gray-400 font-medium">
+                <th className="pb-3 px-4 text-gray-400 font-medium text-center">
                   {t('stats.score')}
                 </th>
-                <th className="pb-3 px-4 text-gray-400 font-medium">
-                  <div className="flex items-center">
+                <th className="pb-3 px-4 text-gray-400 font-medium text-center">
+                  <div className="flex items-center justify-center">
                     <Settings className="h-4 w-4 mr-2" />
                     {t('stats.settings')}
                   </div>
@@ -191,15 +191,15 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
                     <td className="py-4 px-4 text-gray-300">
                       {formatDate(game.start_time)}
                     </td>
-                    <td className="py-4 px-4 text-gray-300">
+                    <td className="py-4 px-4 text-gray-300 text-center">
                       {details ? calculateDuration(details.start_time, details.end_time) : "-"}
                     </td>
-                    <td className="py-4 px-4 text-white font-medium">
+                    <td className="py-4 px-4 text-white font-medium text-center">
                       {details ? getOpponent(details, userId) : "-"}
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="py-4 px-4 text-center">
                       {details ? (
-                        <div className="flex items-center">
+                        <div className="flex items-center justify-center">
                           <span className="font-bold text-blue-400">
                             {getPlayerScore(details, userId)}
                           </span>
@@ -218,9 +218,9 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
                         </div>
                       ) : "-"}
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="py-4 px-4 text-center">
                       {details && details.settings ? (
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 justify-center">
                           {details.settings.ballSpeed && (
                             <GameSetting type="ballSpeed" value={details.settings.ballSpeed} />
                           )}

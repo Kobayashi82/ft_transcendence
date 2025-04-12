@@ -1,7 +1,8 @@
 import React from "react";
-import { Trophy, ChevronRight, ChevronDown } from "lucide-react";
+import { Trophy, ChevronRight, ChevronDown, Medal, Award } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import GameSetting from "./GameSetting";
+import PositionBadge from "./PositionBadge";
 
 // Types
 interface TournamentDetails {
@@ -121,19 +122,19 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                 <th className="pb-3 px-4 text-gray-400 font-medium">
                   {t('stats.tournamentName')}
                 </th>
-                <th className="pb-3 px-4 text-gray-400 font-medium">
+                <th className="pb-3 px-4 text-gray-400 font-medium text-center">
                   {t('stats.date')}
                 </th>
-                <th className="pb-3 px-4 text-gray-400 font-medium">
+                <th className="pb-3 px-4 text-gray-400 font-medium text-center">
                   {t('stats.participants')}
                 </th>
-                <th className="pb-3 px-4 text-gray-400 font-medium">
+                <th className="pb-3 px-4 text-gray-400 font-medium text-center">
                   {t('stats.winner')}
                 </th>
-                <th className="pb-3 px-4 text-gray-400 font-medium">
+                <th className="pb-3 px-4 text-gray-400 font-medium text-center">
                   {t('stats.playerPosition')}
                 </th>
-                <th className="pb-3 px-4 text-gray-400 font-medium">
+                <th className="pb-3 px-4 text-gray-400 font-medium text-center">
                   {t('stats.settings')}
                 </th>
               </tr>
@@ -153,22 +154,25 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                     <td className="py-4 px-4 text-white font-medium">
                       {tournament.name}
                     </td>
-                    <td className="py-4 px-4 text-gray-300">
+                    <td className="py-4 px-4 text-gray-300 text-center">
                       {formatDate(tournament.start_time)}
                     </td>
-                    <td className="py-4 px-4 text-gray-300">
+                    <td className="py-4 px-4 text-gray-300 text-center">
                       {formatParticipants(tournament.players)}
                     </td>
-                    <td className="py-4 px-4">
-                      <span className="font-medium text-amber-400">
-                        {getTournamentWinner(tournament)}
-                      </span>
+                    <td className="py-4 px-4 text-center">
+                      <div className="flex items-center justify-center">
+                        <Trophy size={16} className="text-yellow-400 mr-1.5" />
+                        <span className="font-medium text-amber-400">
+                          {getTournamentWinner(tournament)}
+                        </span>
+                      </div>
                     </td>
-                    <td className="py-4 px-4 text-gray-300">
-                      {getPositionText(tournament.players.find(p => p.user_id === userId)?.final_position || null)}
+                    <td className="py-4 px-4 flex justify-center">
+                      <PositionBadge position={tournament.players.find(p => p.user_id === userId)?.final_position || null} />
                     </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
+                    <td className="py-4 px-4 text-center">
+                      <div className="flex items-center gap-3 justify-center">
                         {tournament.settings.ballSpeed && (
                           <GameSetting type="ballSpeed" value={tournament.settings.ballSpeed} />
                         )}
