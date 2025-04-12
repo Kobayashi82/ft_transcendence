@@ -313,33 +313,6 @@ const TournamentPage: React.FC = () => {
           </div>
         )}
         
-        {/* Tournament Name Card - Moved outside of player selection */}
-        {!isGameModalOpen && (
-          <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl mb-8">
-            <div className="h-2 bg-gradient-to-r from-pink-600 to-purple-700"></div>
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
-                <Type className="mr-2 h-6 w-6 text-pink-400" />
-                {t('tournament.name')}
-              </h2>
-              
-              <div>
-                <input
-                  type="text"
-                  value={tournamentName}
-                  onChange={(e) => setTournamentName(e.target.value)}
-                  placeholder={t('tournament.enterTournamentName')}
-                  spellCheck="false"
-                  className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"
-                />
-                <p className="mt-2 text-gray-400 text-sm">
-                  {t('tournament.nameHelp')}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        
         {/* Tournament setup */}
         {!isGameModalOpen && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -454,8 +427,34 @@ const TournamentPage: React.FC = () => {
               </div>
             </div>
             
-            {/* Right column - Game Settings */}
+            {/* Right column - Tournament Name and Game Settings */}
             <div className="lg:col-span-2">
+              {/* Tournament Name */}
+              <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl mb-8">
+                <div className="h-2 bg-gradient-to-r from-pink-600 to-purple-700"></div>
+                <div className="p-6">
+                  <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
+                    <Type className="mr-2 h-6 w-6 text-pink-400" />
+                    {t('tournament.name')}
+                  </h2>
+                  
+                  <div>
+                    <input
+                      type="text"
+                      value={tournamentName}
+                      onChange={(e) => setTournamentName(e.target.value)}
+                      placeholder={t('tournament.enterTournamentName')}
+                      spellCheck="false"
+                      className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"
+                    />
+                    <p className="mt-2 text-gray-400 text-sm">
+                      {t('tournament.nameHelp')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Game Settings */}
               <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl">
                 <div className="h-2 bg-gradient-to-r from-indigo-600 to-purple-700"></div>
                 <div className="p-6">
