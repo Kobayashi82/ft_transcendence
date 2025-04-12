@@ -10,7 +10,7 @@ const config = require('../config');
 class AINotifier {
   constructor() {
     // URL base para la comunicación con el servicio de IA
-    this.aiServiceUrl = config.services?.ai_deeppong?.url || 'http://ai_deeppong:3003';
+    this.aiServiceUrl = config.AI?.AI_deeppong?.url || 'http://ai_deeppong:3000';
   }
 
   /**
@@ -23,6 +23,7 @@ class AINotifier {
   async notifyAI(gameId, aiName, playerNumber) {
     try {
       console.log(`Notificando a la IA ${aiName} sobre el juego ${gameId} como jugador ${playerNumber}`);
+      console.log(`Using AI service URL: ${this.aiServiceUrl}`);
       
       // Enviar notificación a la IA
       const response = await axios.post(`${this.aiServiceUrl}/join`, {
@@ -38,11 +39,17 @@ class AINotifier {
         console.log(`IA ${aiName} notificada exitosamente sobre el juego ${gameId}`);
         return true;
       } else {
-        console.error(`Error al notificar a la IA ${aiName}: ${response.status}`);
+        console.error(`Error al notificar a la IA ${aiName}: ${response.status} - ${JSON.stringify(response.data)}`);
         return false;
       }
     } catch (error) {
       console.error(`Excepción al notificar a la IA ${aiName}: ${error.message}`);
+      if (error.response) {
+        // Log more detailed error information if available
+        console.error(`Status: ${error.response.status}`);
+        console.error(`Data: ${JSON.stringify(error.response.data)}`);
+        console.error(`Headers: ${JSON.stringify(error.response.headers)}`);
+      }
       return false;
     }
   }

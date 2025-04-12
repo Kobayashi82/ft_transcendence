@@ -7,6 +7,8 @@ const app = fastify();
 app.decorate("config", config);
 
 app.register(require("./plugins/error-handler"));
+// Register AI controller plugin first so it's available for routes
+app.register(require("./plugins/ai-controller"));
 app.register(require("./routes"));
 
 // Shutdown

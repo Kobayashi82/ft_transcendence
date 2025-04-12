@@ -397,10 +397,10 @@ class GameManager {
     if (!game) return false;
     
     // Verificar si el jugador es una IA - si es así, ignorar el comando de movimiento
-    if ((player === 1 && game.player1IsAI) || (player === 2 && game.player2IsAI)) {
-      console.log(`Ignorando comando de movimiento manual para jugador ${player} (IA)`);
-      return false;
-    }
+    // if ((player === 1 && game.player1IsAI) || (player === 2 && game.player2IsAI)) {
+    //   console.log(`Ignorando comando de movimiento manual para jugador ${player} (IA)`);
+    //   return false;
+    // }
     
     game.setPaddleMove(player, direction);
     const gameEntry = this.games.get(gameId);
