@@ -61,6 +61,7 @@ const translations = {
   'quickMatch.humanPlayers': 'Players',
   'quickMatch.playerHelp': 'Select the players for the match.',
   'quickMatch.playNow': 'Play Now',
+  'quickMatch.error.duplicatePlayers': 'Each player must have a unique name',
 
   // Tournament
   'tournament.title': 'Tournament',
@@ -91,6 +92,7 @@ const translations = {
   'tournament.humanPlayers': 'Players',
   'tournament.playerHelp': 'Select the players for the tournament.',
   'tournament.startTournament': 'Start Tournament',
+  'tournament.error.duplicatePlayers': 'Each player must have a unique name',
 
   // PongModal
   'quickMatch.startGame': 'Start',

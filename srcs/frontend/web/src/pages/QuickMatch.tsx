@@ -125,6 +125,12 @@ const QuickMatchPage: React.FC = () => {
       return;
     }
     
+    // Validar que no se hayan seleccionado jugadores duplicados (comparación case insensitive)
+    if (selectedPlayers[0].trim().toLowerCase() === selectedPlayers[1].trim().toLowerCase()) {
+      setError(t('quickMatch.error.duplicatePlayers'));
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);

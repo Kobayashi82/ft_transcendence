@@ -56,11 +56,12 @@ const translations = {
   
   'quickMatch.players': 'Joueurs',
   'quickMatch.player': 'Joueur',
-  'quickMatch.selectPlayer': 'Sélectionnez ou tapez un nom de joueur',
+  'quickMatch.selectPlayer': 'Sélectionnez ou tapez un nom',
   'quickMatch.aiOpponents': 'Adversaires IA',
   'quickMatch.humanPlayers': 'Joueurs',
   'quickMatch.playerHelp': 'Sélectionnez les joueurs pour le match.',
   'quickMatch.playNow': 'Jouer Maintenant',
+  'quickMatch.error.duplicatePlayers': 'Chaque joueur doit avoir un nom unique',
 
   // Tournament
   'tournament.title': 'Tournoi',
@@ -86,11 +87,12 @@ const translations = {
 
   'tournament.players': 'Joueurs',
   'tournament.player': 'Joueur',
-  'tournament.selectPlayer': 'Sélectionnez ou tapez un nom de joueur',
+  'tournament.selectPlayer': 'Sélectionnez ou tapez un nom',
   'tournament.aiOpponents': 'Adversaires IA',
   'tournament.humanPlayers': 'Joueurs',
   'tournament.playerHelp': 'Sélectionnez les joueurs pour le tournoi.',
   'tournament.startTournament': 'Démarrer le tournoi',
+  'tournament.error.duplicatePlayers': 'Chaque joueur doit avoir un nom unique',
 
   // PongModal
   'quickMatch.startGame': 'Commencer',

@@ -133,6 +133,14 @@ const TournamentPage: React.FC = () => {
       return;
     }
     
+    // Verificar que no hay jugadores duplicados (comparación case insensitive)
+    const normalizedPlayers = validPlayers.map(p => p.trim().toLowerCase());
+    const uniquePlayers = new Set(normalizedPlayers);
+    if (uniquePlayers.size !== validPlayers.length) {
+      setError(t('tournament.error.duplicatePlayers'));
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);
