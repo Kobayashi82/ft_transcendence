@@ -178,8 +178,12 @@ const RankingsPage: React.FC = () => {
           id: player.id ? player.id.toString() : '',
           user_id: player.user_id
         }));
-        setUsersList(users);
-        setFilteredUsers(users);
+        
+        // Ordenar los usuarios alfabéticamente por user_id
+        const sortedUsers = users.sort((a, b) => a.user_id.localeCompare(b.user_id));
+        
+        setUsersList(sortedUsers);
+        setFilteredUsers(sortedUsers);
       } else {
         console.error("Unexpected data format:", data);
       }

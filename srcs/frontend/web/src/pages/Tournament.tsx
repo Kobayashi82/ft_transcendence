@@ -100,7 +100,11 @@ const TournamentPage: React.FC = () => {
         
         // Check if the data is in the expected format
         if (data && data.data && Array.isArray(data.data)) {
-          setPlayers(data.data);
+          // Ordenar jugadores alfabéticamente por user_id
+          const sortedPlayers = [...data.data].sort((a, b) => 
+            a.user_id.localeCompare(b.user_id)
+          );
+          setPlayers(sortedPlayers);
         } else {
           console.error("Unexpected player data format:", data);
         }
@@ -115,7 +119,9 @@ const TournamentPage: React.FC = () => {
 
   // Create a tournament
   const createTournament = async () => {
-    if (selectedPlayers.filter(p => p !== "").length !== 4) {
+    // Verificar que todos los jugadores están seleccionados y no están vacíos ni contienen solo espacios
+    const validPlayers = selectedPlayers.filter(p => p.trim() !== "");
+    if (validPlayers.length !== 4) {
       setError(t('tournament.error.selectExactlyFourPlayers'));
       return;
     }
@@ -227,6 +233,24 @@ const TournamentPage: React.FC = () => {
         return t('tournament.long');
       default:
         return option.charAt(0).toUpperCase() + option.slice(1);
+    }
+  };
+
+  // Manejar cambios en el input de puntos para ganar
+  const handleWinningScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    // Permite borrar completamente el input para ingresar un nuevo valor
+    if (inputValue === '') {
+      setWinningScore(0);
+      return;
+    }
+    
+    const val = parseInt(inputValue);
+    const min = options?.winningScore?.min || 1;
+    const max = options?.winningScore?.max || 20;
+    
+    if (!isNaN(val) && val >= min && val <= max) {
+      setWinningScore(val);
     }
   };
 
@@ -371,9 +395,9 @@ const TournamentPage: React.FC = () => {
                     <div className="mt-auto pt-4">
                       <button
                         onClick={createTournament}
-                        disabled={loading || selectedPlayers.filter(p => p !== "").length !== 4}
+                        disabled={loading || selectedPlayers.filter(p => p.trim() !== "").length !== 4}
                         className={`w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center ${
-                          (loading || selectedPlayers.filter(p => p !== "").length !== 4) ? 'opacity-50 cursor-not-allowed' : ''
+                          (loading || selectedPlayers.filter(p => p.trim() !== "").length !== 4) ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
                         <Trophy className="mr-2 h-5 w-5" />
@@ -449,18 +473,11 @@ const TournamentPage: React.FC = () => {
                       </label>
                       <div className="relative">
                         <input
-                          type="number"
+                          type="text"
                           min={options?.winningScore?.min || 1}
                           max={options?.winningScore?.max || 20}
                           value={winningScore}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            const min = options?.winningScore?.min || 1;
-                            const max = options?.winningScore?.max || 20;
-                            if (val >= min && val <= max) {
-                              setWinningScore(val);
-                            }
-                          }}
+                          onChange={handleWinningScoreChange}
                           className="w-full h-9 p-2 pl-3 pr-20 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-8 pointer-events-none">

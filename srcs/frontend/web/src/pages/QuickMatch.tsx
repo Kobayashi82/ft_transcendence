@@ -100,7 +100,11 @@ const QuickMatchPage: React.FC = () => {
         
         // Check if the data is in the expected format
         if (data && data.data && Array.isArray(data.data)) {
-          setPlayers(data.data);
+          // Ordenar jugadores alfabéticamente por user_id
+          const sortedPlayers = [...data.data].sort((a, b) => 
+            a.user_id.localeCompare(b.user_id)
+          );
+          setPlayers(sortedPlayers);
         } else {
           console.error("Unexpected player data format:", data);
         }
@@ -115,7 +119,8 @@ const QuickMatchPage: React.FC = () => {
 
   // Create a new game
   const createGame = async () => {
-    if (!selectedPlayers[0] || !selectedPlayers[1]) {
+    // Validar que los nombres de los jugadores no están vacíos ni contienen solo espacios en blanco
+    if (!selectedPlayers[0].trim() || !selectedPlayers[1].trim()) {
       setError(t('quickMatch.error.selectBothPlayers'));
       return;
     }
@@ -227,6 +232,24 @@ const QuickMatchPage: React.FC = () => {
         return t('quickMatch.long');
       default:
         return option.charAt(0).toUpperCase() + option.slice(1);
+    }
+  };
+
+  // Manejar cambios en el input de puntos para ganar
+  const handleWinningScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    // Permite borrar completamente el input para ingresar un nuevo valor
+    if (inputValue === '') {
+      setWinningScore(0);
+      return;
+    }
+    
+    const val = parseInt(inputValue);
+    const min = options?.winningScore?.min || 1;
+    const max = options?.winningScore?.max || 20;
+    
+    if (!isNaN(val) && val >= min && val <= max) {
+      setWinningScore(val);
     }
   };
 
@@ -369,9 +392,9 @@ const QuickMatchPage: React.FC = () => {
                   <div className="mt-auto pt-0">
                     <button
                       onClick={createGame}
-                      disabled={loading || !selectedPlayers[0] || !selectedPlayers[1]}
+                      disabled={loading || !selectedPlayers[0].trim() || !selectedPlayers[1].trim()}
                       className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center ${
-                        (loading || !selectedPlayers[0] || !selectedPlayers[1]) ? 'opacity-50 cursor-not-allowed' : ''
+                        (loading || !selectedPlayers[0].trim() || !selectedPlayers[1].trim()) ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
                       <Gamepad2 className="mr-2 h-5 w-5" />
@@ -447,18 +470,11 @@ const QuickMatchPage: React.FC = () => {
                     </label>
                     <div className="relative">
                       <input
-                        type="number"
+                        type="text"
                         min={options?.winningScore?.min || 1}
                         max={options?.winningScore?.max || 20}
                         value={winningScore}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value);
-                          const min = options?.winningScore?.min || 1;
-                          const max = options?.winningScore?.max || 20;
-                          if (val >= min && val <= max) {
-                            setWinningScore(val);
-                          }
-                        }}
+                        onChange={handleWinningScoreChange}
                         className="w-full h-9 p-2 pl-3 pr-20 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-8 pointer-events-none">
