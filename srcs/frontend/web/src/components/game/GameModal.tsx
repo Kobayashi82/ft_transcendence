@@ -485,6 +485,23 @@ const GameModal: React.FC<GameModalProps> = ({
         togglePause();
       }
       
+      // Añadir soporte para la tecla espaciadora
+      if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        // Si el juego está pausado o esperando, iniciarlo o reanudarlo
+        if (gameState?.gameState === "paused") {
+          togglePause(); // Reanudar si está pausado
+        } else if (gameState?.gameState === "waiting" || gameState?.gameState === "next") {
+          if (gameState?.gameState === "next") {
+            handleNextRound(); // Próxima ronda si es un torneo
+          } else {
+            startGame(); // Iniciar el juego
+          }
+        } else if (gameState?.gameState === "playing") {
+          togglePause(); // Pausar si está jugando
+        }
+      }
+      
       if (gameState?.gameState !== "playing") return;
       
       if (e.key === "w" || e.key === "W") {
