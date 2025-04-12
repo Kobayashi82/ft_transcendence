@@ -528,6 +528,19 @@ const GameModal: React.FC<GameModalProps> = ({
       return;
     }
     
+    // Si es un torneo completado (ronda final con botón de cierre visible), cerrar directamente sin preguntar
+    const isTournamentCompleted = gameState?.settings?.tournamentMode && 
+                                  currentRound === 2 && 
+                                  gameState.gameState === "next";
+    
+    // Si es un torneo finalizado o el juego ya terminó/canceló, cerrar sin preguntar
+    if (isTournamentCompleted || 
+        (gameState && ["finished", "cancelled"].includes(gameState.gameState))) {
+      onClose();
+      return;
+    }
+    
+    // Para los casos normales en juego
     if (gameState && ["waiting", "playing", "paused", "next"].includes(gameState.gameState)) {
       if (gameState?.gameState === "playing") togglePause();
       setShowExitConfirm(true);
