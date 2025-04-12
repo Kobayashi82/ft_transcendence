@@ -449,9 +449,6 @@ const TournamentPage: React.FC = () => {
                       maxLength={30}
                       className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"
                     />
-                    <p className="mt-2 text-gray-400 text-sm">
-                      {t('tournament.nameHelp')}
-                    </p>
                   </div>
                 </div>
               </div>

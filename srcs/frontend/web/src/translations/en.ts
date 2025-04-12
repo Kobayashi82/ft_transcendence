@@ -63,29 +63,13 @@ const translations = {
   'quickMatch.playNow': 'Play Now',
 
   // Tournament
-  'tournament.title': 'Tournament Mode',
-  'tournament.subtitle': 'Compete in a 4-player bracket tournament',
-  'tournament.name': 'Tournament Name',
-  'tournament.enterTournamentName': 'Enter tournament name...',
-  'tournament.nameHelp': 'Give your tournament a memorable name',
-  'tournament.settings': 'Game Settings',
-  'tournament.humanPlayers': 'Human Players',
-  'tournament.aiOpponents': 'AI Opponents',
-  'tournament.aiLevel': 'AI Level',
-  'tournament.playerHelp': 'Select 4 players for the tournament',
-  'tournament.ballSpeed': 'Ball Speed',
-  'tournament.paddleSize': 'Paddle Size',
-  'tournament.pointsToWin': 'Points to Win',
-  'tournament.useSpeedAcceleration': 'Use Speed Acceleration',
-  'tournament.startTournament': 'Start Tournament',
-
-  'tournament.winsSemifinal': 'wins this semifinal!',
-  'tournament.winsTournament': 'wins the tournament!',
-  'tournament.clickToContinue': 'Click to continue',
-  'tournament.tournamentCompleted': 'Tournament completed',
-  'tournament.score': 'Score',
-
+  'tournament.title': 'Tournament',
   'tournament.subtitle': 'Join a tournament with four players',
+
+  'tournament.name': 'Name',
+  'tournament.enterTournamentName': 'Enter tournament name...',
+
+  'tournament.settings': 'Tournament Settings',
   'tournament.ballSpeed': 'Ball Speed',
   'tournament.paddleSize': 'Paddle Size',
   'tournament.winningScore': 'Points to Win',
@@ -106,7 +90,7 @@ const translations = {
   'tournament.aiOpponents': 'AI Opponents',
   'tournament.humanPlayers': 'Players',
   'tournament.playerHelp': 'Select the players for the tournament.',
-  'tournament.playNow': 'Play Now',
+  'tournament.startTournament': 'Start Tournament',
 
   // PongModal
   'quickMatch.startGame': 'Start',
@@ -140,6 +124,10 @@ const translations = {
   'tournament.proceedToSecondSemifinal': 'Proceed to second semifinal',
   'tournament.proceedToFinal': 'Proceed to final',
   'tournament.closeTournament': 'Close',
+
+  'tournament.winsSemifinal': 'wins this semifinal!',
+  'tournament.winsTournament': 'wins the tournament!',
+  'tournament.score': 'Score',
   
   // Stats
   'stats.title': 'Player Rankings',

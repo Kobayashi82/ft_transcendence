@@ -66,6 +66,9 @@ const translations = {
   'tournament.title': 'Torneo',
   'tournament.subtitle': 'Participa en un torneo con cuatro jugadores',
 
+  'tournament.name': 'Nombre',
+  'tournament.enterTournamentName': 'Introduce el nombre del torneo...',
+
   'tournament.settings': 'Configuración del Torneo',
   'tournament.ballSpeed': 'Velocidad de la pelota',
   'tournament.paddleSize': 'Tamaño de la paleta',
@@ -87,7 +90,7 @@ const translations = {
   'tournament.aiOpponents': 'Oponentes IA',
   'tournament.humanPlayers': 'Jugadores',
   'tournament.playerHelp': 'Selecciona los participantes del torneo.',
-  'tournament.playNow': 'Jugar Ahora',
+  'tournament.startTournament': 'Comenzar Torneo',
 
   // PongModal
   'quickMatch.startGame': 'Iniciar',
@@ -121,6 +124,10 @@ const translations = {
   'tournament.proceedToSecondSemifinal': 'Ir a la segunda semifinal',
   'tournament.proceedToFinal': 'Ir a la final',
   'tournament.closeTournament': 'Volver',
+
+  'tournament.winsSemifinal': '¡gana esta semifinal!',
+  'tournament.winsTournament': '¡gana el torneo!',
+  'tournament.score': 'Puntuación',
 
   // Stats
   'stats.title': 'Clasificación de Jugadores',

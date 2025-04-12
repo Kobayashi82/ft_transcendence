@@ -66,6 +66,9 @@ const translations = {
   'tournament.title': 'Tournoi',
   'tournament.subtitle': 'Rejoignez un tournoi avec quatre joueurs',
 
+  'tournament.name': 'Nom',
+  'tournament.enterTournamentName': 'Entrez le nom du tournoi...',
+
   'tournament.settings': 'Paramètres du Tournoi',
   'tournament.ballSpeed': 'Vitesse de la Balle',
   'tournament.paddleSize': 'Taille de la Raquette',
@@ -87,7 +90,7 @@ const translations = {
   'tournament.aiOpponents': 'Adversaires IA',
   'tournament.humanPlayers': 'Joueurs',
   'tournament.playerHelp': 'Sélectionnez les joueurs pour le tournoi.',
-  'tournament.playNow': 'Jouer Maintenant',
+  'tournament.startTournament': 'Démarrer le tournoi',
 
   // PongModal
   'quickMatch.startGame': 'Commencer',
@@ -121,7 +124,11 @@ const translations = {
   'tournament.proceedToSecondSemifinal': 'Passer à la seconde demi-finale',
   'tournament.proceedToFinal': 'Passer à la finale',
   'tournament.closeTournament': 'Fermer',
-  
+
+  'tournament.winsSemifinal': 'remporte cette demi-finale!',
+  'tournament.winsTournament': 'remporte le tournoi!',
+  'tournament.score': 'Score',
+
   // Stats
   'stats.title': 'Classement des Joueurs',
   'stats.subtitle': 'Suivez les performances et consultez les statistiques détaillées de n\'importe quel joueur',

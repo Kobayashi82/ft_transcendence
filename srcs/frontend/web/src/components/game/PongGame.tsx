@@ -304,11 +304,11 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
           if (gameState.settings.tournamentRound === 1) {
             // Semifinal
             message = `${roundWinner} ${t('tournament.winsSemifinal')}`;
-            subtext = `${t('tournament.score')}: ${player1.score} - ${player2.score} | ${t('tournament.clickToContinue')}`;
+            subtext = `${t('tournament.score')}: ${player1.score} - ${player2.score}`;
           } else {
             // Final
             message = `${roundWinner} ${t('tournament.winsTournament')}`;
-            subtext = `${t('tournament.tournamentCompleted')}: ${gameState.settings.tournamentName || ''}`;
+            subtext = `${t('tournament.score')}: ${player1.score} - ${player2.score}`;
           }
           break;
       }
