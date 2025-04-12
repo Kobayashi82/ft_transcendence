@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 
 // Game state types
-type GameState = 'waiting' | 'playing' | 'paused' | 'finished' | 'cancelled';
+type GameState = 'waiting' | 'playing' | 'paused' | 'finished' | 'cancelled' | 'next';
 
 interface Player {
   name: string | null;
@@ -29,7 +29,10 @@ interface GameSettings {
   ballSpeed: string;
   accelerationEnabled: boolean;
   paddleSize: string;
-  }
+  tournamentMode?: boolean;
+  tournamentRound?: number;
+  tournamentName?: string;
+}
 
 interface GameStateData {
   gameState: GameState;
@@ -293,6 +296,21 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
         case "cancelled":
           message = t('quickMatch.cancelled');
           break;
+        case "next":
+          // Mostrar quién ganó esta ronda
+          const roundWinner = player1.score > player2.score ? player1.name : player2.name;
+          
+          // Determinar si es semifinal o final basado en el número de ronda del torneo
+          if (gameState.settings.tournamentRound === 1) {
+            // Semifinal
+            message = `${roundWinner} ${t('tournament.winsSemifinal')}`;
+            subtext = `${t('tournament.score')}: ${player1.score} - ${player2.score} | ${t('tournament.clickToContinue')}`;
+          } else {
+            // Final
+            message = `${roundWinner} ${t('tournament.winsTournament')}`;
+            subtext = `${t('tournament.tournamentCompleted')}: ${gameState.settings.tournamentName || ''}`;
+          }
+          break;
       }
       
       // Draw semi-transparent overlay
@@ -450,21 +468,6 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       return { x: gameX, y: gameY };
     };
     
-    // Function to determine direction based on current position and target
-    const getDirectionFromTarget = (currentY: number, targetY: number, paddleHeight: number) => {
-      // Add padding to allow for the paddle to center on the target
-      const paddleCenter = currentY + paddleHeight / 2;
-      const threshold = 5; // Small threshold to prevent rapid up/down switching
-      
-      if (targetY < paddleCenter - threshold) {
-        return 'up';
-      } else if (targetY > paddleCenter + threshold) {
-        return 'down';
-      } else {
-        return 'stop';
-      }
-    };
-    
     // Touch start/mouse down handler
     const handleStart = (event: TouchEvent | MouseEvent) => {
       event.preventDefault();
@@ -504,15 +507,11 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
           // Store the target position for this player
           touchTargetsRef.current[playerId] = gameCoords.y;
           
-          // Start moving the paddle in the appropriate direction
-          const currentY = playerId === 1 ? gameState.player1.y : gameState.player2.y;
-          const direction = getDirectionFromTarget(
-            currentY, 
-            gameCoords.y, 
-            gameState.config.paddleHeight
-          );
-          
-          onMove(direction, playerId);
+          // Move directly to the position - use setPosition instead of onMove
+          // Set paddle center position directly to the Y coordinate of the click
+          const paddleHeight = gameState.config.paddleHeight;
+          const targetY = Math.max(0, gameCoords.y - (paddleHeight / 2));
+          onSetPosition(targetY, playerId);
         }
       } else {
         // Mouse event
@@ -539,15 +538,11 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
         // Store the target position for this player
         touchTargetsRef.current[playerId] = gameCoords.y;
         
-        // Start moving the paddle in the appropriate direction
-        const currentY = playerId === 1 ? gameState.player1.y : gameState.player2.y;
-        const direction = getDirectionFromTarget(
-          currentY, 
-          gameCoords.y, 
-          gameState.config.paddleHeight
-        );
-        
-        onMove(direction, playerId);
+        // Move directly to the position - use setPosition instead of onMove
+        // Set paddle center position directly to the Y coordinate of the click
+        const paddleHeight = gameState.config.paddleHeight;
+        const targetY = Math.max(0, gameCoords.y - (paddleHeight / 2));
+        onSetPosition(targetY, playerId);
       }
     };
     
@@ -583,15 +578,11 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
           // Update the target position for this player
           touchTargetsRef.current[playerId] = gameCoords.y;
           
-          // Update paddle movement direction
-          const currentY = playerId === 1 ? gameState.player1.y : gameState.player2.y;
-          const direction = getDirectionFromTarget(
-            currentY, 
-            gameCoords.y, 
-            gameState.config.paddleHeight
-          );
-          
-          onMove(direction, playerId);
+          // Move directly to the position - use setPosition instead of onMove
+          // Set paddle center position directly to the Y coordinate of the movement
+          const paddleHeight = gameState.config.paddleHeight;
+          const targetY = Math.max(0, gameCoords.y - (paddleHeight / 2));
+          onSetPosition(targetY, playerId);
         }
       } else {
         // Mouse event
@@ -615,15 +606,11 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
         // Update the target position for this player
         touchTargetsRef.current[playerId] = gameCoords.y;
         
-        // Update paddle movement direction
-        const currentY = playerId === 1 ? gameState.player1.y : gameState.player2.y;
-        const direction = getDirectionFromTarget(
-          currentY, 
-          gameCoords.y, 
-          gameState.config.paddleHeight
-        );
-        
-        onMove(direction, playerId);
+        // Move directly to the position - use setPosition instead of onMove
+        // Set paddle center position directly to the Y coordinate of the movement
+        const paddleHeight = gameState.config.paddleHeight;
+        const targetY = Math.max(0, gameCoords.y - (paddleHeight / 2));
+        onSetPosition(targetY, playerId);
       }
     };
     
