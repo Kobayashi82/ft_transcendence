@@ -1,6 +1,7 @@
 import React from "react";
 import { Calendar, Settings } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
+import GameSetting from "./GameSetting";
 
 // Types
 interface RecentGame {
@@ -16,9 +17,9 @@ interface GameDetails {
   start_time: string;
   end_time: string;
   settings: {
-    ballSpeed: number;
-    paddleSize: number;
-    speedIncrement: number;
+    ballSpeed: number | string;
+    paddleSize: number | string;
+    speedIncrement: number | boolean;
     pointsToWin: number;
     [key: string]: any;
   };
@@ -217,14 +218,24 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
                         </div>
                       ) : "-"}
                     </td>
-                    <td className="py-4 px-4 text-gray-300">
+                    <td className="py-4 px-4">
                       {details && details.settings ? (
-                        <div className="text-sm">
-                          {formatSettings(details.settings).map((setting, idx) => (
-                            <p key={idx}>{setting.key}: {setting.value}</p>
-                          ))}
-                          {formatSettings(details.settings).length === 0 && (
-                            <p>{t('stats.noSettingsAvailable')}</p>
+                        <div className="flex items-center gap-3">
+                          {details.settings.ballSpeed && (
+                            <GameSetting type="ballSpeed" value={details.settings.ballSpeed} />
+                          )}
+                          {details.settings.paddleSize && (
+                            <GameSetting type="paddleSize" value={details.settings.paddleSize} />
+                          )}
+                          {details.settings.speedIncrement !== undefined && (
+                            <GameSetting type="speedIncrement" value={details.settings.speedIncrement} />
+                          )}
+                          {details.settings.pointsToWin && (
+                            <GameSetting type="pointsToWin" value={details.settings.pointsToWin} />
+                          )}
+                          {!details.settings.ballSpeed && !details.settings.paddleSize && 
+                           details.settings.speedIncrement === undefined && !details.settings.pointsToWin && (
+                            <span className="text-gray-400 text-sm">{t('stats.noSettingsAvailable')}</span>
                           )}
                         </div>
                       ) : "-"}

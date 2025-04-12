@@ -1,6 +1,7 @@
 import React from "react";
 import { Trophy, ChevronRight, ChevronDown } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
+import GameSetting from "./GameSetting";
 
 // Types
 interface TournamentDetails {
@@ -103,59 +104,6 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
     return players.map(player => player.user_id).join(", ");
   };
 
-  // Format settings uniformly
-  const formatSettings = (settings: TournamentDetails['settings']) => {
-    if (!settings) return [];
-    
-    const formattedSettings = [];
-    
-    // Ball Speed
-    if (settings.ballSpeed) {
-      const speedKey = {
-        slow: t('stats.slow'),
-        medium: t('stats.medium'),
-        fast: t('stats.fast')
-      }[settings.ballSpeed];
-	
-      formattedSettings.push({
-        key: t('stats.ballSpeed'),
-        value: speedKey || settings.ballSpeed
-      });
-    }
-    
-    // Paddle Size
-    if (settings.paddleSize) {
-      const sizeKey = {
-        slow: t('stats.slow'),
-        medium: t('stats.medium'),
-        fast: t('stats.fast')
-      }[settings.paddleSize];
-
-      formattedSettings.push({
-        key: t('stats.paddleSize'),
-        value: sizeKey || settings.paddleSize
-      });
-    }
-    
-    // Speed Increment (acceleration)
-    if (settings.speedIncrement !== undefined) {
-      formattedSettings.push({
-        key: t('stats.speedIncrement'),
-        value: settings.speedIncrement ? t('stats.yes') : t('stats.no')
-      });
-    }
-    
-    // Points to Win
-    if (settings.pointsToWin) {
-      formattedSettings.push({
-        key: t('stats.pointsToWin'),
-        value: settings.pointsToWin.toString()
-      });
-    }
-    
-    return formattedSettings;
-  };
-
   return (
     <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl">
       <div className="h-2 bg-gradient-to-r from-amber-500 to-orange-600"></div>
@@ -219,13 +167,23 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                     <td className="py-4 px-4 text-gray-300">
                       {getPositionText(tournament.players.find(p => p.user_id === userId)?.final_position || null)}
                     </td>
-                    <td className="py-4 px-4 text-gray-300">
-                      <div className="text-sm">
-                        {formatSettings(tournament.settings).map((setting, idx) => (
-                          <p key={idx}>{setting.key}: {setting.value}</p>
-                        ))}
-                        {formatSettings(tournament.settings).length === 0 && (
-                          <p>{t('stats.noSettingsAvailable')}</p>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        {tournament.settings.ballSpeed && (
+                          <GameSetting type="ballSpeed" value={tournament.settings.ballSpeed} />
+                        )}
+                        {tournament.settings.paddleSize && (
+                          <GameSetting type="paddleSize" value={tournament.settings.paddleSize} />
+                        )}
+                        {tournament.settings.speedIncrement !== undefined && (
+                          <GameSetting type="speedIncrement" value={tournament.settings.speedIncrement} />
+                        )}
+                        {tournament.settings.pointsToWin && (
+                          <GameSetting type="pointsToWin" value={tournament.settings.pointsToWin} />
+                        )}
+                        {!tournament.settings.ballSpeed && !tournament.settings.paddleSize && 
+                         tournament.settings.speedIncrement === undefined && !tournament.settings.pointsToWin && (
+                          <span className="text-gray-400 text-sm">{t('stats.noSettingsAvailable')}</span>
                         )}
                       </div>
                     </td>
