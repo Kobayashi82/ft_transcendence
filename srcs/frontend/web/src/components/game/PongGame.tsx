@@ -8,6 +8,7 @@ interface Player {
   name: string | null;
   y: number;
   score: number;
+  isAI?: boolean; // Añadimos la bandera isAI para identificar jugadores de IA
 }
 
 interface Ball {
@@ -501,6 +502,13 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       return { x: gameX, y: gameY };
     };
     
+    // Check if player is an AI
+    const isPlayerAI = (playerNum: number) => {
+      if (playerNum === 1 && gameState.player1.isAI) return true;
+      if (playerNum === 2 && gameState.player2.isAI) return true;
+      return false;
+    };
+    
     // Touch start/mouse down handler
     const handleStart = (event: TouchEvent | MouseEvent) => {
       event.preventDefault();
@@ -534,6 +542,9 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
             playerId = 2;
           }
           
+          // Skip if this player is an AI
+          if (isPlayerAI(playerId)) continue;
+          
           // Convert to game coordinates
           const gameCoords = canvasToGameCoords(x, y);
           
@@ -564,6 +575,9 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
           // Right side (Player 2)
           playerId = 2;
         }
+        
+        // Skip if this player is an AI
+        if (isPlayerAI(playerId)) return;
         
         // Convert to game coordinates
         const gameCoords = canvasToGameCoords(x, y);
@@ -605,6 +619,9 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
             playerId = 2;
           }
           
+          // Skip if this player is an AI
+          if (isPlayerAI(playerId)) continue;
+          
           // Convert to game coordinates
           const gameCoords = canvasToGameCoords(x, y);
           
@@ -632,6 +649,9 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
           // Right side (Player 2)
           playerId = 2;
         }
+        
+        // Skip if this player is an AI
+        if (isPlayerAI(playerId)) return;
         
         // Convert to game coordinates
         const gameCoords = canvasToGameCoords(x, y);

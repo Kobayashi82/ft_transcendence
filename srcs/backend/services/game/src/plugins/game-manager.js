@@ -4,6 +4,7 @@ const config = require('../config');
 const PongGame = require('./game-logic');
 const axios = require("axios");
 const { v4: uuidv4 } = require('uuid');
+const aiNotifier = require('./ai-notifier'); // Importar el notificador de IA
 
 // Importamos tournamentManager pero lo haremos después de exportar la instancia
 let tournamentManager;
@@ -85,13 +86,27 @@ class GameManager {
     return gameEntry ? gameEntry.game : null;
   }
   
-  // STATUS
+  // GET GAME STATE - Modificado para incluir la bandera isAI en la información del jugador
   getGameState(gameId) {
-    const game = this.getGame(gameId);   
-    return game ? game.getState() : null;
+    const gameEntry = this.games.get(gameId);
+    if (!gameEntry) return null;
+    
+    // Obtener el estado básico del juego
+    const state = gameEntry.game.getState();
+    
+    // Añadir las banderas de IA a los jugadores
+    if (gameEntry.game.player1IsAI) {
+      state.player1.isAI = true;
+    }
+    
+    if (gameEntry.game.player2IsAI) {
+      state.player2.isAI = true;
+    }
+    
+    return state;
   }
 
-  // ADD PLAYER
+  // ADD PLAYER - Modificado para notificar a la IA cuando se asigna un jugador IA
   addPlayer(gameId, playerName, playerNumber) {
     const gameEntry = this.games.get(gameId);
     if (!gameEntry) return false;
@@ -100,7 +115,35 @@ class GameManager {
     this.players.set(playerName, { gameId, playerNumber });
     gameEntry.lastActivity = Date.now();
     
+    // Verificar si el jugador es una IA (por el nombre)
+    const isAI = this.isAIPlayer(playerName);
+    if (isAI) {
+      // Marcar el jugador como IA en el estado del juego para el frontend
+      gameEntry.game['player' + playerNumber + 'IsAI'] = true;
+      
+      console.log(`Jugador ${playerNumber} (${playerName}) es una IA - Notificando a la IA`);
+      // Notificar a la IA sobre el juego asignado (sin necesidad de bloquear)
+      aiNotifier.notifyAI(gameId, playerName, playerNumber)
+        .then(success => {
+          if (success) {
+            console.log(`IA ${playerName} notificada exitosamente sobre el juego ${gameId}`);
+          } else {
+            console.error(`Error al notificar a la IA ${playerName} sobre el juego ${gameId}`);
+          }
+        })
+        .catch(error => {
+          console.error(`Excepción al notificar a la IA: ${error.message}`);
+        });
+    }
+    
     return true;
+  }
+  
+  // Método auxiliar para verificar si un jugador es IA basado en su nombre
+  isAIPlayer(playerName) {
+    // Verificar si el nombre del jugador coincide con alguna IA conocida
+    const aiNames = config.ai?.opponents || [];
+    return aiNames.includes(playerName);
   }
 
   // PLAYER PLAYING
@@ -297,7 +340,7 @@ class GameManager {
     return success;
   }
   
-  // CANCEL
+  // CANCEL - Sin necesidad de liberar IAs
   cancelGame(gameId) {
     const game = this.getGame(gameId);
     if (!game) return false;
@@ -311,14 +354,26 @@ class GameManager {
     const gameEntry = this.games.get(gameId);
     gameEntry.lastActivity = Date.now();
 
+    // Notificar que el juego ha terminado
+    if (game.player1IsAI || game.player2IsAI) {
+      console.log(`Juego ${gameId} cancelado - Notificando a las IAs`);
+      aiNotifier.clearNotificationsForGame(gameId);
+    }
+    
     if (success) this.broadcastGameState(gameId);     
     return success;
   }
   
-  // PADDLE MOVE
+  // PADDLE MOVE - Modificado para ignorar movimientos de jugadores IA desde el cliente
   handlePaddleMove(gameId, player, direction) {
     const game = this.getGame(gameId);
     if (!game) return false;
+    
+    // Verificar si el jugador es una IA - si es así, ignorar el comando de movimiento
+    if ((player === 1 && game.player1IsAI) || (player === 2 && game.player2IsAI)) {
+      console.log(`Ignorando comando de movimiento manual para jugador ${player} (IA)`);
+      return false;
+    }
     
     game.setPaddleMove(player, direction);
     const gameEntry = this.games.get(gameId);
@@ -327,10 +382,16 @@ class GameManager {
     return true;
   }
   
-  // PADDLE POSITION
+  // PADDLE POSITION - Modificado para ignorar cambios de posición de jugadores IA desde el cliente
   setPaddlePosition(gameId, player, y) {
     const game = this.getGame(gameId);
     if (!game) return false;
+    
+    // Verificar si el jugador es una IA - si es así, ignorar el cambio de posición
+    if ((player === 1 && game.player1IsAI) || (player === 2 && game.player2IsAI)) {
+      console.log(`Ignorando cambio de posición manual para jugador ${player} (IA)`);
+      return false;
+    }
     
     game.setPaddlePosition(player, y);    
     const gameEntry = this.games.get(gameId);
@@ -358,7 +419,7 @@ class GameManager {
     }
   }
   
-  // CLEAN UP INACTIVE GAMES
+  // CLEAN UP INACTIVE GAMES - Sin necesidad de liberar IAs
   cleanupInactiveGames() {
     const now = Date.now();
     
@@ -376,6 +437,12 @@ class GameManager {
         // Remove players
         if (gameEntry.game.player1) this.players.delete(gameEntry.game.player1);
         if (gameEntry.game.player2) this.players.delete(gameEntry.game.player2);
+        
+        // Notificar que el juego ha terminado
+        if (gameEntry.game.player1IsAI || gameEntry.game.player2IsAI) {
+          console.log(`Juego ${gameId} eliminado por inactividad - Notificando a las IAs`);
+          aiNotifier.clearNotificationsForGame(gameId);
+        }
         
         // Remove game
         this.games.delete(gameId);

@@ -47,6 +47,11 @@ class PongGame {
     // Player state
     this.player1 = null;
     this.player2 = null;
+    
+    // AI players flags
+    this.player1IsAI = false;
+    this.player2IsAI = false;
+    
     this.player1Score = 0;
     this.player2Score = 0;
     this.player1Movement = null; // 'up', 'down', or null
@@ -84,10 +89,25 @@ class PongGame {
     }
   }
 
+  // Método para verificar si un nombre corresponde a una IA
+  isAIPlayer(playerName) {
+    // Comprueba si el nombre del jugador está en la lista de nombres de IA
+    return config.game.defaults.ai_opponents && 
+           config.game.defaults.ai_opponents.includes(playerName);
+  }
+
   // PLAYER NAME
   setPlayer(playerNumber, playerName) {
-    if (playerNumber === 1) { this.player1 = playerName; }
-    else if (playerNumber === 2) { this.player2 = playerName; }
+    if (playerNumber === 1) { 
+      this.player1 = playerName; 
+      this.player1IsAI = this.isAIPlayer(playerName);
+      console.log(`Player 1 set to ${playerName}, isAI: ${this.player1IsAI}`);
+    }
+    else if (playerNumber === 2) { 
+      this.player2 = playerName; 
+      this.player2IsAI = this.isAIPlayer(playerName);
+      console.log(`Player 2 set to ${playerName}, isAI: ${this.player2IsAI}`);
+    }
   }
 
   // RESET BALL
@@ -405,12 +425,14 @@ class PongGame {
       player1: {
         name: this.player1,
         y: this.player1Y,
-        score: this.player1Score
+        score: this.player1Score,
+        isAI: this.player1IsAI
       },
       player2: {
         name: this.player2,
         y: this.player2Y,
-        score: this.player2Score
+        score: this.player2Score,
+        isAI: this.player2IsAI
       },
       ball: {
         x: this.ballX,

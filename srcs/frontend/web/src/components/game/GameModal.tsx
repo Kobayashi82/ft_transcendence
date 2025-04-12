@@ -24,6 +24,7 @@ interface Player {
   name: string | null;
   y: number;
   score: number;
+  isAI?: boolean; // Add isAI property to Player interface
 }
 
 interface Ball {
@@ -430,28 +431,44 @@ const GameModal: React.FC<GameModalProps> = ({
 
   // Handle paddle movement
   const handleMove = (direction: 'up' | 'down' | 'stop', player: number) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      const moveMessage = {
-        type: "move",
-        gameId: currentGameId,
-        player,
-        direction
-      };
-      wsRef.current.send(JSON.stringify(moveMessage));
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    
+    // Verificar si el jugador es una IA antes de enviar comandos de movimiento
+    if (gameState && 
+        ((player === 1 && gameState.player1.isAI) || 
+         (player === 2 && gameState.player2.isAI))) {
+      console.log(`Ignorando comando de movimiento para jugador ${player} (es una IA)`);
+      return;
     }
+    
+    const moveMessage = {
+      type: "move",
+      gameId: currentGameId,
+      player,
+      direction
+    };
+    wsRef.current.send(JSON.stringify(moveMessage));
   };
 
   // Handle paddle position update
   const handleSetPosition = (y: number, player: number) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      const positionMessage = {
-        type: "position",
-        gameId: currentGameId,
-        player,
-        y
-      };
-      wsRef.current.send(JSON.stringify(positionMessage));
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    
+    // Verificar si el jugador es una IA antes de enviar actualizaciones de posición
+    if (gameState && 
+        ((player === 1 && gameState.player1.isAI) || 
+         (player === 2 && gameState.player2.isAI))) {
+      console.log(`Ignorando cambio de posición para jugador ${player} (es una IA)`);
+      return;
     }
+    
+    const positionMessage = {
+      type: "position",
+      gameId: currentGameId,
+      player,
+      y
+    };
+    wsRef.current.send(JSON.stringify(positionMessage));
   };
   
   // Handle keyboard events for controls
