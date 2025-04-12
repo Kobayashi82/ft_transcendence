@@ -26,16 +26,17 @@ async function routes(fastify, options) {
     const { players, settings } = request.body;
     const [player1Name, player2Name] = players;
     
-    // Determine AI status
-    const isPlayer1AI = player1Name.startsWith('AI_');
-    const isPlayer2AI = player2Name.startsWith('AI_');
+    // Determine AI status usando el gameManager para verificar
+    const isPlayer1AI = gameManager.isAIPlayer(player1Name);
+    const isPlayer2AI = gameManager.isAIPlayer(player2Name);
 
     // Validate players
     let message = null;
     const isPlayer1InGame = !isPlayer1AI && gameManager.isPlayerInGame(player1Name);
     const isPlayer2InGame = !isPlayer2AI && gameManager.isPlayerInGame(player2Name);  
 
-    if (player1Name === player2Name && !isPlayer1AI) message = 'Players with same name'
+    // Permitir nombres iguales si ambos son IAs
+    if (player1Name === player2Name && !(isPlayer1AI && isPlayer2AI)) message = 'Players with same name'
     else if (isPlayer1InGame && isPlayer2InGame) message = 'Both players are already in a game' 
     else if (isPlayer1InGame) message = `Player ${player1Name} is already in a game` 
     else if (isPlayer2InGame) message = `Player ${player2Name} is already in a game`

@@ -93,6 +93,7 @@ const translations = {
   'tournament.playerHelp': 'Selecciona los participantes del torneo.',
   'tournament.startTournament': 'Comenzar Torneo',
   'tournament.error.duplicatePlayers': 'Cada jugador debe tener un nombre único',
+  'tournament.error.noAIAllowed': 'No se permite jugadores controlados por IA',
 
   // PongModal
   'quickMatch.startGame': 'Iniciar',

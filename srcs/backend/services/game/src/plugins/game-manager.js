@@ -141,9 +141,18 @@ class GameManager {
   
   // Método auxiliar para verificar si un jugador es IA basado en su nombre
   isAIPlayer(playerName) {
-    // Verificar si el nombre del jugador coincide con alguna IA conocida
-    const aiNames = config.ai?.opponents || [];
-    return aiNames.includes(playerName);
+    if (!playerName) return false;
+    
+    // Eliminar el prefijo 'AI_' si existe, para compatibilidad con solicitudes antiguas
+    const normalizedName = playerName.startsWith('AI_') ? playerName.substring(3) : playerName;
+    
+    // Verificar si el nombre normalizado coincide con alguna IA conocida
+    const aiOpponents = config.game?.defaults?.ai_opponents || [];
+    
+    // Hacer la comparación insensible a mayúsculas/minúsculas
+    return aiOpponents.some(aiName => 
+      aiName.toLowerCase() === normalizedName.toLowerCase()
+    );
   }
 
   // PLAYER PLAYING
@@ -216,25 +225,43 @@ class GameManager {
         }
       }
       
-      // Si no quedan clientes conectados, liberar todos los jugadores y cancelar el juego
+      // Si no quedan clientes conectados
       if (gameEntry.clients.size === 0) {
-        console.log(`No quedan clientes conectados para el juego ${clientEntry.gameId}, liberando jugadores`);
+        console.log(`No quedan clientes conectados para el juego ${clientEntry.gameId}`);
         
-        // Liberar jugadores explícitamente del mapa de jugadores
-        if (gameEntry.game.player1) {
-          console.log(`Liberando jugador 1: ${gameEntry.game.player1}`);
-          this.players.delete(gameEntry.game.player1);
-        }
-        
-        if (gameEntry.game.player2) {
-          console.log(`Liberando jugador 2: ${gameEntry.game.player2}`);
-          this.players.delete(gameEntry.game.player2);
-        }
-        
-        // Si el juego estaba en progreso (o esperando), cancelarlo
-        if (['playing', 'paused', 'waiting'].includes(gameEntry.game.gameState)) {
-          console.log(`Cancelando juego ${clientEntry.gameId} por desconexión de todos los clientes`);
-          gameEntry.game.cancel();
+        // CASO ESPECIAL: Si es un juego IA contra IA, permitir que continúe sin clientes
+        if (gameEntry.game.player1IsAI && gameEntry.game.player2IsAI) {
+          console.log(`Juego ${clientEntry.gameId} es IA contra IA, permitiendo que continúe sin clientes`);
+          
+          // Si el juego está pausado, reanudarlo
+          if (gameEntry.game.gameState === 'paused') {
+            console.log(`Reanudando juego IA contra IA ${clientEntry.gameId}`);
+            gameEntry.game.resume();
+          }
+          
+          // Actualizar el tiempo de actividad para evitar limpieza prematura
+          gameEntry.lastActivity = Date.now();
+          
+        } else {
+          // Para juegos con al menos un jugador humano, liberar y cancelar
+          console.log(`Liberando jugadores para juego ${clientEntry.gameId}`);
+          
+          // Liberar jugadores explícitamente del mapa de jugadores
+          if (gameEntry.game.player1) {
+            console.log(`Liberando jugador 1: ${gameEntry.game.player1}`);
+            this.players.delete(gameEntry.game.player1);
+          }
+          
+          if (gameEntry.game.player2) {
+            console.log(`Liberando jugador 2: ${gameEntry.game.player2}`);
+            this.players.delete(gameEntry.game.player2);
+          }
+          
+          // Si el juego estaba en progreso (o esperando), cancelarlo
+          if (['playing', 'paused', 'waiting'].includes(gameEntry.game.gameState)) {
+            console.log(`Cancelando juego ${clientEntry.gameId} por desconexión de todos los clientes`);
+            gameEntry.game.cancel();
+          }
         }
       } else {
         // Todavía hay clientes conectados, verificar si todos los jugadores están desconectados
@@ -409,9 +436,16 @@ class GameManager {
       // Update game
       gameEntry.game.update();
       
-      // If game just finished, send results to stats service
+      // If game just finished, handle game completion
       if (gameEntry.game.gameState === 'finished') {
         this.sendGameResultsToStats(gameId);
+        
+        // Si es un juego de IA contra IA sin clientes conectados, marcar como completado
+        // para evitar que sea cancelado por falta de clientes
+        if (gameEntry.game.player1IsAI && gameEntry.game.player2IsAI && gameEntry.clients.size === 0) {
+          console.log(`IA vs IA game ${gameId} completed without clients, ensuring stats are saved`);
+          gameEntry.sentToStats = true; // Marcar que ya se enviaron estadísticas
+        }
       }
      
       // Broadcast updated state to clients
@@ -428,6 +462,12 @@ class GameManager {
       if (now - gameEntry.lastActivity > 1000 * 60 * 60) {
         // Check if it's a tournament game
         const matchInfo = this.findMatchInfoForGame(gameId);
+        
+        // Si el juego está finalizado y es IA vs IA, asegurarse de que se enviaron estadísticas
+        if (gameEntry.game.gameState === 'finished' && gameEntry.game.player1IsAI && gameEntry.game.player2IsAI && !gameEntry.sentToStats) {
+          console.log(`Found finished IA vs IA game ${gameId} without stats sent, sending now before cleanup`);
+          this.sendGameResultsToStats(gameId);
+        }
         
         // Remove all clients from this game
         for (const clientId of gameEntry.clients) {
@@ -472,9 +512,24 @@ class GameManager {
       return;
     }
     
-    console.log(`Sending game results for ${gameId} to stats service`);
+    console.log(`Preparing to send game results for ${gameId} to stats service`);
 
     const statsService = config.services.stats;
+    
+    // Usar los nombres de jugadores sin modificar
+    let player1Name = gameState.player1.name;
+    let player2Name = gameState.player2.name;
+    
+    // Verificar si ambos jugadores son IAs
+    const player1IsAI = gameState.player1.isAI || gameEntry.game.player1IsAI;
+    const player2IsAI = gameState.player2.isAI || gameEntry.game.player2IsAI;
+    
+    // Si ambos jugadores son IA, no enviar el juego a la base de datos
+    if (player1IsAI && player2IsAI) {
+      console.log(`Skipping stats for game ${gameId} because both players are AI (${player1Name} vs ${player2Name})`);
+      gameEntry.sentToStats = true; // Marcar como enviado para evitar futuros intentos
+      return;
+    }
     
     // Usar el tiempo de finalización registrado, o el tiempo actual si no existe
     const now = Date.now();
@@ -544,11 +599,11 @@ class GameManager {
         },
         players: [
           {
-            user_id: gameState.player1.name,
+            user_id: player1Name,
             score: gameState.player1.score
           },
           {
-            user_id: gameState.player2.name,
+            user_id: player2Name,
             score: gameState.player2.score
           }
         ]

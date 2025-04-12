@@ -20,6 +20,16 @@ async function routes(fastify, options) {
         };
       }
       
+      // Nueva validación: No permitir jugadores IA en los torneos
+      const aiPlayers = players.filter(playerName => gameManager.isAIPlayer(playerName));
+      if (aiPlayers.length > 0) {
+        reply.code(400);
+        return {
+          success: false,
+          message: `AI players are not allowed in tournaments: ${aiPlayers.join(', ')}`
+        };
+      }
+      
       // Validar que se proporciona un nombre para el torneo
       const tournamentName = name ? name.trim() : "";
       if (!tournamentName) {

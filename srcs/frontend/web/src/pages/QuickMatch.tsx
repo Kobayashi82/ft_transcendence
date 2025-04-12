@@ -125,8 +125,16 @@ const QuickMatchPage: React.FC = () => {
       return;
     }
     
-    // Validar que no se hayan seleccionado jugadores duplicados (comparación case insensitive)
-    if (selectedPlayers[0].trim().toLowerCase() === selectedPlayers[1].trim().toLowerCase()) {
+    // Normalizar los nombres de jugadores
+    const normalizedPlayers = selectedPlayers.map(player => normalizeAIName(player.trim()));
+    
+    // Validar que no se hayan seleccionado jugadores duplicados (excepto IAs)
+    const player1IsAI = isAIPlayer(normalizedPlayers[0]);
+    const player2IsAI = isAIPlayer(normalizedPlayers[1]);
+    
+    // Verificamos duplicados solo si NO son ambos IAs
+    if (normalizedPlayers[0].toLowerCase() === normalizedPlayers[1].toLowerCase() && 
+        !(player1IsAI && player2IsAI)) {
       setError(t('quickMatch.error.duplicatePlayers'));
       return;
     }
@@ -136,8 +144,10 @@ const QuickMatchPage: React.FC = () => {
       setError(null);
       setSuccess(null);
     
+      // Ya no es necesario transformar los nombres de IAs con el prefijo AI_
+      // Usamos directamente los nombres normalizados
       const gameData = {
-        players: selectedPlayers,
+        players: normalizedPlayers,
         settings: {
           ballSpeed,
           paddleSize,
@@ -165,6 +175,7 @@ const QuickMatchPage: React.FC = () => {
       console.log("Game created:", data);
       
       setGameId(data.gameId);
+      setSelectedPlayers(normalizedPlayers);
       setIsGameModalOpen(true);
       
     } catch (err) {
@@ -212,6 +223,20 @@ const QuickMatchPage: React.FC = () => {
 
   // Select a player
   const selectPlayer = (playerIndex: number, userId: string) => {
+    // Verificar si el jugador ya está seleccionado en la otra posición
+    const otherPlayerIndex = playerIndex === 0 ? 1 : 0;
+    
+    // Permitimos seleccionar la misma IA para ambos jugadores
+    const aiNames = getAIOpponents();
+    const isAI = aiNames.includes(userId);
+    
+    // Solo verificamos duplicados si NO es una IA
+    if (userId === selectedPlayers[otherPlayerIndex] && !isAI) {
+      // Si el jugador ya está seleccionado en la otra posición y no es una IA, mostrar un error
+      setError(t('quickMatch.error.playerAlreadySelected'));
+      return;
+    }
+
     const newSelectedPlayers = [...selectedPlayers];
     newSelectedPlayers[playerIndex] = userId;
     setSelectedPlayers(newSelectedPlayers);
@@ -221,6 +246,20 @@ const QuickMatchPage: React.FC = () => {
   // Get AI opponents from options
   const getAIOpponents = () => {
     return options?.default?.ai_opponents || [];
+  };
+
+  // Verificar si un nombre coincide con una IA
+  const isAIPlayer = (playerName: string) => {
+    const aiNames = getAIOpponents();
+    // Comprobación insensible a mayúsculas/minúsculas
+    return aiNames.some(ai => ai.toLowerCase() === playerName.toLowerCase());
+  };
+
+  // Normalizar el nombre de una IA para usar el formato exacto del backend
+  const normalizeAIName = (playerName: string) => {
+    const aiNames = getAIOpponents();
+    const matchedAI = aiNames.find(ai => ai.toLowerCase() === playerName.toLowerCase());
+    return matchedAI || playerName; // Devuelve el nombre normalizado o el original si no es IA
   };
 
   // Get display text for speed/size options
@@ -377,7 +416,14 @@ const QuickMatchPage: React.FC = () => {
                                   </div>
                                   <div className="p-2">
                                     {players
-                                      .filter(player => index === 0 || player.user_id !== selectedPlayers[0])
+                                      .filter(player => {
+                                        // Filtrar IAs de la columna de jugadores humanos
+                                        const aiNames = getAIOpponents();
+                                        const isAI = aiNames.includes(player.user_id);
+                                        
+                                        // No mostrar IAs y no mostrar jugador ya seleccionado en la otra posición
+                                        return !isAI && (index === 0 || player.user_id !== selectedPlayers[0]);
+                                      })
                                       .map((player) => (
                                         <div
                                           key={player.id}

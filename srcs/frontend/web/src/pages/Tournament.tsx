@@ -101,8 +101,9 @@ const TournamentPage: React.FC = () => {
         
         // Check if the data is in the expected format
         if (data && data.data && Array.isArray(data.data)) {
-          // Ordenar jugadores alfabéticamente por user_id
-          const sortedPlayers = [...data.data].sort((a, b) => 
+          // Filtrar jugadores IA de la lista y ordenar alfabéticamente por user_id
+          const filteredPlayers = data.data.filter(player => !player.isAI);
+          const sortedPlayers = [...filteredPlayers].sort((a, b) => 
             a.user_id.localeCompare(b.user_id)
           );
           setPlayers(sortedPlayers);
@@ -133,10 +134,16 @@ const TournamentPage: React.FC = () => {
       return;
     }
     
-    // Verificar que no hay jugadores duplicados (comparación case insensitive)
-    const normalizedPlayers = validPlayers.map(p => p.trim().toLowerCase());
-    const uniquePlayers = new Set(normalizedPlayers);
-    if (uniquePlayers.size !== validPlayers.length) {
+    // Verificar que no hay IAs en la lista de jugadores seleccionados
+    const hasAI = selectedPlayers.some(player => isAIPlayer(player.trim()));
+    if (hasAI) {
+      setError(t('tournament.error.noAIAllowed'));
+      return;
+    }
+    
+    // Verificar que no hay jugadores humanos duplicados
+    const uniquePlayers = new Set(selectedPlayers.map(p => p.trim().toLowerCase()));
+    if (uniquePlayers.size !== selectedPlayers.length) {
       setError(t('tournament.error.duplicatePlayers'));
       return;
     }
@@ -148,7 +155,7 @@ const TournamentPage: React.FC = () => {
       
       const tournamentData = {
         name: tournamentName.trim(),
-        players: selectedPlayers,
+        players: selectedPlayers.map(p => p.trim()),
         settings: {
           ballSpeed,
           paddleSize,
@@ -223,7 +230,20 @@ const TournamentPage: React.FC = () => {
   }, [showAIList]);
 
   // Select a player
-  const selectPlayer = (playerIndex: number, userId: string) => {   
+  const selectPlayer = (playerIndex: number, userId: string) => {
+    // Verificar si el jugador ya está seleccionado en otra posición
+    const aiNames = getAIOpponents();
+    const isAI = aiNames.includes(userId);
+    
+    // Si es una IA, permitimos seleccionarla múltiples veces
+    if (!isAI) {
+      const isDuplicate = selectedPlayers.some((player, idx) => idx !== playerIndex && player === userId);
+      if (isDuplicate) {
+        setError(t('tournament.error.playerAlreadySelected'));
+        return;
+      }
+    }
+    
     const newSelectedPlayers = [...selectedPlayers];
     newSelectedPlayers[playerIndex] = userId;
     setSelectedPlayers(newSelectedPlayers);
@@ -233,6 +253,20 @@ const TournamentPage: React.FC = () => {
   // Get AI opponents from options
   const getAIOpponents = () => {
     return options?.default?.ai_opponents || [];
+  };
+  
+  // Verificar si un nombre coincide con una IA
+  const isAIPlayer = (playerName: string) => {
+    const aiNames = getAIOpponents();
+    // Comprobación insensible a mayúsculas/minúsculas
+    return aiNames.some(ai => ai.toLowerCase() === playerName.toLowerCase());
+  };
+
+  // Normalizar el nombre de una IA para usar el formato exacto del backend
+  const normalizeAIName = (playerName: string) => {
+    const aiNames = getAIOpponents();
+    const matchedAI = aiNames.find(ai => ai.toLowerCase() === playerName.toLowerCase());
+    return matchedAI || playerName; // Devuelve el nombre normalizado o el original si no es IA
   };
 
   // Get display text for speed/size options
@@ -366,26 +400,8 @@ const TournamentPage: React.FC = () => {
                             {showAIList === index && (
                               <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
                                 <div className="flex h-40 mb-1">
-                                  {/* AI Opponents Column */}
-                                  <div className="w-1/2 border-r border-gray-700 overflow-y-auto">
-                                    <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
-                                      <div className="font-medium text-purple-400 px-2 py-1 text-sm">{t('tournament.aiOpponents')}</div>
-                                    </div>
-                                    <div className="p-2">
-                                      {getAIOpponents().map((ai) => (
-                                        <div
-                                          key={`ai-${ai}`}
-                                          className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
-                                          onClick={() => selectPlayer(index, ai)}
-                                        >
-                                          {ai}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Human Players Column */}
-                                  <div className="w-1/2 overflow-y-auto">
+                                  {/* Human Players Column - Ahora ocupa el 100% del ancho */}
+                                  <div className="w-full overflow-y-auto">
                                     <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
                                       <div className="font-medium text-purple-400 px-2 py-1 text-sm">{t('tournament.humanPlayers')}</div>
                                     </div>

@@ -470,6 +470,12 @@ const GameModal: React.FC<GameModalProps> = ({
     };
     wsRef.current.send(JSON.stringify(positionMessage));
   };
+
+  const formatPlayerName = (name: string | null | undefined): string => {
+    if (!name) return '';
+    // Si el nombre comienza con "AI_", eliminarlo para la visualización
+    return name.startsWith('AI_') ? name.substring(3) : name;
+  };
   
   // Handle keyboard events for controls
   useEffect(() => {
@@ -646,13 +652,13 @@ const GameModal: React.FC<GameModalProps> = ({
               )}
               {screenSize === 'small' ? (
                 <>
-                  <span className="truncate max-w-[100px]">{gameState?.player1?.name || player1}</span> 
+                  <span className="truncate max-w-[100px]">{formatPlayerName(gameState?.player1?.name) || formatPlayerName(player1)}</span> 
                   <span className="mx-1">🆚</span> 
-                  <span className="truncate max-w-[100px]">{gameState?.player2?.name || player2 || t('quickMatch.waiting')}</span>
+                  <span className="truncate max-w-[100px]">{formatPlayerName(gameState?.player2?.name) || formatPlayerName(player2) || t('quickMatch.waiting')}</span>
                 </>
               ) : (
                 <>
-                  {gameState?.player1?.name || player1} 🆚 {gameState?.player2?.name || player2 || t('quickMatch.waiting')}
+                  {formatPlayerName(gameState?.player1?.name) || formatPlayerName(player1)} 🆚 {formatPlayerName(gameState?.player2?.name) || formatPlayerName(player2) || t('quickMatch.waiting')}
                 </>
               )}
             </h3>

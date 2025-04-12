@@ -62,6 +62,7 @@ const translations = {
   'quickMatch.playerHelp': 'Sélectionnez les joueurs pour le match.',
   'quickMatch.playNow': 'Jouer Maintenant',
   'quickMatch.error.duplicatePlayers': 'Chaque joueur doit avoir un nom unique',
+  'tournament.error.noAIAllowed': 'Les joueurs contrôlés par l’IA ne sont pas autorisés',
 
   // Tournament
   'tournament.title': 'Tournoi',

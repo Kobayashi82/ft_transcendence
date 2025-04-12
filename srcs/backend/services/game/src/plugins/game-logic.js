@@ -92,8 +92,13 @@ class PongGame {
   // Método para verificar si un nombre corresponde a una IA
   isAIPlayer(playerName) {
     // Comprueba si el nombre del jugador está en la lista de nombres de IA
+    if (!playerName) return false;
+    
+    // Hacemos la comparación insensible a mayúsculas/minúsculas
     return config.game.defaults.ai_opponents && 
-           config.game.defaults.ai_opponents.includes(playerName);
+           config.game.defaults.ai_opponents.some(aiName => 
+             aiName.toLowerCase() === playerName.toLowerCase()
+           );
   }
 
   // PLAYER NAME
