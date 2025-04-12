@@ -251,29 +251,7 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       ctx.arc(scaledBall.x, scaledBall.y, scaledBall.size * 2, 0, Math.PI * 2);
       ctx.fill();
     }
-    
-    // Draw scores at the top of the screen
-    if (player1.score > 0 || player2.score > 0) {
-      // Calculate font size based on canvas width and orientation
-      const scoreFontSize = Math.max(12, Math.floor(24 * scaleFactor.current));
-      
-      // Draw scores
-      ctx.font = `bold ${scoreFontSize}px Arial`;
-      ctx.fillStyle = colors.score;
-      ctx.textAlign = "center";
-      
-      // Scale positioning based on canvas size
-      const scoreY = Math.max(scaledPadding / 2, 25 * scaleFactor.current);
-      
-      // Player 1 score (left)
-      ctx.fillStyle = playerNumber === 1 ? colors.scoreHighlight : colors.score;
-      ctx.fillText(player1.score.toString(), canvas.width / 4, scoreY);
-      
-      // Player 2 score (right)
-      ctx.fillStyle = playerNumber === 2 ? colors.scoreHighlight : colors.score;
-      ctx.fillText(player2.score.toString(), (canvas.width / 4) * 3, scoreY);
-    }
-    
+  
     // If game is not playing, show overlay message
     if (gameState.gameState !== "playing") {
       let message = "";
@@ -316,23 +294,78 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       // Draw semi-transparent overlay
       ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Asegurarnos de que los textos no sean más grandes que el campo de juego
+      const gameAreaWidth = canvas.width - (scaledPadding * 2);
+      const gameAreaHeight = canvas.height - (scaledPadding * 2);
+
+      // Calcular tamaños de fuente que se ajusten al campo de juego
+      // El texto principal no debe ocupar más del 70% del ancho del área de juego
+      // y el subtexto no debe ocupar más del 80%
+      const maxMainFontSize = Math.min(gameAreaHeight * 0.15, gameAreaWidth * 0.05);
+      const maxSubFontSize = maxMainFontSize * 0.6;
       
-      // Calculate scaled font sizes
+      // Calcular tamaño base teniendo en cuenta el dispositivo
+      const isMobile = window.innerWidth <= 767;
       const isPortrait = orientationRef.current === 'portrait';
-      const mainFontSize = Math.max(16, Math.floor((isPortrait ? 24 : 32) * scaleFactor.current));
-      const subFontSize = Math.max(8, Math.floor((isPortrait ? 12 : 16) * scaleFactor.current));
       
-      // Draw message with scaled font
+      // Tamaños de fuente base, más pequeños para dispositivos móviles
+      let mainFontSizeBase = Math.min(
+        gameAreaWidth / (message.length > 15 ? 15 : 10), // Ajustar según longitud del mensaje
+        maxMainFontSize
+      );
+      
+      // Ajustar según orientación
+      if (isMobile) {
+        mainFontSizeBase *= isPortrait ? 0.9 : 0.8; // Reducir más en landscape para móviles
+      }
+      
+      // Asegurar un tamaño mínimo y máximo razonable
+      const mainFontSize = Math.max(14, Math.min(36, mainFontSizeBase));
+      const subFontSize = Math.max(10, Math.min(24, mainFontSize * 0.65));
+      
+      // Draw message with scaled font and shadow for mejor legibilidad
       ctx.font = `bold ${mainFontSize}px Arial`;
-      ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
-      ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+      ctx.textBaseline = "middle";
       
-      // Draw subtext with scaled font
+      // Añadir sombra para mejorar legibilidad
+      ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      
+      // Medir el ancho del texto para verificar que cabe
+      const mainTextWidth = ctx.measureText(message).width;
+      if (mainTextWidth > gameAreaWidth * 0.9) {
+        // Si el texto es demasiado largo, reducir el tamaño
+        const newFontSize = Math.floor(mainFontSize * (gameAreaWidth * 0.9 / mainTextWidth));
+        ctx.font = `bold ${newFontSize}px Arial`;
+      }
+      
+      // Dibujar mensaje principal con color más brillante
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(message, canvas.width / 2, canvas.height / 2 - (subtext ? mainFontSize / 2 : 0));
+      
+      // Reset shadow for subtext
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      
+      // Draw subtext with scaled font if present
       if (subtext) {
         ctx.font = `${subFontSize}px Arial`;
-        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-        ctx.fillText(subtext, canvas.width / 2, canvas.height / 2 + mainFontSize + 8);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+        
+        // Medir el ancho del subtexto para verificar que cabe
+        const subTextWidth = ctx.measureText(subtext).width;
+        if (subTextWidth > gameAreaWidth * 0.9) {
+          // Si el texto es demasiado largo, reducir el tamaño
+          const newSubFontSize = Math.floor(subFontSize * (gameAreaWidth * 0.9 / subTextWidth));
+          ctx.font = `${newSubFontSize}px Arial`;
+        }
+        
+        ctx.fillText(subtext, canvas.width / 2, canvas.height / 2 + mainFontSize * 0.8);
       }
     }
   };

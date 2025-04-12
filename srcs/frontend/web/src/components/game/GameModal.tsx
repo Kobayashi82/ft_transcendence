@@ -92,6 +92,13 @@ const GameModal: React.FC<GameModalProps> = ({
   const [currentRound, setCurrentRound] = useState<number>(tournamentRound);
   const [nextButtonEnabled, setNextButtonEnabled] = useState<boolean>(false);
   const [currentGameId, setCurrentGameId] = useState<string>(gameId); // Track the current game ID
+  // Para detectar la orientación y tamaño de pantalla
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(
+    window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
+  );
+  const [screenSize, setScreenSize] = useState<'small' | 'medium' | 'large'>(
+    window.innerWidth < 640 ? 'small' : window.innerWidth < 1024 ? 'medium' : 'large'
+  );
 
   // Update current round when game state changes
   useEffect(() => {
@@ -99,6 +106,41 @@ const GameModal: React.FC<GameModalProps> = ({
       setCurrentRound(gameState.settings.tournamentRound);
     }
   }, [gameState]);
+
+  // Detector de orientación y tamaño de pantalla
+  useEffect(() => {
+    const handleResize = () => {
+      // Detectar orientación
+      const newOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+      setOrientation(newOrientation);
+      
+      // Detectar tamaño de pantalla
+      let newSize: 'small' | 'medium' | 'large';
+      if (window.innerWidth < 640) {
+        newSize = 'small';
+      } else if (window.innerWidth < 1024) {
+        newSize = 'medium';
+      } else {
+        newSize = 'large';
+      }
+      setScreenSize(newSize);
+    };
+    
+    // Configurar el detector inicial
+    handleResize();
+    
+    // Agregar listeners para cambios de tamaño y orientación
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', () => {
+      // Pequeño retraso para asegurar que los valores se actualicen después del cambio de orientación
+      setTimeout(handleResize, 300);
+    });
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
 
   // Setup WebSocket connection
   useEffect(() => {
@@ -564,26 +606,36 @@ const GameModal: React.FC<GameModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm">
-      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl w-full max-w-5xl">
-        <div className="bg-gray-900 px-6 py-4 flex justify-between items-center border-b border-gray-700">
-          <div>
-            <h3 className="text-xl font-bold text-white flex items-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm p-2 sm:p-4">
+      <div className={`bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl w-full ${screenSize === 'small' ? 'max-w-full' : 'max-w-5xl'}`}>
+        <div className={`bg-gray-900 px-3 sm:px-6 py-2 sm:py-4 flex justify-between items-center border-b border-gray-700 ${screenSize === 'small' ? 'flex-col' : 'flex-row'}`}>
+          <div className={`${screenSize === 'small' ? 'w-full text-center mb-2' : ''}`}>
+            <h3 className={`${screenSize === 'small' ? 'text-lg' : 'text-xl'} font-bold text-white flex items-center ${screenSize === 'small' ? 'justify-center' : ''}`}>
               {gameState?.settings?.tournamentMode && (
-                <Trophy className="h-5 w-5 text-amber-400 mr-2" />
+                <Trophy className={`${screenSize === 'small' ? 'h-4 w-4' : 'h-5 w-5'} text-amber-400 mr-2`} />
               )}
-              {gameState?.player1?.name || player1} 🆚 {gameState?.player2?.name || player2 || t('quickMatch.waiting')}
+              {screenSize === 'small' ? (
+                <>
+                  <span className="truncate max-w-[100px]">{gameState?.player1?.name || player1}</span> 
+                  <span className="mx-1">🆚</span> 
+                  <span className="truncate max-w-[100px]">{gameState?.player2?.name || player2 || t('quickMatch.waiting')}</span>
+                </>
+              ) : (
+                <>
+                  {gameState?.player1?.name || player1} 🆚 {gameState?.player2?.name || player2 || t('quickMatch.waiting')}
+                </>
+              )}
             </h3>
-            <p className="text-gray-400 text-sm flex items-center">
+            <p className="text-gray-400 text-sm flex items-center justify-center sm:justify-start">
               {!isConnected && <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 mr-2 animate-pulse"></span>}
               {/* {getStatusText()} */}
             </p>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className={`flex items-center ${screenSize === 'small' ? 'w-full justify-between' : 'space-x-4'}`}>
             {gameState && (
               <div className="bg-gray-800 px-4 py-2 rounded-lg">
-                <span className="text-xl font-bold text-white">{getScoreText()}</span>
+                <span className={`${screenSize === 'small' ? 'text-lg' : 'text-xl'} font-bold text-white`}>{getScoreText()}</span>
               </div>
             )}
             
@@ -594,7 +646,7 @@ const GameModal: React.FC<GameModalProps> = ({
                   className={`${gameState?.gameState === "next" ? "bg-purple-600 hover:bg-purple-700" : "bg-green-600 hover:bg-green-700"} text-white p-2 rounded-lg`}
                   title={t('quickMatch.startGame')}
                 >
-                  <Play className="h-5 w-5" />
+                  <Play className={`${screenSize === 'small' ? 'h-4 w-4' : 'h-5 w-5'}`} />
                 </button>
               )}
               
@@ -605,9 +657,9 @@ const GameModal: React.FC<GameModalProps> = ({
                   title={gameState?.gameState === "paused" ? t('quickMatch.resume') : t('quickMatch.pause')}
                 >
                   {gameState?.gameState === "paused" ? (
-                    <Play className="h-5 w-5" />
+                    <Play className={`${screenSize === 'small' ? 'h-4 w-4' : 'h-5 w-5'}`} />
                   ) : (
-                    <Pause className="h-5 w-5" />
+                    <Pause className={`${screenSize === 'small' ? 'h-4 w-4' : 'h-5 w-5'}`} />
                   )}
                 </button>
               )}
@@ -617,22 +669,22 @@ const GameModal: React.FC<GameModalProps> = ({
                 className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg"
                 title={t('quickMatch.close')}
               >
-                <X className="h-5 w-5" />
+                <X className={`${screenSize === 'small' ? 'h-4 w-4' : 'h-5 w-5'}`} />
               </button>
             </div>
           </div>
         </div>
         
         {persistentConnectionLost && (
-          <div className="bg-red-900/40 border border-red-500/50 text-red-100 px-4 py-3 m-4 rounded-lg">
+          <div className="bg-red-900/40 border border-red-500/50 text-red-100 px-3 py-2 sm:px-4 sm:py-3 m-2 sm:m-4 rounded-lg">
             <div className="flex">
               <AlertTriangle className="h-5 w-5 text-red-300 mr-2 flex-shrink-0" />
               <div>
                 <p className="font-medium">{t('quickMatch.connectionLostTitle')}</p>
-                <p>{t('quickMatch.connectionLostMessage')}</p>
+                <p className={`${screenSize === 'small' ? 'text-sm' : ''}`}>{t('quickMatch.connectionLostMessage')}</p>
                 <button 
                   onClick={onClose}
-                  className="mt-3 px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded-lg"
+                  className="mt-2 sm:mt-3 px-3 py-1 sm:px-4 sm:py-2 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm sm:text-base"
                 >
                   {t('quickMatch.returnToMenu')}
                 </button>
@@ -642,11 +694,11 @@ const GameModal: React.FC<GameModalProps> = ({
         )}
         
         {showNextRoundButton() && (
-          <div className="bg-purple-900/40 border border-purple-500/50 text-purple-100 px-4 py-3 m-4 rounded-lg">
+          <div className="bg-purple-900/40 border border-purple-500/50 text-purple-100 px-3 py-2 sm:px-4 sm:py-3 m-2 sm:m-4 rounded-lg">
             <div className="flex">
               <Trophy className="h-5 w-5 text-purple-300 mr-2 flex-shrink-0" />
               <div>
-                <p>
+                <p className={`${screenSize === 'small' ? 'text-sm' : ''}`}>
                   {currentRound === 1 ? 
                     (gameState && gameState.settings?.isSecondSemifinal ? 
                       t('tournament.secondSemifinalCompleted') : 
@@ -656,7 +708,7 @@ const GameModal: React.FC<GameModalProps> = ({
                 {currentRound === 1 ? (
                   <button 
                     onClick={handleNextRound}
-                    className="mt-3 px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg"
+                    className="mt-2 sm:mt-3 px-3 py-1 sm:px-4 sm:py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-sm sm:text-base"
                   >
                     {gameState?.settings?.isSecondSemifinal ? 
                       t('tournament.proceedToFinal') : 
@@ -665,7 +717,7 @@ const GameModal: React.FC<GameModalProps> = ({
                 ) : (
                   <button
                     onClick={onClose}
-                    className="mt-3 px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg"
+                    className="mt-2 sm:mt-3 px-3 py-1 sm:px-4 sm:py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-sm sm:text-base"
                   >
                     {t('tournament.closeTournament')}
                   </button>
@@ -676,15 +728,21 @@ const GameModal: React.FC<GameModalProps> = ({
         )}
         
         {error && !persistentConnectionLost && (
-          <div className="bg-red-900/40 border border-red-500/50 text-red-100 px-4 py-3 m-4 rounded-lg">
+          <div className="bg-red-900/40 border border-red-500/50 text-red-100 px-3 py-2 sm:px-4 sm:py-3 m-2 sm:m-4 rounded-lg">
             <div className="flex">
               <AlertTriangle className="h-5 w-5 text-red-300 mr-2 flex-shrink-0" />
-              <p>{error}</p>
+              <p className={`${screenSize === 'small' ? 'text-sm' : ''}`}>{error}</p>
             </div>
           </div>
         )}
         
-        <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3/2" }}>
+        <div 
+          className="relative w-full overflow-hidden"
+          style={{ 
+            aspectRatio: orientation === 'portrait' ? '4/3' : '3/2',
+            maxHeight: orientation === 'portrait' ? '70vh' : '80vh',
+          }}
+        >
           {gameState ? (
             <PongGame
               gameState={gameState}
@@ -697,7 +755,7 @@ const GameModal: React.FC<GameModalProps> = ({
               {persistentConnectionLost ? (
                 <div className="text-center">
                   <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                  <p className="text-lg text-gray-300">{t('quickMatch.connectionLostMessage')}</p>
+                  <p className={`${screenSize === 'small' ? 'text-base' : 'text-lg'} text-gray-300`}>{t('quickMatch.connectionLostMessage')}</p>
                 </div>
               ) : (
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -708,13 +766,13 @@ const GameModal: React.FC<GameModalProps> = ({
       </div>
       
       {showExitConfirm && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-75">
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 max-w-md">
-            <div className="flex items-center mb-4">
-              <XCircle className="h-6 w-6 text-red-500 mr-3" />
-              <h3 className="text-xl font-bold text-white">{t('quickMatch.confirmCancel')}</h3>
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-75 p-4">
+          <div className={`bg-gray-800 rounded-xl border border-gray-700 p-4 sm:p-6 ${screenSize === 'small' ? 'w-[90%]' : 'max-w-md'}`}>
+            <div className="flex items-center mb-3 sm:mb-4">
+              <XCircle className={`${screenSize === 'small' ? 'h-5 w-5' : 'h-6 w-6'} text-red-500 mr-2 sm:mr-3`} />
+              <h3 className={`${screenSize === 'small' ? 'text-lg' : 'text-xl'} font-bold text-white`}>{t('quickMatch.confirmCancel')}</h3>
             </div>
-            <p className="text-gray-300 mb-6">
+            <p className={`text-gray-300 mb-4 sm:mb-6 ${screenSize === 'small' ? 'text-sm' : ''}`}>
               {gameState?.settings?.tournamentMode 
                 ? t('tournament.confirmCancelText') 
                 : t('quickMatch.confirmCancelText')}
@@ -722,13 +780,13 @@ const GameModal: React.FC<GameModalProps> = ({
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowExitConfirm(false)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                className={`px-3 py-1 sm:px-4 sm:py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg ${screenSize === 'small' ? 'text-sm' : ''}`}
               >
                 {t('quickMatch.stay')}
               </button>
               <button
                 onClick={cancelGame}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                className={`px-3 py-1 sm:px-4 sm:py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg ${screenSize === 'small' ? 'text-sm' : ''}`}
               >
                 {t('quickMatch.leave')}
               </button>
