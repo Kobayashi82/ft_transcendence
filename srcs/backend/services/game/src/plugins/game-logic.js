@@ -76,6 +76,8 @@ class PongGame {
     
     // Status flags
     this.ballHitRecently = false;
+    this.ballPaused = false;         // Nueva bandera para indicar si la bola está en pausa
+    this.ballReadyTime = 0;          // Timestamp de cuando la bola estará lista para moverse
 
     // Timing related properties - CRÍTICO: Inicializar todos los contadores de tiempo
     this.pauseTime = null; // Timestamp when the game was paused
@@ -141,6 +143,11 @@ class PongGame {
     
     // Reset hit flag
     this.ballHitRecently = false;
+    
+    // NUEVO: Activar pausa de la bola por 500ms
+    this.ballPaused = true;
+    this.ballReadyTime = Date.now() + 500; // La bola estará lista para moverse en 500ms
+    console.log(`Ball paused for 500ms after point`);
   }
   
   // START
@@ -362,6 +369,18 @@ class PongGame {
       this.player2Y = Math.min(this.height - this.paddleHeight - this.edgePadding, this.player2Y + paddleSpeed);
     }
     
+    // NUEVO: Verificar si la bola está en pausa
+    if (this.ballPaused) {
+      // Comprobar si ya pasó el tiempo de pausa
+      if (now >= this.ballReadyTime) {
+        console.log(`Ball pause ended, continuing game`);
+        this.ballPaused = false;
+      } else {
+        // Si la bola sigue en pausa, no actualizar su posición
+        return;
+      }
+    }
+    
     // For very large dt values, step the ball movement gradually
     if (dt > 1.5) {
       const steps = Math.ceil(dt / 1.0); // Break into steps of 1.0 or smaller
@@ -441,7 +460,9 @@ class PongGame {
       },
       ball: {
         x: this.ballX,
-        y: this.ballY
+        y: this.ballY,
+        paused: this.ballPaused,             // NUEVO: Indicar si la bola está en pausa
+        readyTime: this.ballPaused ? this.ballReadyTime : null  // NUEVO: Tiempo cuando la bola se moverá
       },
       config: {
         width: this.width,

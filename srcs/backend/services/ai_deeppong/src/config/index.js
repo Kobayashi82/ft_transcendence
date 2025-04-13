@@ -24,7 +24,7 @@ const config = {
   // Configuración de la IA
   ai: {
     // Intervalo de actualización (ms) - Aumentado para reducir el temblor
-    updateInterval: 200,
+    updateInterval: 100,
     
     // Desplazamiento del centro de la paleta para simular imprecisión - Reducido para más estabilidad
     paddleCenterOffset: 0.05,
@@ -35,24 +35,18 @@ const config = {
     // Niveles de dificultad
     difficultyLevels: {
       easy: {
-        errorRate: 0.3,
-        reactionDelay: 20,     // Reacción aumentada para reducir movimientos erráticos
-        predictAccuracy: 0.7,
-        stabilityFactor: 0.7  // Aumentado para más estabilidad
-      },
-      medium: {
         errorRate: 0.15,
         reactionDelay: 15,     // Reacción aumentada para reducir movimientos erráticos
         predictAccuracy: 0.85,
         stabilityFactor: 0.8  // Aumentado para más estabilidad
       },
-      hard: {
+      medium: {
         errorRate: 0.05,
         reactionDelay: 10,     // Pequeño retraso para movimientos más suaves
         predictAccuracy: 0.95,
         stabilityFactor: 0.9  // Aumentado para más estabilidad
       },
-      impossible: {
+      hard: {
         errorRate: 0.01,      // Casi nunca comete errores
         reactionDelay: 5,     // Pequeño retraso para movimientos más naturales
         predictAccuracy: 0.99, // Alta precisión

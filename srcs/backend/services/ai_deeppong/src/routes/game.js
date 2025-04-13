@@ -8,7 +8,7 @@ module.exports = function(fastify, options, done) {
     try {
       const { game_id, player_number, ai_name } = request.body;
       
-      const difficulty = 'impossible'
+      const difficulty = 'hard'
       console.log(`Joining game ${game_id} with AI ${ai_name}`);
       console.log(`Request body: ${JSON.stringify(request.body)}`);
       

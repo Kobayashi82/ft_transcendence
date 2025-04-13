@@ -285,7 +285,7 @@ class AIController {
     
     const { gameId, gameState, playerNumber, difficulty } = gameData;
     
-    // NUEVO: Verificar explícitamente que el juego está en estado "playing"
+    // Verificar explícitamente que el juego está en estado "playing"
     if (gameState.gameState !== 'playing') return;
     
     // Verificar que tenemos los datos necesarios
@@ -309,117 +309,175 @@ class AIController {
     // Distancia al objetivo
     const distanceToTarget = targetPosition - paddleCenter;
     
-    // MODIFICADO: Umbral basado en dificultad - Aumentado para mayor estabilidad y menos movimientos
+    // MODIFICADO: Umbral basado en dificultad - Aumentado significativamente para mayor estabilidad
     let threshold;
     switch (difficulty) {
-      case 'impossible': threshold = 10; break; // Aumentado de 5 a 10
-      case 'hard': threshold = 20; break; // Aumentado de 10 a 20
-      case 'medium': threshold = 30; break; // Aumentado de 20 a 30
-      case 'easy': threshold = 40; break; // Aumentado de 30 a 40
-      default: threshold = 25; // Aumentado de 15 a 25
+      case 'impossible': threshold = 25; break; // Aumentado de 10 a 25
+      case 'hard': threshold = 35; break; // Aumentado de 20 a 35
+      case 'medium': threshold = 45; break; // Aumentado de 30 a 45
+      case 'easy': threshold = 55; break; // Aumentado de 40 a 55
+      default: threshold = 40; // Aumentado de 25 a 40
     }
     
     // NUEVO: Si la paleta ya estaba detenida y la distancia sigue siendo pequeña
     // mantenemos la paleta quieta incluso con un umbral mayor para evitar movimientos innecesarios
     if (gameData.lastDirection === 'stop') {
-      // Umbral más amplio cuando ya estamos parados para evitar reiniciar movimiento por pequeños cambios
-      threshold *= 1.5; // 50% más de margen cuando ya estamos detenidos
+      // Umbral mucho más amplio cuando ya estamos parados para evitar reiniciar movimiento por pequeños cambios
+      threshold *= 1.5; // 100% más de margen cuando ya estamos detenidos (antes era 1.5 o 50%)
     }
     
-    // Si ya estamos suficientemente cerca, quedarnos quietos
+    // NUEVO: Implementar amortiguación para evitar cambios rápidos de dirección
+    // Si no tenemos una última dirección registrada, inicializarla
+    if (!gameData.directionHistory) {
+      gameData.directionHistory = [];
+      gameData.lastDirectionChangeTime = 0;
+      gameData.stablePositionCount = 0;
+    }
+    
+    // NUEVO: Tiempo mínimo para mantener una dirección (en ms)
+    const minDirectionTime = 100; // Mínimo 300ms en la misma dirección
+    
+    // NUEVO: Verificar si ha pasado suficiente tiempo desde el último cambio de dirección
+    const timeSinceLastDirectionChange = now - gameData.lastDirectionChangeTime;
+    const canChangeDirection = timeSinceLastDirectionChange > minDirectionTime;
+    
+    // Si ya estamos suficientemente cerca del objetivo, quedarnos quietos
     if (Math.abs(distanceToTarget) <= threshold) {
       if (gameData.lastDirection !== 'stop') {
         console.log(`AI ${gameId}: Already at target position (distance=${Math.round(distanceToTarget)}px, threshold=${threshold}px), stopping`);
         this.sendMove(gameId, playerNumber, 'stop');
         gameData.lastDirection = 'stop';
-        gameData.pendingStopTime = null; // Cancelar cualquier parada programada
-        gameData.continuousMovementDuration = 0; // Reiniciar contador de movimiento continuo
+        gameData.pendingStopTime = null;
+        gameData.continuousMovementDuration = 0;
+        gameData.stablePositionCount = 0; // Resetear contador de posición estable
+      } else {
+        // NUEVO: Incrementar contador de "estabilidad" si seguimos en la misma posición
+        gameData.stablePositionCount++;
+        
+        // Si llevamos varias iteraciones en posición estable, aumentar el umbral aún más
+        // para aumentar la "inercia" y evitar movimientos por pequeñas variaciones
+        if (gameData.stablePositionCount > 3) {
+          threshold *= 1.5; // 50% adicional después de 3 iteraciones estables
+        }
       }
       return;
     }
     
-    // Determinar dirección
+    // Determinar dirección basada en la distancia al objetivo
     const direction = distanceToTarget > 0 ? 'down' : 'up';
     
-    // MODIFICADO: Si ya tenemos programada una parada pero la dirección ha cambiado, invalidar la parada
+    // NUEVO: Guardar historial de direcciones (limitar a las últimas 5)
+    gameData.directionHistory.unshift(direction);
+    if (gameData.directionHistory.length > 5) {
+      gameData.directionHistory.pop();
+    }
+    
+    // NUEVO: Detectar oscilaciones rápidas y prevenirlas
+    if (gameData.directionHistory.length >= 3) {
+      const pattern = gameData.directionHistory.slice(0, 3).join('');
+      // Detectar patrones oscilatorios como "updownup" o "downupdown"
+      if (pattern === 'updownup' || pattern === 'downupdown') {
+        this.sendMove(gameId, playerNumber, 'stop');
+        gameData.lastDirection = 'stop';
+        gameData.pendingStopTime = null;
+        gameData.directionHistory = [];
+        gameData.lastDirectionChangeTime = now;
+        gameData.continuousMovementDuration = 0;
+        gameData.stablePositionCount = 0;
+        return;
+      }
+    }
+    
+    // NUEVO: Si no podemos cambiar de dirección todavía, mantener la dirección actual
+    if (!canChangeDirection && gameData.lastDirection !== 'stop' && gameData.lastDirection !== direction) {
+      console.log(`AI ${gameId}: Direction change too soon (${gameData.lastDirection} to ${direction}), maintaining current direction`);
+      return;
+    }
+    
+    // Si ya tenemos programada una parada pero la dirección ha cambiado y podemos cambiar
     if (gameData.pendingStopTime !== null) {
-      if (gameData.lastDirection !== direction) {
+      if (gameData.lastDirection !== direction && canChangeDirection) {
         // La dirección cambió, cancelar la parada programada
         console.log(`AI ${gameId}: Direction changed from ${gameData.lastDirection} to ${direction}, cancelling scheduled stop`);
         gameData.pendingStopTime = null;
+        gameData.lastDirectionChangeTime = now; // Registrar momento del cambio
       } else {
-        // Verificar que la parada programada aún tiene sentido (podría haber rebotado la bola)
+        // Verificar que la parada programada aún tiene sentido
         const currentTimeToTarget = Math.abs(distanceToTarget) / gameData.paddleSpeed * 1000;
         const projectedStopTime = now + currentTimeToTarget;
         
-        // Si la diferencia es significativa (más de 100ms), actualizar el tiempo de parada
+        // Si la diferencia es significativa, actualizar el tiempo de parada
         if (Math.abs(projectedStopTime - gameData.pendingStopTime) > 100) {
           gameData.pendingStopTime = projectedStopTime;
-          console.log(`AI ${gameId}: Updated stop time to ${Math.round(currentTimeToTarget)}ms from now`);
         }
         return;
       }
     }
     
-    // MODIFICADO: Si no hay cambio de dirección y estamos en movimiento, verificar si debemos actualizar la parada
+    // Si no hay cambio de dirección y estamos en movimiento, actualizar el tiempo de parada
     if (direction === gameData.lastDirection && gameData.lastDirection !== 'stop') {
-      // Pero actualizamos el tiempo de parada ya que la predicción puede haber cambiado
       const currentTimeToTarget = Math.abs(distanceToTarget) / gameData.paddleSpeed * 1000;
       
-      // NUEVO: Limitar el tiempo máximo de movimiento continuo a 2 segundos
+      // Limitar el tiempo máximo de movimiento continuo
       const maxMoveTime = 2000; // 2 segundos
       const timeToStop = Math.min(currentTimeToTarget, maxMoveTime);
       
       gameData.pendingStopTime = now + timeToStop;
-      
-      if (timeToStop < currentTimeToTarget) {
-        console.log(`AI ${gameId}: Limiting continuous ${direction} movement to ${Math.round(timeToStop)}ms (was ${Math.round(currentTimeToTarget)}ms)`);
-      } else {
-        console.log(`AI ${gameId}: Continuing ${direction}, updated stop time to ${Math.round(currentTimeToTarget)}ms from now`);
-      }
       return;
     }
     
-    // CÁLCULO MEJORADO DE TIEMPO PARA PARAR
-    // 1. Usar la velocidad definida que refleja las unidades por segundo
-    // 2. Aplicar un factor de corrección según la dificultad
-    const paddleSpeed = gameData.paddleSpeed; // unidades por segundo
+    // MODIFICADO: Si necesitamos cambiar de dirección, pero la distancia es pequeña
+    // mejor detenernos completamente para evitar oscilaciones
+    if (gameData.lastDirection !== 'stop' && gameData.lastDirection !== direction && 
+        Math.abs(distanceToTarget) < threshold * 2) {
+      console.log(`AI ${gameId}: Small direction change needed, stopping first to avoid oscillation`);
+      this.sendMove(gameId, playerNumber, 'stop');
+      gameData.lastDirection = 'stop';
+      gameData.pendingStopTime = null;
+      gameData.lastDirectionChangeTime = now;
+      gameData.stablePositionCount = 0;
+      
+      // Esperar antes de tomar la próxima decisión
+      return;
+    }
     
     // Aplicar factor de corrección según dificultad para evitar paradas demasiado tempranas
     let correctionFactor;
     switch (difficulty) {
-      case 'impossible': correctionFactor = 1.0; break; // Sin error, tiempo exacto
-      case 'hard': correctionFactor = 0.98; break; // Pequeña subestimación para parar un poco tarde
-      case 'medium': correctionFactor = 0.95; break; // Mayor subestimación
-      case 'easy': correctionFactor = 0.9; break; // Gran subestimación para mayor "humanidad"
+      case 'impossible': correctionFactor = 1.0; break;
+      case 'hard': correctionFactor = 0.98; break;
+      case 'medium': correctionFactor = 0.95; break;
+      case 'easy': correctionFactor = 0.9; break;
       default: correctionFactor = 0.95;
     }
     
-    const timeToTarget = Math.abs(distanceToTarget) / paddleSpeed * 1000 * correctionFactor; // en milisegundos
+    const timeToTarget = Math.abs(distanceToTarget) / gameData.paddleSpeed * 1000 * correctionFactor;
     
-    // MODIFICADO: Incluso para distancias grandes, programamos una parada máxima
+    // MODIFICADO: Programar una parada si la distancia es pequeña o el tiempo al objetivo es corto
     let stopTime;
-    if (timeToTarget > config.ai.updateInterval * 2) {
-      console.log(`AI ${gameId}: Moving ${direction}, target far (${Math.round(timeToTarget)}ms), limiting movement time`);
-      // Limitar el movimiento a un máximo de 2 segundos antes de recalcular
+    if (Math.abs(distanceToTarget) < threshold * 3) {
+      // Para distancias pequeñas, movimientos más cortos y controlados
+      stopTime = now + Math.min(timeToTarget, 100); // Máximo 100ms para ajustes finos
+      console.log(`AI ${gameId}: Fine adjustment ${direction}, will stop in ${Math.round(stopTime - now)}ms`);
+    } else if (timeToTarget > config.ai.updateInterval * 2) {
+      // Para distancias grandes, limitar el tiempo de movimiento
       stopTime = now + Math.min(2000, config.ai.updateInterval * 2);
+      console.log(`AI ${gameId}: Moving ${direction}, target far (${Math.round(timeToTarget)}ms), limiting movement time`);
     } else {
-      // Programar la detención para el momento exacto con el factor de corrección aplicado
+      // Programar la detención para el momento exacto
       stopTime = now + timeToTarget;
+      console.log(`AI ${gameId}: Moving ${direction}, will stop in ${Math.round(stopTime - now)}ms`);
     }
     
-    console.log(`AI ${gameId}: Moving ${direction} to target Y=${Math.round(targetPosition)}, ` +
-                `current Y=${Math.round(paddleCenter)}, distance=${Math.round(distanceToTarget)}, ` +
-                `will stop in ${Math.round(stopTime - now)}ms`);
-                
+    // Enviar el comando de movimiento
     this.sendMove(gameId, playerNumber, direction);
     gameData.lastDirection = direction;
     gameData.pendingStopTime = stopTime;
+    gameData.lastDirectionChangeTime = now;
+    gameData.stablePositionCount = 0;
     
     // Resetear contador de movimiento continuo al cambiar de dirección
-    if (direction !== gameData.lastDirection) {
-      gameData.continuousMovementDuration = 0;
-    }
+    gameData.continuousMovementDuration = 0;
   }
   
   calculateTargetPosition(gameKey) {
