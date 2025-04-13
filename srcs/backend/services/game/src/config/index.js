@@ -4,19 +4,19 @@ require("dotenv").config();
 
 // AI
 const AI = {
-  AI_deeppong: {
+  deeppong: {
     name: 'DeepPong',
-    url: process.env.AI_DEEPPONG_URL || "http://ai_deeppong:3000",
+    url: process.env.DEEPPONG_URL || "http://deeppong:3000",
     timeout: 2000,
   },
   AI_K_Pong: {
     name: 'K-Pong',
-    url: process.env.AI_DEEPPONG_URL || "http://ai_deeppong:3000",
+    url: process.env.DEEPPONG_URL || "http://deeppong:3000",
     timeout: 2000,
   },
   AI_DumbBot: {
     name: 'DumbBot',
-    url: process.env.AI_DEEPPONG_URL || "http://ai_deeppong:3000",
+    url: process.env.DEEPPONG_URL || "http://deeppong:3000",
     timeout: 2000,
   }
 };

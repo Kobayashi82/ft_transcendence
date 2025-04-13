@@ -50,7 +50,7 @@ async function checkServices(services, startTime, fastify) {
         };
       } catch (error) {
         let temp_name;
-        if (name === 'ai_deeppong') temp_name = 'AI DeepPong';
+        if (name === 'deeppong') temp_name = 'DeepPong';
         if (name === 'game') temp_name = 'Game';
         if (name === 'stats') temp_name = 'Stats';
         serviceStatus[temp_name] = {

@@ -123,15 +123,15 @@ class GameManager {
       
       try {
         console.log(`Notificando a la IA ${playerName} sobre el juego ${gameId} como jugador ${playerNumber}`);
-        console.log(`Using AI service URL: ${config.AI.AI_deeppong.url}`);
+        console.log(`Using AI service URL: ${config.AI.deeppong.url}`);
         
-        const response = await axios.post(`${config.AI.AI_deeppong.url}/join`, {
+        const response = await axios.post(`${config.AI.deeppong.url}/join`, {
           game_id: gameId,
           ai_name: playerName,
           player_number: playerNumber
         }, {
           headers: { 'Content-Type': 'application/json' },
-          timeout: config.AI.AI_deeppong.timeout
+          timeout: config.AI.deeppong.timeout
         });
         
         if (response.status === 200) {

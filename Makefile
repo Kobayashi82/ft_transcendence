@@ -106,9 +106,7 @@ _remove_networks:
 
 # Remove volumes (private rule)
 _remove_volumes:
-	@docker volume rm srcs_nginx_data > /dev/null 2>&1 || true
-	@docker volume rm srcs_web_data > /dev/null 2>&1 || true
-	@docker volume rm srcs_ms_stats_data > /dev/null 2>&1 || true
+	@docker volume rm stats_data > /dev/null 2>&1 || true
 
 # Remove images (private rule)
 _remove_images:
@@ -117,6 +115,6 @@ _remove_images:
 	@docker rmi srcs-gateway > /dev/null 2>&1 || true
 	@docker rmi srcs-stats > /dev/null 2>&1 || true
 	@docker rmi srcs-game > /dev/null 2>&1 || true
-	@docker rmi srcs-ai_deeppong > /dev/null 2>&1 || true
+	@docker rmi srcs-deeppong > /dev/null 2>&1 || true
 
 .PHONY: all up down restart build rebuild iclean vclean nclean clean fclean _remove_images _remove_volumes _remove_networks

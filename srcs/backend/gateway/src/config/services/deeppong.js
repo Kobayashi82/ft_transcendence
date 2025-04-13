@@ -1,9 +1,9 @@
 "use strict";
 
 module.exports = {
-  name: "ai_deeppong",
-  url: process.env.AI_DEEPPONG_SERVICE_URL || "http://ai_deeppong:3000",
-  prefix: "/ai_deeppong",
+  name: "deeppong",
+  url: process.env.DEEPPONG_SERVICE_URL || "http://deeppong:3000",
+  prefix: "/deeppong",
   routes: {
     
     // Health check

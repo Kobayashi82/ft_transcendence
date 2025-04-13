@@ -41,7 +41,7 @@ services:
       - SERVICE_URL=gateway:3000
       - STATS_SERVICE_URL=http://stats:3000
       - GAME_SERVICE_URL=http://game:3000
-      - AI_DEEPPONG_SERVICE_URL=http://ai_deeppong:3000
+      - DEEPPONG_SERVICE_URL=http://deeppong:3000
       - CORS_ORIGIN=${CORS_ORIGIN-*}
     networks:
       - backend-net
@@ -58,7 +58,7 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./backend/services/stats/src:/app/src
-      - ms_stats_data:/app/data
+      - stats_data:/app/data
     environment:
       - SERVICE_URL=stats:3000
     networks:
@@ -81,15 +81,15 @@ services:
     restart: unless-stopped
     
   # AI DeepPong (3000)
-  ai_deeppong:
-    container_name: ai_deeppong
+  deeppong:
+    container_name: deeppong
     build:
-      context: ./backend/services/ai_deeppong
+      context: ./backend/services/deeppong
       dockerfile: Dockerfile.dev
     volumes:
-      - ./backend/services/ai_deeppong/src:/app/src
+      - ./backend/services/deeppong/src:/app/src
     environment:
-      - SERVICE_URL=ai_deeppong:3000
+      - SERVICE_URL=deeppong:3000
     networks:
       - service-net
     restart: unless-stopped
@@ -97,7 +97,8 @@ services:
 # ------------------------- VOLUMES ------------------------ #
 
 volumes:
-  ms_stats_data:
+  stats_data:
+    name: stats_data
 
 # ------------------------- NETWORK ------------------------ #
 
