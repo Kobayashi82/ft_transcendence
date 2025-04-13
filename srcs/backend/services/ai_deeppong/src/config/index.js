@@ -16,10 +16,7 @@ const config = {
   },
   
   // AI
-  ai: {
-    updateInterval: 100,
-    defaultDifficulty: 'hard',
-  }
+  AI_update: 1000,
 };
 
 module.exports = config;

@@ -7,12 +7,11 @@ const dns = require('dns');
 
 class AIController {
   constructor() {
-    // Cambiando el mapa para usar combinación de gameId y playerNumber como clave
-    this.activeGames = new Map(); // Map of active games: `${gameId}_${playerNumber}` -> {playerNumber, intervalId, gameState, difficulty}
+    this.activeGames = new Map();
     this.gameServiceUrl = config.services.game.url;
   }
 
-  async joinGame(gameId, playerNumber, aiName, difficulty = config.ai.defaultDifficulty) {    
+  async joinGame(gameId, playerNumber, aiName, difficulty) {    
     try {
       // Creamos una clave única que combina gameId y playerNumber
       const gameKey = `${gameId}_${playerNumber}`;
@@ -22,7 +21,7 @@ class AIController {
    
       // Setup game data
       const gameData = {
-        gameId, // Añadimos explícitamente el gameId
+        gameId,
         playerNumber,
         aiName,
         difficulty: difficulty,
@@ -81,7 +80,6 @@ class AIController {
     let failureCount = 0;
     const MAX_FAILURES = 3;
     
-    // INTERVALO: Obtener estado y tomar decisiones - EXACTAMENTE config.ai.updateInterval (1000ms)
     gameData.intervalId = setInterval(async () => {
       try {
         const gameState = await this.getGameState(gameId);
@@ -174,7 +172,7 @@ class AIController {
         failureCount++;       
         if (failureCount >= MAX_FAILURES) this.endGame(gameKey);
       }
-    }, config.ai.updateInterval); // Usar EXACTAMENTE config.ai.updateInterval
+    }, config.AI_update / 10);
     
     // Timer de seguridad: comprobar cada 200ms si es necesario detener la paleta
     gameData.moveIntervalId = setInterval(async () => {
@@ -201,7 +199,7 @@ class AIController {
           gameData.continuousMovementDuration = 0;
         }
       } catch (error) {}
-    }, config.ai.updateInterval);
+    }, 50);
   }
   
   handleMovement(gameKey) {
@@ -357,9 +355,9 @@ class AIController {
     if (Math.abs(distanceToTarget) < threshold * 3) {
       // Para distancias pequeñas, movimientos más cortos y controlados
       stopTime = now + Math.min(timeToTarget, 100); // Máximo 100ms para ajustes finos
-    } else if (timeToTarget > config.ai.updateInterval * 2) {
+    } else if (timeToTarget > (config.AI_update / 10) * 2) {
       // Para distancias grandes, limitar el tiempo de movimiento
-      stopTime = now + Math.min(2000, config.ai.updateInterval * 2);
+      stopTime = now + Math.min(2000, (config.AI_update / 10) * 2);
     } else {
       // Programar la detención para el momento exacto
       stopTime = now + timeToTarget;
