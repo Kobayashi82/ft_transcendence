@@ -360,9 +360,18 @@ class AIController {
                              (playerNumber === 2 && ballVelX > 0);
     
     // Si la bola no viene hacia nosotros, mantenerse cerca del centro
+    // pero con una ligera inclinación hacia la pelota para anticipar
     if (!isComingTowardsUs) {
-      // Posición ligeramente inclinada hacia la pelota desde el centro
-      return gameHeight / 2 * 0.8 + ball.y * 0.2;
+      // Más inclinado hacia la pelota en dificultades más altas
+      let followFactor;
+      switch (difficulty) {
+        case 'impossible': followFactor = 0.3; break; // Mayor anticipación
+        case 'hard': followFactor = 0.25; break;
+        case 'medium': followFactor = 0.2; break;
+        case 'easy': followFactor = 0.15; break; // Menos anticipación
+        default: followFactor = 0.2;
+      }
+      return gameHeight / 2 * (1 - followFactor) + ball.y * followFactor;
     }
     
     // Calcular la posición X de nuestra paleta
@@ -372,27 +381,69 @@ class AIController {
     const distX = Math.abs(paddleX - ball.x);
     const timeToImpact = Math.abs(distX / ballVelX);
     
-    // Predecir la posición Y en el momento del impacto
-    let predictedY = ball.y + gameData.ballVelocity.y * timeToImpact;
-    
-    // Calcular rebotes simples si es necesario
-    if (predictedY < 0) {
-      predictedY = -predictedY;
-    } else if (predictedY > gameHeight) {
-      predictedY = 2 * gameHeight - predictedY;
+    // Ajuste de precisión de predicción según dificultad
+    let predictionAccuracy;
+    switch (difficulty) {
+      case 'impossible': predictionAccuracy = 1.0; break; // Predicción perfecta
+      case 'hard': predictionAccuracy = 0.98; break;
+      case 'medium': predictionAccuracy = 0.95; break;
+      case 'easy': predictionAccuracy = 0.9; break; // Predicción imprecisa
+      default: predictionAccuracy = 0.95;
     }
     
-    // Asegurarse de que el resultado está dentro de los límites
-    predictedY = Math.max(0, Math.min(gameHeight, predictedY));
+    // Velocidad Y corregida para la predicción
+    const correctedVelY = gameData.ballVelocity.y * predictionAccuracy;
     
-    // Para niveles de dificultad más bajos, añadir un poco de error
-    if (difficulty !== 'impossible' && difficulty !== 'hard') {
-      const errorAmount = difficulty === 'easy' ? 40 : 20;
-      if (Math.random() < 0.3) {
-        predictedY += (Math.random() - 0.5) * errorAmount;
-        predictedY = Math.max(0, Math.min(gameHeight, predictedY));
+    // Predicción mejorada con múltiples rebotes
+    let predictedY = ball.y;
+    let remainingTime = timeToImpact;
+    let currentVelY = correctedVelY;
+    
+    // Simular el movimiento de la pelota con rebotes hasta el tiempo de impacto
+    while (remainingTime > 0) {
+      // Calcular tiempo hasta el siguiente rebote (si lo hay)
+      let timeToNextBounce = Infinity;
+      if (currentVelY > 0) {
+        timeToNextBounce = (gameHeight - predictedY) / currentVelY;
+      } else if (currentVelY < 0) {
+        timeToNextBounce = -predictedY / currentVelY;
+      }
+      
+      // Si no hay rebote antes del impacto, calcular posición final
+      if (timeToNextBounce >= remainingTime) {
+        predictedY += currentVelY * remainingTime;
+        break;
+      }
+      
+      // Actualizar posición hasta el rebote
+      predictedY += currentVelY * timeToNextBounce;
+      // Invertir velocidad Y (rebote)
+      currentVelY = -currentVelY;
+      // Reducir tiempo restante
+      remainingTime -= timeToNextBounce;
+      
+      // Ajustar posición después del rebote para evitar errores de punto flotante
+      if (predictedY <= 0) predictedY = 0.001;
+      if (predictedY >= gameHeight) predictedY = gameHeight - 0.001;
+    }
+    
+    // Aplicar pequeñas variaciones aleatorias según dificultad
+    // para simular comportamiento humano
+    if (difficulty !== 'impossible') {
+      const randomRange = {
+        'easy': 20,
+        'medium': 10,
+        'hard': 5
+      }[difficulty] || 0;
+      
+      if (randomRange > 0) {
+        const randomOffset = (Math.random() * 2 - 1) * randomRange;
+        predictedY += randomOffset;
       }
     }
+    
+    // Garantizar que permanezca dentro de los límites
+    predictedY = Math.max(0, Math.min(gameHeight, predictedY));
     
     return predictedY;
   }
