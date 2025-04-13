@@ -19,7 +19,7 @@ class GameManager {
     this.cleanupInactiveGames = this.cleanupInactiveGames.bind(this);
     this.sendGameResultsToStats = this.sendGameResultsToStats.bind(this);
     
-    this.updateGamesInterval = setInterval(this.updateGames, 16); // 60 fps
+    this.updateGamesInterval = setInterval(this.updateGames, 33); // 30 fps
     this.cleanupGamesInterval = setInterval(this.cleanupInactiveGames, 60000);
   }
 
@@ -223,10 +223,8 @@ class GameManager {
         
         // Liberar al jugador del mapa de jugadores si el juego no está en curso
         if (!['playing', 'paused', 'waiting'].includes(gameEntry.game.gameState)) {
-          console.log(`Liberando al jugador ${clientEntry.playerName} por desconexión en estado ${gameEntry.game.gameState}`);
           this.players.delete(clientEntry.playerName);
         } else {
-          console.log(`Marcando jugador ${clientEntry.playerName} como desconectado temporalmente`);
         }
         
         // Pause the game if it was playing
@@ -238,15 +236,12 @@ class GameManager {
       
       // Si no quedan clientes conectados
       if (gameEntry.clients.size === 0) {
-        console.log(`No quedan clientes conectados para el juego ${clientEntry.gameId}`);
         
         // CASO ESPECIAL: Si es un juego IA contra IA, permitir que continúe sin clientes
         if (gameEntry.game.player1IsAI && gameEntry.game.player2IsAI) {
-          console.log(`Juego ${clientEntry.gameId} es IA contra IA, permitiendo que continúe sin clientes`);
           
           // Si el juego está pausado, reanudarlo
           if (gameEntry.game.gameState === 'paused') {
-            console.log(`Reanudando juego IA contra IA ${clientEntry.gameId}`);
             gameEntry.game.resume();
           }
           
@@ -255,29 +250,22 @@ class GameManager {
           
         } else {
           // Para juegos con al menos un jugador humano, liberar y cancelar
-          console.log(`Liberando jugadores para juego ${clientEntry.gameId}`);
           
           // Liberar jugadores explícitamente del mapa de jugadores
           if (gameEntry.game.player1) {
-            console.log(`Liberando jugador 1: ${gameEntry.game.player1}`);
             this.players.delete(gameEntry.game.player1);
           }
           
           if (gameEntry.game.player2) {
-            console.log(`Liberando jugador 2: ${gameEntry.game.player2}`);
             this.players.delete(gameEntry.game.player2);
           }
           
           // Si el juego estaba en progreso (o esperando), cancelarlo
           if (['playing', 'paused', 'waiting'].includes(gameEntry.game.gameState)) {
-            console.log(`Cancelando juego ${clientEntry.gameId} por desconexión de todos los clientes`);
             gameEntry.game.cancel();
           }
         }
-      } else {
-        // Todavía hay clientes conectados, verificar si todos los jugadores están desconectados
-        console.log(`Quedan ${gameEntry.clients.size} clientes conectados para el juego ${clientEntry.gameId}`);
-        
+      } else {      
         // Si todos los jugadores están desconectados por más de 30 segundos, liberar y cancelar
         const now = Date.now();
         const allPlayersDisconnected = (gameEntry.game.player1 && gameEntry.disconnectedPlayers.has(gameEntry.game.player1)) &&
@@ -289,7 +277,6 @@ class GameManager {
         
         // Si todos los jugadores están desconectados por más de 30 segundos, liberar y cancelar
         if (allPlayersDisconnected && now - oldestDisconnection > 30000) {
-          console.log(`Todos los jugadores desconectados por más de 30 segundos, liberando y cancelando juego ${clientEntry.gameId}`);
           
           if (gameEntry.game.player1) this.players.delete(gameEntry.game.player1);
           if (gameEntry.game.player2) this.players.delete(gameEntry.game.player2);
@@ -301,7 +288,6 @@ class GameManager {
     }
     
     this.clients.delete(clientId);
-    console.log(`Cliente ${clientId} desregistrado`);
   }
   
   // Broadcast game state to all connected clients
@@ -339,11 +325,6 @@ class GameManager {
     game.lastUpdate = exactStartTime;
     game.totalPausedTime = 0; // Reiniciar tiempo en pausa
     game.pauseIntervals = []; // Reiniciar intervalos de pausa
-    
-    console.log(`Game ${gameId} starting at ${new Date(exactStartTime).toISOString()}`);
-    if (game.tournamentMode) {
-      console.log(`Tournament game, round ${game.tournamentRound}, ${game.isSecondSemifinal ? 'Second semifinal' : (game.tournamentRound === 2 ? 'Final' : 'First semifinal')}`);
-    }
     
     const success = game.start();
     game.gameStateChangeTime = exactStartTime; // Registrar cambio de estado
@@ -391,11 +372,6 @@ class GameManager {
     
     const gameEntry = this.games.get(gameId);
     gameEntry.lastActivity = Date.now();
-
-    // Notificar que el juego ha terminado
-    if (game.player1IsAI || game.player2IsAI) {
-      console.log(`Juego ${gameId} cancelado - Notificando a las IAs`);
-    }
     
     if (success) this.broadcastGameState(gameId);     
     return success;
@@ -405,12 +381,6 @@ class GameManager {
   handlePaddleMove(gameId, player, direction) {
     const game = this.getGame(gameId);
     if (!game) return false;
-    
-    // Verificar si el jugador es una IA - si es así, ignorar el comando de movimiento
-    // if ((player === 1 && game.player1IsAI) || (player === 2 && game.player2IsAI)) {
-    //   console.log(`Ignorando comando de movimiento manual para jugador ${player} (IA)`);
-    //   return false;
-    // }
     
     game.setPaddleMove(player, direction);
     const gameEntry = this.games.get(gameId);
@@ -426,7 +396,6 @@ class GameManager {
     
     // Verificar si el jugador es una IA - si es así, ignorar el cambio de posición
     if ((player === 1 && game.player1IsAI) || (player === 2 && game.player2IsAI)) {
-      console.log(`Ignorando cambio de posición manual para jugador ${player} (IA)`);
       return false;
     }
     
@@ -453,7 +422,6 @@ class GameManager {
         // Si es un juego de IA contra IA sin clientes conectados, marcar como completado
         // para evitar que sea cancelado por falta de clientes
         if (gameEntry.game.player1IsAI && gameEntry.game.player2IsAI && gameEntry.clients.size === 0) {
-          console.log(`IA vs IA game ${gameId} completed without clients, ensuring stats are saved`);
           gameEntry.sentToStats = true; // Marcar que ya se enviaron estadísticas
         }
       }
@@ -475,7 +443,6 @@ class GameManager {
         
         // Si el juego está finalizado y es IA vs IA, asegurarse de que se enviaron estadísticas
         if (gameEntry.game.gameState === 'finished' && gameEntry.game.player1IsAI && gameEntry.game.player2IsAI && !gameEntry.sentToStats) {
-          console.log(`Found finished IA vs IA game ${gameId} without stats sent, sending now before cleanup`);
           this.sendGameResultsToStats(gameId);
         }
         
@@ -487,12 +454,7 @@ class GameManager {
         // Remove players
         if (gameEntry.game.player1) this.players.delete(gameEntry.game.player1);
         if (gameEntry.game.player2) this.players.delete(gameEntry.game.player2);
-        
-        // Notificar que el juego ha terminado
-        if (gameEntry.game.player1IsAI || gameEntry.game.player2IsAI) {
-          console.log(`Juego ${gameId} eliminado por inactividad - Notificando a las IAs`);
-        }
-        
+  
         // Remove game
         this.games.delete(gameId);
         
@@ -501,7 +463,6 @@ class GameManager {
           this.handleTournamentGameCleanup(matchInfo.tournamentId, gameId);
         }
         
-        console.log(`Game ${gameId} removed due to inactivity`);
       }
     }
   }
@@ -517,12 +478,9 @@ class GameManager {
     
     // Si ya se envió a stats, no enviar de nuevo
     if (gameEntry.sentToStats) {
-      console.log(`Game ${gameId} already sent to stats, skipping duplicate send`);
       return;
     }
     
-    console.log(`Preparing to send game results for ${gameId} to stats service`);
-
     const statsService = config.services.stats;
     
     // Usar los nombres de jugadores sin modificar
@@ -535,7 +493,6 @@ class GameManager {
     
     // Si ambos jugadores son IA, no enviar el juego a la base de datos
     if (player1IsAI && player2IsAI) {
-      console.log(`Skipping stats for game ${gameId} because both players are AI (${player1Name} vs ${player2Name})`);
       gameEntry.sentToStats = true; // Marcar como enviado para evitar futuros intentos
       return;
     }
@@ -552,7 +509,6 @@ class GameManager {
       let tournamentDbId = null;
       
       if (isTournamentGame) {
-        console.log(`Game ${gameId} is a tournament game according to settings`);
         
         // Buscar información del torneo
         for (const [tournamentId, tournament] of this.tournaments.entries()) {
@@ -570,8 +526,6 @@ class GameManager {
               if (tournament.dbId) {
                 tournamentDbId = tournament.dbId;
               }
-              
-              console.log(`Found match ${matchId} in tournament ${tournamentId}, database ID: ${tournamentDbId || 'unknown'}`);
               break;
             }
           }
@@ -586,7 +540,6 @@ class GameManager {
       // Si hay información de tiempo en pausas, ajustar el end_time
       if (gameState.timing && gameState.timing.totalPausedTime) {
         const totalPausedMs = gameState.timing.totalPausedTime;
-        console.log(`Game ${gameId} had ${totalPausedMs}ms of paused time`);
         
         // Ajustar el end_time para reflejar solo el tiempo jugado
         effectiveEndTime = new Date(finishTime - totalPausedMs);
@@ -594,8 +547,6 @@ class GameManager {
       
       // Calcular la duración efectiva en milisegundos
       const effectiveDurationMs = effectiveEndTime.getTime() - effectiveStartTime.getTime();
-      console.log(`Game ${gameId} effective time: ${effectiveStartTime.toISOString()} to ${effectiveEndTime.toISOString()}`);
-      console.log(`Game ${gameId} duration: ${effectiveDurationMs / 1000} seconds`);
       
       const gamePayload = {
         start_time: effectiveStartTime.toISOString(),
@@ -620,7 +571,6 @@ class GameManager {
 
       // Si es un juego de torneo y tenemos el ID de la base de datos, incluirlo
       if (matchInfo && tournamentDbId) {
-        console.log(`Adding tournament database ID ${tournamentDbId} to game payload`);
         gamePayload.tournament_id = tournamentDbId;
         
         if (matchInfo.round === 2) {
@@ -630,11 +580,7 @@ class GameManager {
         } else {
           gamePayload.match_type = "Semifinal 1";
         }
-      } else if (isTournamentGame) {
-        console.log(`Tournament game detected but no database ID found. Game will be saved without tournament link.`);
       }
-      
-      console.log(`Sending game payload to stats: ${JSON.stringify(gamePayload)}`);
       
       const response = await axios.post(`${statsService.url}/games`, gamePayload, {
         headers: {
@@ -646,24 +592,16 @@ class GameManager {
       // Marcar que este juego ya se envió a stats para evitar duplicados
       gameEntry.sentToStats = true;
       
-      console.log(`Game results sent to stats service: ${gameId}`);
-      
       // Si es un partido de torneo, guardar el ID de la base de datos para referencia futura
       if (matchInfo) {
         const match = tournamentManager.matches.get(matchInfo.matchId);
         if (match) {
           match.statsGameId = response.data.id;
-          console.log(`Saved stats game ID ${response.data.id} for match ${matchInfo.matchId}`);
         }
       }
       
       return response.data;
-    } catch (error) {
-      console.error(`Failed to send game results to stats service: ${error.message}`);
-      if (error.response) {
-        console.error(`Status: ${error.response.status}, Data:`, error.response.data);
-      }
-    }
+    } catch (error) {}
   }
 
   // Helper method to find tournament match information
@@ -684,7 +622,6 @@ class GameManager {
 
   // Add method to register tournament
   registerTournament(tournamentId, tournamentData) {
-    console.log(`Registering tournament ${tournamentId} in gameManager`);
     this.tournaments.set(tournamentId, tournamentData);
   }
 

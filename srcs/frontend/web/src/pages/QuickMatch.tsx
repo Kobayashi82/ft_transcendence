@@ -64,7 +64,6 @@ const QuickMatchPage: React.FC = () => {
         }
         
         const data: GameOptions = await response.json();
-        console.log("Game options received:", data);
         setOptions(data);
         
         // Set default values if available
@@ -75,7 +74,6 @@ const QuickMatchPage: React.FC = () => {
           setAccelerationEnabled(data.default.accelerationEnabled);
         }
       } catch (err) {
-        console.error("Failed to fetch game options:", err);
         setError(err instanceof Error ? err.message : "Unknown error");
         
         // Set fallback default values
@@ -105,12 +103,8 @@ const QuickMatchPage: React.FC = () => {
             a.user_id.localeCompare(b.user_id)
           );
           setPlayers(sortedPlayers);
-        } else {
-          console.error("Unexpected player data format:", data);
         }
-      } catch (err) {
-        console.error("Failed to fetch players:", err);
-      }
+      } catch (err) {}
     };
     
     fetchOptions();
@@ -156,8 +150,6 @@ const QuickMatchPage: React.FC = () => {
         }
       };
       
-      console.log("Creating game with data:", gameData);
-      
       const response = await fetch("/api/game/create", {
         method: "POST",
         headers: {
@@ -172,14 +164,12 @@ const QuickMatchPage: React.FC = () => {
       }
       
       const data = await response.json();
-      console.log("Game created:", data);
       
       setGameId(data.gameId);
       setSelectedPlayers(normalizedPlayers);
       setIsGameModalOpen(true);
       
     } catch (err) {
-      console.error("Failed to create game:", err);
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);

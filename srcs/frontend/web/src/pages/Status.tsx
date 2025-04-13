@@ -79,8 +79,6 @@ const ServerStatusPage: React.FC = () => {
         setLoading(true);
       }
 
-      console.log("Fetching server status...");
-
       // Start timer for gateway request
       const startTime = performance.now();
       
@@ -103,7 +101,6 @@ const ServerStatusPage: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log("Health data received:", data);
 
       // Add response time to gateway data
       if (data.gateway) {
@@ -121,7 +118,6 @@ const ServerStatusPage: React.FC = () => {
       setLastUpdated(now);
       cachedData.lastUpdated = now;
     } catch (error) {
-      console.error("Error fetching health data:", error);
       
       // Check if it's a rate limit error (429) or other temporary error
       const isRateLimitError = error instanceof Error && 
@@ -130,13 +126,9 @@ const ServerStatusPage: React.FC = () => {
          error.message.includes("rate limit"));
       
       if (isRateLimitError) {
-        // If it's a rate limit error, don't change the state
-        console.log("Rate limit error detected");
-        // Just show a temporary error message
         setError("Rate limit exceeded. Please try again later.");
       } else {
         // Gateway is down, all services should appear as down
-        // Create down services object
         const downServices: ServicesType = {};
         AVAILABLE_MICROSERVICES.forEach(serviceName => {
           downServices[serviceName] = { 

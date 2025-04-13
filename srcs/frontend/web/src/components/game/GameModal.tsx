@@ -3,7 +3,6 @@ import { X, Play, Pause, AlertTriangle, XCircle, Trophy } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import PongGame from "../../components/game/PongGame";
 
-// Update interface to include tournament props
 interface GameModalProps {
   gameId: string;
   player1: string;
@@ -17,14 +16,13 @@ interface GameModalProps {
   tournamentRound?: number;
 }
 
-// Game state types
 type GameState = 'waiting' | 'playing' | 'paused' | 'finished' | 'next' | 'cancelled';
 
 interface Player {
   name: string | null;
   y: number;
   score: number;
-  isAI?: boolean; // Add isAI property to Player interface
+  isAI?: boolean;
 }
 
 interface Ball {
@@ -80,7 +78,7 @@ const GameModal: React.FC<GameModalProps> = ({
   const { t } = useLanguage();
   const wsRef = useRef<WebSocket | null>(null);
   const pingIntervalRef = useRef<number | null>(null);
-  const unmountingRef = useRef(false); // Add an unmounting flag to track component unmounts vs round transitions
+  const unmountingRef = useRef(false);
   
   // State
   const [gameState, setGameState] = useState<GameStateData | null>(null);
@@ -92,14 +90,9 @@ const GameModal: React.FC<GameModalProps> = ({
   const connectionLostTimeoutRef = useRef<number | null>(null);
   const [currentRound, setCurrentRound] = useState<number>(tournamentRound);
   const [nextButtonEnabled, setNextButtonEnabled] = useState<boolean>(false);
-  const [currentGameId, setCurrentGameId] = useState<string>(gameId); // Track the current game ID
-  // Para detectar la orientación y tamaño de pantalla
-  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(
-    window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
-  );
-  const [screenSize, setScreenSize] = useState<'small' | 'medium' | 'large'>(
-    window.innerWidth < 640 ? 'small' : window.innerWidth < 1024 ? 'medium' : 'large'
-  );
+  const [currentGameId, setCurrentGameId] = useState<string>(gameId);
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(window.innerHeight > window.innerWidth ? 'portrait' : 'landscape');
+  const [screenSize, setScreenSize] = useState<'small' | 'medium' | 'large'>(window.innerWidth < 640 ? 'small' : window.innerWidth < 1024 ? 'medium' : 'large');
 
   // Update current round when game state changes
   useEffect(() => {
@@ -111,32 +104,22 @@ const GameModal: React.FC<GameModalProps> = ({
   // Detector de orientación y tamaño de pantalla
   useEffect(() => {
     const handleResize = () => {
-      // Detectar orientación
       const newOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
       setOrientation(newOrientation);
-      
-      // Detectar tamaño de pantalla
+
       let newSize: 'small' | 'medium' | 'large';
-      if (window.innerWidth < 640) {
-        newSize = 'small';
-      } else if (window.innerWidth < 1024) {
-        newSize = 'medium';
-      } else {
-        newSize = 'large';
-      }
+      if 		  (window.innerWidth < 640)   newSize = 'small';
+      else if (window.innerWidth < 1024)  newSize = 'medium';
+      else                                newSize = 'large';
       setScreenSize(newSize);
     };
     
-    // Configurar el detector inicial
     handleResize();
     
     // Agregar listeners para cambios de tamaño y orientación
     window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', () => {
-      // Pequeño retraso para asegurar que los valores se actualicen después del cambio de orientación
-      setTimeout(handleResize, 300);
-    });
-    
+    window.addEventListener('orientationchange', () => { setTimeout(handleResize, 300); });
+
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
@@ -151,8 +134,6 @@ const GameModal: React.FC<GameModalProps> = ({
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${wsProtocol}//${window.location.host}/api/game/ws/pong`;
       
-      console.log(`Setting up WebSocket connection for gameId: ${currentGameId}`);
-      
       // Create WebSocket connection if it doesn't exist or is closed
       if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
         const ws = new WebSocket(wsUrl);
@@ -160,7 +141,6 @@ const GameModal: React.FC<GameModalProps> = ({
         
         // Handle connection open
         ws.onopen = () => {
-          console.log("WebSocket connection established");
           setIsConnected(true);
           setError(null);
           setConnectionLost(false);
@@ -179,14 +159,11 @@ const GameModal: React.FC<GameModalProps> = ({
             playerName: player1, 
             isSpectator: false
           };
-          console.log(`Requesting state for gameId: ${currentGameId}`);
           ws.send(JSON.stringify(stateRequest));
 
           // Send ping every 30 seconds to keep connection alive
-          if (pingIntervalRef.current) {
-            clearInterval(pingIntervalRef.current);
-          }
-          
+          if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);   
+      
           pingIntervalRef.current = window.setInterval(() => {
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ type: "ping" }));
@@ -203,16 +180,12 @@ const GameModal: React.FC<GameModalProps> = ({
         ws.onmessage = (event) => {
           try {
             const message = JSON.parse(event.data) as WebSocketMessage;
-            console.log("Message received:", message);
             
             switch (message.type) {
               case "state":
                 setGameState(message.data);
-                if (message.data?.gameState === "next") {
-                  setNextButtonEnabled(true);
-                } else {
-                  setNextButtonEnabled(false);
-                }
+                if (message.data?.gameState === "next") setNextButtonEnabled(true);
+                else									setNextButtonEnabled(false);
                 break;            
               case "started":
                 setGameState(message.gameState);
@@ -226,12 +199,9 @@ const GameModal: React.FC<GameModalProps> = ({
               case "cancelled":
                 setGameState(message.gameState);
                 break;
-              case "next_match":
-                console.log("Moving to next match:", message);
-                
+              case "next_match":                
                 // Store both IDs but use the matchId for all subsequent communications
                 if (message.matchId) {
-                  console.log(`Updating currentGameId from ${currentGameId} to ${message.matchId}`);
                   setCurrentGameId(message.matchId);
                   
                   // Request the state of the new game using the existing WebSocket
@@ -242,13 +212,11 @@ const GameModal: React.FC<GameModalProps> = ({
                       playerName: player1, 
                       isSpectator: false
                     };
-                    console.log("Requesting state for new match:", stateRequest);
                     ws.send(JSON.stringify(stateRequest));
                   }
                 }
                 break;
               case "tournament_completed":
-                console.log("Tournament completed:", message);
                 setGameState(prev => prev ? { 
                   ...prev, 
                   gameState: "finished",
@@ -261,41 +229,23 @@ const GameModal: React.FC<GameModalProps> = ({
               case "pong":
                 break;
               case "error":
-                console.error("Error message received:", message);
                 setError(message.message);
                 break;            
-              default:
-                console.log("Unknown message type:", message.type);
             }
-          } catch (err) {
-            console.error("Error processing message:", err);
-          }
+          } catch (err) {}
         };
         
         // Handle connection close
         ws.onclose = (event) => {
-          console.log("WebSocket connection closed", event);
           setIsConnected(false);
           
-          if (event.code === 1006) {
-            console.error("Abnormal closure - the server closed the connection unexpectedly");
-            
+          if (event.code === 1006) {           
             setConnectionLost(true);
-            
-            connectionLostTimeoutRef.current = window.setTimeout(() => {
-              setPersistentConnectionLost(true);
-            }, 5000); 
+            connectionLostTimeoutRef.current = window.setTimeout(() => { setPersistentConnectionLost(true); }, 5000);
           }
         };
-        
-        // Handle connection error
-        ws.onerror = (error) => {
-          console.error("WebSocket error:", error);
-          setConnectionLost(true);
-        };
+        ws.onerror = (_) => setConnectionLost(true);
       } else if (wsRef.current.readyState === WebSocket.OPEN) {
-        // If WebSocket is already open, just request the current state
-        console.log(`WebSocket already open, requesting state for gameId: ${currentGameId}`);
         const stateRequest = { 
           type: "state", 
           gameId: currentGameId,
@@ -308,8 +258,7 @@ const GameModal: React.FC<GameModalProps> = ({
     
     setupWebSocket();
     
-    // When currentGameId changes, don't recreate the WebSocket,
-    // just update the state request with the new gameId
+    // When currentGameId changes update the state request with the new gameId
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && !cleanupCalled) {
       const stateRequest = { 
         type: "state", 
@@ -317,14 +266,12 @@ const GameModal: React.FC<GameModalProps> = ({
         playerName: player1, 
         isSpectator: false
       };
-      console.log(`GameId changed, requesting state for: ${currentGameId}`);
       wsRef.current.send(JSON.stringify(stateRequest));
     }
     
     // Cleanup function when component unmounts or gameId changes
     return () => {
       cleanupCalled = true;
-      console.log(`Cleanup for gameId: ${currentGameId}`);
       
       if (connectionLostTimeoutRef.current) {
         clearTimeout(connectionLostTimeoutRef.current);
@@ -335,10 +282,6 @@ const GameModal: React.FC<GameModalProps> = ({
         clearInterval(pingIntervalRef.current);
         pingIntervalRef.current = null;
       }
-      
-      // We don't close the WebSocket here anymore since we want to reuse it
-      // for the next game in the tournament sequence. It will be closed
-      // when the component unmounts completely.
     };
   }, [currentGameId, player1, player2]);
 
@@ -346,7 +289,6 @@ const GameModal: React.FC<GameModalProps> = ({
   useEffect(() => {
     return () => {
       // This executes when the entire component is unmounted (not just during round transitions)
-      console.log("GameModal component is completely unmounting");
       unmountingRef.current = true;
       
       if (connectionLostTimeoutRef.current) {
@@ -360,22 +302,19 @@ const GameModal: React.FC<GameModalProps> = ({
       // Only cancel the game if we're truly unmounting the whole component
       // not just transitioning between rounds
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        console.log(`Closing WebSocket and cancelling game: ${currentGameId}`);
         try {
           wsRef.current.send(JSON.stringify({
             type: "cancel",
             gameId: currentGameId
           }));
           wsRef.current.close(1000, "Component unmounted");
-        } catch (e) {
-          console.error("Error closing WebSocket:", e);
-        }
+        } catch (e) {}
         wsRef.current = null;
       }
     };
   }, []);
 
-  // Start the game
+  // Start
   const startGame = () => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       const startMessage = {
@@ -386,7 +325,7 @@ const GameModal: React.FC<GameModalProps> = ({
     }
   };
 
-  // Handle next round in tournament mode
+  // Next round in tournament
   const handleNextRound = () => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       const nextMessage = {
@@ -397,7 +336,7 @@ const GameModal: React.FC<GameModalProps> = ({
     }
   };
 
-  // Pause/Resume the game
+  // Pause/Resume
   const togglePause = () => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       const isPaused = gameState?.gameState === "paused";
@@ -413,13 +352,11 @@ const GameModal: React.FC<GameModalProps> = ({
   const cancelGame = () => {
     // Don't cancel if we're in the middle of a tournament round transition
     if (gameState?.settings?.tournamentMode && gameState?.gameState === 'next') {
-      console.log('Attempting to close during tournament round transition - skipping cancel');
       onClose();
       return;
     }
 
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      console.log(`Sending cancel message for gameId: ${currentGameId}`);
       const cancelMessage = {
         type: "cancel",
         gameId: currentGameId
@@ -433,13 +370,7 @@ const GameModal: React.FC<GameModalProps> = ({
   const handleMove = (direction: 'up' | 'down' | 'stop', player: number) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
     
-    // Verificar si el jugador es una IA antes de enviar comandos de movimiento
-    if (gameState && 
-        ((player === 1 && gameState.player1.isAI) || 
-         (player === 2 && gameState.player2.isAI))) {
-      console.log(`Ignorando comando de movimiento para jugador ${player} (es una IA)`);
-      return;
-    }
+    if (gameState && ((player === 1 && gameState.player1.isAI) || (player === 2 && gameState.player2.isAI))) return;
     
     const moveMessage = {
       type: "move",
@@ -450,17 +381,11 @@ const GameModal: React.FC<GameModalProps> = ({
     wsRef.current.send(JSON.stringify(moveMessage));
   };
 
-  // Handle paddle position update
+  // Handle paddle position
   const handleSetPosition = (y: number, player: number) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
     
-    // Verificar si el jugador es una IA antes de enviar actualizaciones de posición
-    if (gameState && 
-        ((player === 1 && gameState.player1.isAI) || 
-         (player === 2 && gameState.player2.isAI))) {
-      console.log(`Ignorando cambio de posición para jugador ${player} (es una IA)`);
-      return;
-    }
+    if (gameState && ((player === 1 && gameState.player1.isAI) || (player === 2 && gameState.player2.isAI))) return;
     
     const positionMessage = {
       type: "position",
@@ -470,69 +395,37 @@ const GameModal: React.FC<GameModalProps> = ({
     };
     wsRef.current.send(JSON.stringify(positionMessage));
   };
-
-  const formatPlayerName = (name: string | null | undefined): string => {
-    if (!name) return '';
-    // Si el nombre comienza con "AI_", eliminarlo para la visualización
-    return name.startsWith('AI_') ? name.substring(3) : name;
-  };
   
-  // Handle keyboard events for controls
+  // Handle keyboard events
   useEffect(() => {
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && (gameState?.gameState === "paused" || gameState?.gameState === "playing")) {
         e.preventDefault();
         togglePause();
       }
-      
-      // Añadir soporte para la tecla espaciadora
+
       if (e.key === " " || e.code === "Space") {
         e.preventDefault();
-        // Si el juego está pausado o esperando, iniciarlo o reanudarlo
-        if (gameState?.gameState === "paused") {
-          togglePause(); // Reanudar si está pausado
-        } else if (gameState?.gameState === "waiting" || gameState?.gameState === "next") {
-          if (gameState?.gameState === "next") {
-            handleNextRound(); // Próxima ronda si es un torneo
-          } else {
-            startGame(); // Iniciar el juego
-          }
-        } else if (gameState?.gameState === "playing") {
-          togglePause(); // Pausar si está jugando
-        }
+        if      (gameState?.gameState === "waiting")  startGame();
+		else if (gameState?.gameState === "next")     handleNextRound();
+        else if (gameState?.gameState === "paused")   togglePause();
+        else if (gameState?.gameState === "playing")  togglePause();
       }
       
       if (gameState?.gameState !== "playing") return;
       
-      if (e.key === "w" || e.key === "W") {
-        e.preventDefault();
-        handleMove("up", 1);
-      } else if (e.key === "s" || e.key === "S") {
-        e.preventDefault();
-        handleMove("down", 1);
-      }
+      if      (e.key === "w" || e.key === "W") { e.preventDefault(); handleMove("up", 1);   }
+      else if (e.key === "s" || e.key === "S") { e.preventDefault(); handleMove("down", 1); }
       
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        handleMove("up", 2);
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        handleMove("down", 2);
-      }
+      if      (e.key === "ArrowUp")   { e.preventDefault(); handleMove("up", 2);   }
+      else if (e.key === "ArrowDown") { e.preventDefault(); handleMove("down", 2); }
     };
     
     const handleKeyUp = (e: KeyboardEvent) => {
       if (gameState?.gameState !== "playing") return;
-      
-      if (e.key === "w" || e.key === "W" || e.key === "s" || e.key === "S") {
-        e.preventDefault();
-        handleMove("stop", 1);
-      }
-      
-      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-        e.preventDefault();
-        handleMove("stop", 2);
-      }
+      if (e.key === "w" || e.key === "W" || e.key === "s" || e.key === "S") { e.preventDefault(); handleMove("stop", 1); }
+      if (e.key === "ArrowUp" || e.key === "ArrowDown")                     { e.preventDefault(); handleMove("stop", 2); }
     };
     
     window.addEventListener("keydown", handleKeyDown);
@@ -544,7 +437,7 @@ const GameModal: React.FC<GameModalProps> = ({
     };
   }, [gameState]);
   
-  // Prevent page unload/navigation when game is in progress
+  // Prevent page refresh
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (gameState && ["waiting", "playing", "paused", "next"].includes(gameState.gameState)) {
@@ -555,32 +448,16 @@ const GameModal: React.FC<GameModalProps> = ({
     };
     
     window.addEventListener("beforeunload", handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
+    return () => { window.removeEventListener("beforeunload", handleBeforeUnload); };
   }, [gameState]);
   
   // Handle closing the modal
   const handleCloseClick = () => {
-    if (persistentConnectionLost) {
-      onClose();
-      return;
-    }
+    if (persistentConnectionLost) { onClose(); return; }
+
+    const isTournamentCompleted = gameState?.settings?.tournamentMode && currentRound === 2 && gameState.gameState === "next";
+    if (isTournamentCompleted || (gameState && ["finished", "cancelled"].includes(gameState.gameState))) { onClose(); return; }
     
-    // Si es un torneo completado (ronda final con botón de cierre visible), cerrar directamente sin preguntar
-    const isTournamentCompleted = gameState?.settings?.tournamentMode && 
-                                  currentRound === 2 && 
-                                  gameState.gameState === "next";
-    
-    // Si es un torneo finalizado o el juego ya terminó/canceló, cerrar sin preguntar
-    if (isTournamentCompleted || 
-        (gameState && ["finished", "cancelled"].includes(gameState.gameState))) {
-      onClose();
-      return;
-    }
-    
-    // Para los casos normales en juego
     if (gameState && ["waiting", "playing", "paused", "next"].includes(gameState.gameState)) {
       if (gameState?.gameState === "playing") togglePause();
       setShowExitConfirm(true);
@@ -591,72 +468,19 @@ const GameModal: React.FC<GameModalProps> = ({
   
   useEffect(() => {
     if (persistentConnectionLost) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 15000);
-      
+      const timer = setTimeout(() => { onClose(); }, 15000);
       return () => clearTimeout(timer);
     }
   }, [persistentConnectionLost, onClose]);
   
-//   const getStatusText = () => {
-//     if (persistentConnectionLost) return t('quickMatch.connectionLost');
-//     if (!gameState) return t('quickMatch.connecting');
-    
-//     const isTournamentMode = gameState.settings?.tournamentMode;
-//     const round = gameState.settings?.tournamentRound || 1;
-//     const tournamentPrefix = isTournamentMode ? 
-//       (round === 2 ? `${t('tournament.final')}: ` : `${t('tournament.round')} ${round}: `) : '';
-    
-//     switch (gameState.gameState) {
-//       case "waiting":
-//         return `${tournamentPrefix}${t('quickMatch.waiting')}`;
-//       case "playing":
-//         return `${tournamentPrefix}${t('quickMatch.inProgress')}`;
-//       case "paused":
-//        return `${tournamentPrefix}${t('quickMatch.paused')}`;
-//       case "next":
-//         return `${tournamentPrefix}${t('tournament.roundCompleted')}`;
-//       case "finished":
-//         const winner = gameState.player1.score > gameState.player2.score 
-//           ? gameState.player1.name 
-//           : gameState.player2.name;
-//         return `${tournamentPrefix}${winner} ${t('quickMatch.wins')}`;
-//       case "cancelled":
-//         return `${tournamentPrefix}${t('quickMatch.cancelled')}`;
-//       default:
-//         return "Unknown state";
-//     }
-//   };
-  
   const getScoreText = () => {
-    if (!gameState) return "";
-    
+    if (!gameState) return "";  
     return `${gameState.player1.score} - ${gameState.player2.score}`;
   };
   
-  const canStartGame = () => {
-    // No mostrar el botón de inicio cuando hay un botón de "Proceed" visible
-    return gameState && 
-           !showNextRoundButton() &&  // No mostrar si ya hay un botón "Proceed"
-           (gameState.gameState === "waiting" || gameState.gameState === "next") && 
-           gameState.player1.name && 
-           gameState.player2.name &&
-           !persistentConnectionLost;
-  };
-  
-  const canPauseGame = () => {
-    return gameState && 
-           (gameState.gameState === "playing" || gameState.gameState === "paused") &&
-           !persistentConnectionLost;
-  };
-
-  const showNextRoundButton = () => {
-    return gameState && 
-           gameState.gameState === "next" && 
-           gameState.settings?.tournamentMode && 
-           !persistentConnectionLost;
-  };
+  const canStartGame = () => { return gameState && !showNextRoundButton() && (gameState.gameState === "waiting" || gameState.gameState === "next") && gameState.player1.name && gameState.player2.name && !persistentConnectionLost; }; 
+  const canPauseGame = () => { return gameState && (gameState.gameState === "playing" || gameState.gameState === "paused") && !persistentConnectionLost; };
+  const showNextRoundButton = () => { return gameState && gameState.gameState === "next" && gameState.settings?.tournamentMode && !persistentConnectionLost; };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm p-2 sm:p-4">
@@ -669,13 +493,13 @@ const GameModal: React.FC<GameModalProps> = ({
               )}
               {screenSize === 'small' ? (
                 <>
-                  <span className="truncate max-w-[100px]">{formatPlayerName(gameState?.player1?.name) || formatPlayerName(player1)}</span> 
+                  <span className="truncate max-w-[100px]">{gameState?.player1?.name || player1}</span> 
                   <span className="mx-1">🆚</span> 
-                  <span className="truncate max-w-[100px]">{formatPlayerName(gameState?.player2?.name) || formatPlayerName(player2) || t('quickMatch.waiting')}</span>
+                  <span className="truncate max-w-[100px]">{gameState?.player2?.name || player2 || t('quickMatch.waiting')}</span>
                 </>
               ) : (
                 <>
-                  {formatPlayerName(gameState?.player1?.name) || formatPlayerName(player1)} 🆚 {formatPlayerName(gameState?.player2?.name) || formatPlayerName(player2) || t('quickMatch.waiting')}
+                  {gameState?.player1?.name || player1} 🆚 {gameState?.player2?.name || player2 || t('quickMatch.waiting')}
                 </>
               )}
             </h3>

@@ -9,11 +9,9 @@ function websocketHandler(fastify, options, done) {
 
   // Helper function to release players from tournament games
   function releasePlayersFromTournament(tournamentId) {
-    console.log(`Releasing players from tournament: ${tournamentId}`);
     
     const tournament = tournamentManager.getTournament(tournamentId);
     if (!tournament) {
-      console.log(`Tournament ${tournamentId} not found`);
       return false;
     }
     
@@ -26,16 +24,13 @@ function websocketHandler(fastify, options, done) {
         
         // Release players from this game
         if (game) {
-          console.log(`Releasing players from match ${matchId}, game ${match.gameId}`);
           
           // Remove players from gameManager's players map
           if (game.player1) {
-            console.log(`Releasing player: ${game.player1}`);
             gameManager.players.delete(game.player1);
           }
           
           if (game.player2) {
-            console.log(`Releasing player: ${game.player2}`);
             gameManager.players.delete(game.player2);
           }
         }
@@ -53,13 +48,11 @@ function websocketHandler(fastify, options, done) {
     try {
       const tournament = tournamentManager.getTournament(tournamentId);
       if (!tournament) {
-        console.log(`Tournament ${tournamentId} not found for stats`);
         return;
       }
       
       // Avoid sending duplicate results
       if (tournament.resultsSent) {
-        console.log(`Tournament ${tournamentId} results already sent`);
         return;
       }
       
@@ -68,7 +61,6 @@ function websocketHandler(fastify, options, done) {
       const finalMatch = tournamentManager.matches.get(finalMatchId);
       
       if (!finalMatch || !finalMatch.gameId) {
-        console.log('Final match not found or not played');
         return;
       }
       
@@ -76,7 +68,6 @@ function websocketHandler(fastify, options, done) {
       const finalGameState = gameManager.getGameState(finalMatch.gameId);
       
       if (!finalGame || !finalGameState) {
-        console.log('Final game not found');
         return;
       }
       
@@ -115,9 +106,7 @@ function websocketHandler(fastify, options, done) {
           fourthPlace = semifinal2Loser;
         }
       }
-      
-      console.log(`Tournament positions - 1st: ${winner}, 2nd: ${runnerUp}, 3rd: ${thirdPlace}, 4th: ${fourthPlace}`);
-      
+  
       // Get actual game settings to format them properly
       const tournamentSettings = {
         ballSpeed: tournament.settings?.ballSpeed || "medium",
@@ -132,9 +121,7 @@ function websocketHandler(fastify, options, done) {
                              tournament.tournamentName || // O si está en la propiedad tournamentName
                              tournamentManager.getTournamentSettings(tournamentId)?.tournamentName || // O en los settings guardados
                              `Tournament ${tournamentId.substring(0, 8)}`; // Fallback
-      
-      console.log(`Using tournament name: ${tournamentName}`);
-      
+
       // Create tournament result payload - match format to what the model expects
       const tournamentPayload = {
         name: tournamentName, // Usamos el nombre real del torneo
@@ -144,9 +131,7 @@ function websocketHandler(fastify, options, done) {
         status: 'completed',
         players: tournament.players.map(playerId => ({ user_id: playerId }))
       };
-      
-      console.log(`Sending tournament with settings: ${JSON.stringify(tournamentSettings)}`);
-      
+
       // Obtener entradas del game manager para acceder a los tiempos reales
       const gameEntry1 = semifinal1Match?.gameId ? gameManager.games.get(semifinal1Match.gameId) : null;
       const gameEntry2 = semifinal2Match?.gameId ? gameManager.games.get(semifinal2Match.gameId) : null;
@@ -171,7 +156,6 @@ function websocketHandler(fastify, options, done) {
         let totalPausedMs = 0;
         if (gameState.timing && gameState.timing.totalPausedTime) {
           totalPausedMs = gameState.timing.totalPausedTime;
-          console.log(`Game ${gameEntry.id} had ${totalPausedMs}ms of paused time`);
         }
         
         // Tiempo de finalización ajustado por pausas (tiempo real = tiempo total - tiempo pausado)
@@ -179,7 +163,6 @@ function websocketHandler(fastify, options, done) {
         
         // Calcular y mostrar la duración real
         const effectiveDurationMs = effectiveEndTime.getTime() - startTime.getTime();
-        console.log(`Game ${gameEntry.id} effective duration: ${effectiveDurationMs / 1000} seconds`);
         
         return { 
           startTime, 
@@ -191,10 +174,6 @@ function websocketHandler(fastify, options, done) {
       const semi1Times = calculateEffectiveTimes(gameEntry1, semi1GameState);
       const semi2Times = calculateEffectiveTimes(gameEntry2, semi2GameState);
       const finalTimes = calculateEffectiveTimes(gameEntryFinal, finalGameState);
-      
-      console.log(`Semifinal 1 times: ${semi1Times.startTime?.toISOString() || 'unknown'} - ${semi1Times.endTime?.toISOString() || 'unknown'}`);
-      console.log(`Semifinal 2 times: ${semi2Times.startTime?.toISOString() || 'unknown'} - ${semi2Times.endTime?.toISOString() || 'unknown'}`);
-      console.log(`Final times: ${finalTimes.startTime?.toISOString() || 'unknown'} - ${finalTimes.endTime?.toISOString() || 'unknown'}`);
       
       // Incluimos los datos de los juegos del torneo con los tiempos reales
       tournamentPayload.games = [];
@@ -235,8 +214,6 @@ function websocketHandler(fastify, options, done) {
         });
       }
       
-      console.log(`Sending tournament results to stats: ${JSON.stringify(tournamentPayload)}`);
-      
       const statsService = require('../config').services.stats;
       const axios = require('axios');
       
@@ -249,12 +226,10 @@ function websocketHandler(fastify, options, done) {
       });
       
       const tournamentDbId = createResponse.data.id;
-      console.log(`Tournament created in stats with ID: ${tournamentDbId}`);
       
       // Guardamos el ID de la base de datos del torneo para usarlo en los juegos
       if (tournament.dbId === undefined) {
         tournament.dbId = tournamentDbId;
-        console.log(`Saved database ID ${tournamentDbId} for tournament ${tournamentId}`);
       }
       
       // Now update the tournament results with player positions
@@ -280,44 +255,27 @@ function websocketHandler(fastify, options, done) {
         timeout: statsService.timeout
       });
       
-      console.log(`Tournament results sent to stats service: ${tournamentId}`);
-      
       // Mark results as sent
       tournament.resultsSent = true;
       return true;
-    } catch (error) {
-      console.error(`Failed to send tournament results to stats service: ${error.message}`);
-      if (error.response) {
-        console.error(`Status: ${error.response.status}, Data:`, error.response.data);
-      }
-    }
+    } catch (error) {}
   }
 
   fastify.get('/game/ws/pong', { websocket: true }, (connection, req) => {
     const ws = connection.socket;
     const clientId = uuidv4();
-    
-    console.log(`WebSocket connection established: ${clientId}`);
-    console.log(`Connection details: ${req.headers['origin']}`);
            
     // DISCONNECT
     ws.on('close', () => {
-      console.log(`WebSocket connection closed: ${clientId}`);
       // Find game associated with this client and cancel it if not already finished
       const clientEntry = gameManager.getClientInfo(clientId);
       if (clientEntry && clientEntry.gameId) {
         const game = gameManager.getGame(clientEntry.gameId);
         if (game && ['playing', 'paused', 'waiting'].includes(game.gameState)) {
-          console.log(`Cancelling game ${clientEntry.gameId} due to websocket disconnect`);
           gameManager.cancelGame(clientEntry.gameId);
         }
       }
       gameManager.unregisterClient(clientId);
-    });
-
-    // ERROR
-    ws.on('error', (error) => {
-      console.error(`WebSocket error for client ${clientId}:`, error);
     });
 
     // SEND ERROR
@@ -362,7 +320,6 @@ function websocketHandler(fastify, options, done) {
             sendError(ws, `Unknown message type: ${data.type}`);
         }
       } catch (error) {
-        console.error('Error handling WebSocket message:', error);
         sendError(ws, 'Invalid message format');
       }
     });
@@ -436,7 +393,6 @@ function websocketHandler(fastify, options, done) {
       
       if (gameManager.cancelGame(gameId)) {
         if (tournamentId) {
-          console.log(`Canceling tournament ${tournamentId} due to match cancellation`);
           releasePlayersFromTournament(tournamentId);
           tournamentManager.cancelTournament(tournamentId);
         }
@@ -524,8 +480,6 @@ function websocketHandler(fastify, options, done) {
           return sendError(ws, 'Missing gameId in next message');
         }
         
-        console.log(`Processing next message for game ID: ${data.gameId}`);
-        
         // First check if the game exists
         let gameId = data.gameId;
         let matchId = data.gameId;
@@ -541,8 +495,6 @@ function websocketHandler(fastify, options, done) {
           gameId = matchDetails.gameId;
         }
         
-        console.log(`Match ID: ${matchId}, Game ID: ${gameId}`);
-        
         // Check if the game has finished and is in 'next' state
         const gameState = gameManager.getGameState(gameId);
         if (!gameState || gameState.gameState !== 'next') {
@@ -555,13 +507,11 @@ function websocketHandler(fastify, options, done) {
         // Obtener la entrada del juego y establecer su tiempo de finalización
         const gameEntry = gameManager.games.get(gameId);
         if (!gameEntry) {
-          console.error(`Game entry not found for game ${gameId}`);
           return sendError(ws, `Game entry not found: ${gameId}`);
         }
         
         // Guardar tiempo de finalización exacto
         gameEntry.finishTime = exactFinishTime;
-        console.log(`Registered EXACT finishTime for game ${gameId}: ${new Date(exactFinishTime).toISOString()}`);
         
         // Calcular la duración real de la partida
         const startTime = gameEntry.startTime || Date.now() - 10000; // Fallback de 10 segundos si no hay startTime
@@ -570,92 +520,17 @@ function websocketHandler(fastify, options, done) {
         // Calcular tiempo en pausa con mayor precisión
         if (gameState.timing && gameState.timing.totalPausedTime) {
           totalPausedMs = gameState.timing.totalPausedTime;
-          console.log(`Game had ${totalPausedMs}ms of paused time`);
         }
         
         // CRÍTICO: Calcular tiempo efectivo de juego con máxima precisión
         const effectiveDurationMs = (exactFinishTime - startTime) - totalPausedMs;
         const effectiveEndTime = new Date(startTime + effectiveDurationMs).toISOString();
-        
-        console.log(`Game ${gameId} statistics:`);
-        console.log(`- Start time: ${new Date(startTime).toISOString()}`);
-        console.log(`- Finish time: ${new Date(exactFinishTime).toISOString()}`);
-        console.log(`- Paused time: ${totalPausedMs}ms`);
-        console.log(`- Effective duration: ${effectiveDurationMs / 1000} seconds`);
-        console.log(`- Effective end time: ${effectiveEndTime}`);
-        
-        // IMPORTANTE: Guardar explícitamente los resultados en stats
-        console.log(`Saving game results for tournament game ${gameId}, tournament: ${matchDetails.tournamentId}`);
-        const statsService = require('../config').services.stats;
-        const axios = require('axios');
-        
-        // CRÍTICO: Marcar el juego como ya enviado para evitar duplicaciones ANTES de enviarlo
-        // Esto evita posibles condiciones de carrera con el loop de update en game-manager
-        // gameEntry.sentToStats = true;
-        // console.log(`Marked game ${gameId} as already sent to stats to prevent duplication`);
-        
-        // // Creamos el payload con tiempos extremadamente precisos
-        // const gamePayload = {
-        //   tournament_id: tournamentManager.tournaments.get(matchDetails.tournamentId)?.dbId,
-        //   start_time: new Date(startTime).toISOString(),
-        //   end_time: effectiveEndTime, // Tiempo de finalización efectivo
-        //   settings: {
-        //     ballSpeed: gameState.settings?.ballSpeed || 'medium',
-        //     paddleSize: gameState.settings?.paddleSize || 'medium',
-        //     speedIncrement: gameState.settings?.accelerationEnabled || false,
-        //     pointsToWin: gameState.config?.winningScore || 5
-        //   },
-        //   players: [
-        //     {
-        //       user_id: gameState.player1.name,
-        //       score: gameState.player1.score
-        //     },
-        //     {
-        //       user_id: gameState.player2.name,
-        //       score: gameState.player2.score
-        //     }
-        //   ]
-        // };
-        
-        // // Añadimos información sobre el tipo de partido
-        // if (matchDetails.round === 2) {
-        //   gamePayload.match_type = "Final";
-        // } else {
-        //   const isSecond = tournamentManager.tournaments.get(matchDetails.tournamentId).matches.indexOf(matchId) === 1;
-        //   gamePayload.match_type = isSecond ? "Semifinal 2" : "Semifinal 1";
-        // }
-        
-        //console.log(`Sending tournament game to stats: ${JSON.stringify(gamePayload)}`);
-        
-        // // CRÍTICO: Guardar el tiempo del juego actual antes de crear/pasar a la siguiente ronda
-        // try {
-        //   const response = await axios.post(`${statsService.url}/games`, gamePayload, {
-        //     headers: {
-        //       'Content-Type': 'application/json'
-        //     },
-        //     timeout: statsService.timeout
-        //   });
-          
-        //   console.log(`Tournament game saved to stats with ID: ${response.data.id}`);
-          
-        //   // Si es un partido de torneo, guardar el ID de la base de datos para referencia futura
-        //   const match = tournamentManager.matches.get(matchId);
-        //   if (match) {
-        //     match.statsGameId = response.data.id;
-        //     console.log(`Saved stats game ID ${response.data.id} for match ${matchId}`);
-        //   }
-        // } catch (error) {
-        //   console.error(`Error saving tournament game to stats: ${error.message}`);
-        //   // No quitamos el flag sentToStats aunque falle, para evitar duplicaciones
-        // }
-        
+       
         // Get tournament data to check match sequence
         const tournamentData = tournamentManager.getTournament(matchDetails.tournamentId);
         if (!tournamentData) {
           return sendError(ws, `Tournament not found: ${matchDetails.tournamentId}`);
         }
-        
-        console.log(`Tournament data: ${JSON.stringify(tournamentData)}`);
         
         // Find current match index in tournament
         const currentMatchIndex = tournamentData.matches.findIndex(id => id === matchId);
@@ -664,28 +539,19 @@ function websocketHandler(fastify, options, done) {
           return sendError(ws, `Match not found in tournament: ${matchId}`);
         }
         
-        console.log(`Current match index: ${currentMatchIndex}, Total matches: ${tournamentData.matches.length}`);
-        
         // Find the next match based on tournament flow
         let nextMatchId;
         const isFinalMatch = currentMatchIndex === tournamentData.matches.length - 1;
         const isFirstSemifinal = currentMatchIndex === 0;
         const isSecondSemifinal = currentMatchIndex === 1;
         
-        console.log(`Is first semifinal: ${isFirstSemifinal}, Is second semifinal: ${isSecondSemifinal}, Is final: ${isFinalMatch}`);
-        
         if (isFirstSemifinal) {
           // After first semifinal, go to second semifinal
           nextMatchId = tournamentData.matches[1]; // Second semifinal
-          console.log(`Moving to second semifinal: ${nextMatchId}`);
         } else if (isSecondSemifinal) {
           // After second semifinal, go to final
           nextMatchId = tournamentData.matches[2]; // Final match
-          console.log(`Moving to final match: ${nextMatchId}`);
-        } else {
-          // This was the final match or an unknown state
-          console.log(`Tournament completed, no more matches`);
-          
+        } else {          
           // Get and cleanup all games associated with this tournament
           releasePlayersFromTournament(matchDetails.tournamentId);
           
@@ -699,12 +565,10 @@ function websocketHandler(fastify, options, done) {
         
         // Get the next match details
         const nextMatchDetails = tournamentManager.getMatchDetails(nextMatchId);
-        console.log(`Next match details: ${JSON.stringify(nextMatchDetails)}`);
         
         // Check if the next match already has a game ID - Si tiene, NO reusar ese juego
         // porque posiblemente tiene tiempos incorrectos
         if (nextMatchDetails.gameId) {
-          console.log(`Clearing previous game ID ${nextMatchDetails.gameId} for next match`);
           
           // Cancelar el juego anterior si existe
           gameManager.cancelGame(nextMatchDetails.gameId);
@@ -721,14 +585,10 @@ function websocketHandler(fastify, options, done) {
           isSecondSemifinal: isFirstSemifinal // Solo activar si vamos a la segunda semifinal
         };
         
-        console.log(`Next game settings: ${JSON.stringify(nextGameSettings)}`);
-        
         let player1, player2;
         
         if (isSecondSemifinal) {
-          // Going to final - determine players from semifinal winners
-          console.log(`Determining players for final match from semifinal winners`);
-          
+          // Going to final - determine players from semifinal winners        
           const firstSemiMatch = tournamentManager.matches.get(tournamentData.matches[0]);
           const secondSemiMatch = tournamentManager.matches.get(tournamentData.matches[1]);
           
@@ -744,14 +604,8 @@ function websocketHandler(fastify, options, done) {
           }
           
           // Determine winners from both semifinals
-          const firstSemiWinner = firstSemiGame.player1Score > firstSemiGame.player2Score ? 
-            firstSemiGame.player1 : firstSemiGame.player2;
-            
-          const secondSemiWinner = secondSemiGame.player1Score > secondSemiGame.player2Score ?
-            secondSemiGame.player1 : secondSemiGame.player2;
-            
-          console.log(`First semifinal winner: ${firstSemiWinner}`);
-          console.log(`Second semifinal winner: ${secondSemiWinner}`);
+          const firstSemiWinner = firstSemiGame.player1Score > firstSemiGame.player2Score ? firstSemiGame.player1 : firstSemiGame.player2;
+          const secondSemiWinner = secondSemiGame.player1Score > secondSemiGame.player2Score ? secondSemiGame.player1 : secondSemiGame.player2;
           
           player1 = firstSemiWinner;
           player2 = secondSemiWinner;
@@ -761,12 +615,9 @@ function websocketHandler(fastify, options, done) {
           nextMatchDetails.player2 = player2;
         } else {
           // Next semifinal - use predefined players
-          console.log(`Using predefined players for second semifinal`);
           player1 = nextMatchDetails.player1;
           player2 = nextMatchDetails.player2;
         }
-        
-        console.log(`Creating game with players: ${player1} vs ${player2}`);
         
         // USAR EL NUEVO MÉTODO que garantiza tiempos independientes para cada partida
         const nextGameId = tournamentManager.createGameForMatch(nextMatchId, nextGameSettings);
@@ -775,18 +626,13 @@ function websocketHandler(fastify, options, done) {
           return sendError(ws, 'Failed to create new game');
         }
         
-        console.log(`New game created with ID: ${nextGameId}`);
-        
         const nextGameState = gameManager.getGameState(nextGameId);
         
         if (!nextGameState) {
-          console.error(`Failed to get game state for new game ${nextGameId}`);
           return sendError(ws, 'Failed to get game state for new game');
         }
         
-        // Send response with new game info
-        console.log(`Sending next_match response for matchId: ${nextMatchId}, gameId: ${nextGameId}`);
-        
+        // Send response with new game info       
         ws.send(JSON.stringify({
           type: 'next_match',
           matchId: nextMatchId,
@@ -794,7 +640,6 @@ function websocketHandler(fastify, options, done) {
           gameState: nextGameState
         }));
       } catch (error) {
-        console.error('Error in handleNext:', error);
         sendError(ws, 'Error processing next round: ' + error.message);
       }
     }

@@ -83,12 +83,6 @@ class PongGame {
     this.pauseTime = null; // Timestamp when the game was paused
     this.totalPausedTime = 0; // Total time spent in pause (ms)
     this.pauseIntervals = []; // Track all pause intervals [start, end]
-    
-    // Log para debugging
-    console.log(`Nuevo juego creado a las ${new Date(now).toISOString()}`);
-    if (this.tournamentMode) {
-      console.log(`Modo torneo: Ronda ${this.tournamentRound}, ${this.isSecondSemifinal ? 'Segunda semifinal' : (this.tournamentRound === 2 ? 'Final' : 'Primera semifinal')}`);
-    }
   }
 
   // Método para verificar si un nombre corresponde a una IA
@@ -108,12 +102,10 @@ class PongGame {
     if (playerNumber === 1) { 
       this.player1 = playerName; 
       this.player1IsAI = this.isAIPlayer(playerName);
-      console.log(`Player 1 set to ${playerName}, isAI: ${this.player1IsAI}`);
     }
     else if (playerNumber === 2) { 
       this.player2 = playerName; 
       this.player2IsAI = this.isAIPlayer(playerName);
-      console.log(`Player 2 set to ${playerName}, isAI: ${this.player2IsAI}`);
     }
   }
 
@@ -147,7 +139,6 @@ class PongGame {
     // NUEVO: Activar pausa de la bola por 500ms
     this.ballPaused = true;
     this.ballReadyTime = Date.now() + 500; // La bola estará lista para moverse en 500ms
-    console.log(`Ball paused for 500ms after point`);
   }
   
   // START
@@ -165,7 +156,6 @@ class PongGame {
     if (this.gameState === 'playing') {
       this.gameState = 'paused';
       this.pauseTime = Date.now(); // Record when we paused
-      console.log(`Game paused at ${new Date(this.pauseTime).toISOString()}`);
       return true;
     }
     return false;
@@ -186,8 +176,6 @@ class PongGame {
       
       // Accumulate total paused time
       this.totalPausedTime += pauseDuration;
-      
-      console.log(`Game resumed after ${pauseDuration}ms pause. Total paused time: ${this.totalPausedTime}ms`);
       
       this.gameState = 'playing';
       this.lastUpdate = now; // Update last update time to now
@@ -373,7 +361,6 @@ class PongGame {
     if (this.ballPaused) {
       // Comprobar si ya pasó el tiempo de pausa
       if (now >= this.ballReadyTime) {
-        console.log(`Ball pause ended, continuing game`);
         this.ballPaused = false;
       } else {
         // Si la bola sigue en pausa, no actualizar su posición

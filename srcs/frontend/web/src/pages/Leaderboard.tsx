@@ -44,8 +44,6 @@ const LeaderboardPage: React.FC = () => {
         
         if (winsResponse.ok) {
           winsData = await winsResponse.json();
-        } else {
-          console.error('Failed to fetch wins leaderboard:', winsResponse.status);
         }
         
         // Fetch win rate leaderboard
@@ -54,8 +52,6 @@ const LeaderboardPage: React.FC = () => {
         
         if (winRateResponse.ok) {
           winRateData = await winRateResponse.json();
-        } else {
-          console.error('Failed to fetch win rate leaderboard:', winRateResponse.status);
         }
         
         // Fetch tournament wins leaderboard
@@ -64,8 +60,6 @@ const LeaderboardPage: React.FC = () => {
         
         if (tournamentResponse.ok) {
           tournamentData = await tournamentResponse.json();
-        } else {
-          console.error('Failed to fetch tournament leaderboard:', tournamentResponse.status);
         }
         
         // We'll fetch fastest wins from the same data
@@ -79,7 +73,6 @@ const LeaderboardPage: React.FC = () => {
         if (totalGamesResponse.ok) {
           totalGamesData = await totalGamesResponse.json();
         } else {
-          console.error('Failed to fetch total games leaderboard:', totalGamesResponse.status);
           // If the API doesn't exist, we'll show empty data
           totalGamesData = { data: [] };
         }
@@ -91,7 +84,6 @@ const LeaderboardPage: React.FC = () => {
         if (fastestWinsResponse.ok) {
           fastestWinsData = await fastestWinsResponse.json();
         } else {
-          console.error('Failed to fetch fastest wins leaderboard:', fastestWinsResponse.status);
           // If the API doesn't exist, we'll show empty data
           fastestWinsData = { data: [] };
         }
@@ -104,7 +96,6 @@ const LeaderboardPage: React.FC = () => {
           totalGames: totalGamesData.data || []
         });
       } catch (err) {
-        console.error('Error fetching leaderboards:', err);
         setError(t('leaderboard.errorFetching'));
       } finally {
         setIsLoading(false);

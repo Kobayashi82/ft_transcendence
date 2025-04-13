@@ -32,7 +32,6 @@ class TournamentManager {
   // Método para guardar la configuración para todas las rondas del torneo
   setTournamentSettings(tournamentId, settings) {
     this.tournamentSettings.set(tournamentId, settings);
-    console.log(`Saved tournament settings for all rounds of tournament ${tournamentId}:`, settings);
   }
   
   // Método para obtener la configuración guardada del torneo
@@ -103,9 +102,6 @@ class TournamentManager {
     // solo si tenemos acceso a gameManager
     if (this.gameManager && typeof this.gameManager.registerTournament === 'function') {
       this.gameManager.registerTournament(tournamentId, tournament);
-      console.log(`Tournament ${tournamentId} registered in gameManager with ${tournament.matches.length} matches`);
-    } else {
-      console.log(`Warning: gameManager not available or registerTournament is not a function. Tournament ${tournamentId} not registered in gameManager.`);
     }
     
     return {
@@ -213,11 +209,8 @@ class TournamentManager {
         throw new Error(`Match not found: ${matchId}`);
       }
       
-      console.log(`Tournament match ${matchId} completed, winner: ${winnerId}`);
-      
       // Verify this match is part of a tournament and has a next match
       if (!match.nextMatchId) {
-        console.log(`Match ${matchId} has no next match - this must be the final`);
         return null;
       }
       
@@ -226,8 +219,6 @@ class TournamentManager {
       if (!nextMatch) {
         throw new Error(`Next match not found: ${match.nextMatchId}`);
       }
-      
-      console.log(`Advancing winner ${winnerId} to match ${match.nextMatchId}`);
       
       // Update next match with this match's winner
       if (match.player1Position === 1) {
@@ -238,7 +229,6 @@ class TournamentManager {
       
       // Check if both players for next match are ready
       if (nextMatch.player1 && nextMatch.player2) {
-        console.log(`Next match ${match.nextMatchId} is ready to start with players ${nextMatch.player1} and ${nextMatch.player2}`);
         return {
           matchId: match.nextMatchId,
           player1: nextMatch.player1,
@@ -246,11 +236,9 @@ class TournamentManager {
           round: nextMatch.round
         };
       }
-      
-      console.log(`Waiting for other semifinal to complete before starting next match`);
+
       return null;
     } catch (error) {
-      console.error(`Error advancing to next round: ${error.message}`);
       return null;
     }
   }
@@ -278,7 +266,6 @@ class TournamentManager {
       const savedSettings = this.getTournamentSettings(tournamentId);
       
       if (savedSettings) {
-        console.log(`Using saved tournament settings for match ${matchId} in tournament ${tournamentId}`);
         // Usar la configuración guardada para todas las rondas
         settings = {
           ...savedSettings,
@@ -296,15 +283,11 @@ class TournamentManager {
         };
       }
       
-      console.log(`Creating game for tournament match ${matchId} with settings:`, settings);
-      console.log(`Match round: ${match.round}, isSecondSemifinal: ${isSecondSemifinal}`);
-      
       // Create a new game with FRESH timers
       const gameId = this.gameManager.createGame(settings);
       
       // Update match with game ID
       match.gameId = gameId;
-      console.log(`Game ${gameId} created for match ${matchId}`);
       
       // Add players to the game
       this.gameManager.addPlayer(gameId, match.player1, 1);
@@ -327,15 +310,11 @@ class TournamentManager {
           game.gameStartedAt = null; // Se establecerá cuando inicie el juego
           game.totalPausedTime = 0;
           game.pauseIntervals = [];
-          
-          console.log(`Game ${gameId} initialized with fresh timestamps at ${new Date(freshStartTime).toISOString()}`);
-          console.log(`Tournament round ${match.round}, ${isSecondSemifinal ? 'Second semifinal' : (match.round === 2 ? 'Final' : 'First semifinal')}`);
         }
       }
       
       return gameId;
     } catch (error) {
-      console.error(`Error creating game for match: ${error.message}`);
       return null;
     }
   }
