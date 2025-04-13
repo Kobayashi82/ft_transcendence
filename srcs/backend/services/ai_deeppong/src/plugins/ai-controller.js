@@ -68,7 +68,7 @@ class AIController {
       
       if (response.status === 200 && response.data.success) {
         console.log(`Game state received successfully for ${gameId}`);
-        console.log(response.data)
+        console.log(response.data.gameState)
         return response.data.gameState;
       }
       console.warn(`Invalid response for game ${gameId}: ${JSON.stringify(response.data)}`);
@@ -153,14 +153,80 @@ class AIController {
   }
   
   calculateNextMove(gameId) {
+    console.log('CALCULANDO')
     const gameData = this.activeGames.get(gameId);
-    if (!gameData || !gameData.gameState) return null;
+    if (!gameData || !gameData.gameState) {
+      console.log(`No game data or state available for ${gameId}`);
+      return null;
+    }
     
     const { gameState, playerNumber, difficulty } = gameData;
     const diffSettings = config.ai.difficultyLevels[difficulty];
     
-    // Game data
-    const { ball, paddles, dimensions } = gameState;
+    console.log(`Game state structure: ${JSON.stringify(Object.keys(gameState))}`);
+
+    // Adapt to the actual game state format
+    // Check which properties are available
+    if (!gameState.ball || !gameState.config) {
+      console.log(`Missing critical game state data for ${gameId}: ball=${!!gameState.ball}, config=${!!gameState.config}`);
+      return null;
+    }
+    
+    // Map new structure to expected structure
+    const ball = gameState.ball;
+    
+    // If velocity is not present, we need to calculate or default it
+    if (!ball.velocity) {
+      ball.velocity = { x: 0, y: 0 };
+      // We can try to calculate velocity based on previous state
+      if (gameData.previousBallPosition) {
+        const timeDiff = gameState.timing?.currentTime - gameData.previousTimestamp;
+        if (timeDiff > 0) {
+          ball.velocity.x = (ball.x - gameData.previousBallPosition.x) / timeDiff * 1000; // Velocidad en unidades/segundo
+          ball.velocity.y = (ball.y - gameData.previousBallPosition.y) / timeDiff * 1000;
+        }
+      }
+    }
+    
+    // Store current position for future velocity calculation
+    gameData.previousBallPosition = { x: ball.x, y: ball.y };
+    gameData.previousTimestamp = gameState.timing?.currentTime || Date.now();
+    
+    // Set up size if not present
+    if (!ball.size) {
+      ball.size = gameState.config.ballSize || 10;
+    }
+    
+    // Create paddles array from players
+    const paddles = [];
+    if (gameState.player1) {
+      paddles[0] = {
+        y: gameState.player1.y,
+        height: gameState.config.paddleHeight,
+        width: gameState.config.paddleWidth,
+      };
+    }
+    
+    if (gameState.player2) {
+      paddles[1] = {
+        y: gameState.player2.y,
+        height: gameState.config.paddleHeight,
+        width: gameState.config.paddleWidth,
+      };
+    }
+    
+    // Set up dimensions object
+    const dimensions = {
+      width: gameState.config.width,
+      height: gameState.config.height
+    };
+    
+    // Check if paddle exists for this player
+    if (!paddles[playerNumber - 1]) {
+      console.log(`No paddle data found for player ${playerNumber} in game ${gameId}`);
+      return 'stop';
+    }
+
     const paddle = paddles[playerNumber - 1];
     
     // Introduce random error to simulate difficulty
@@ -172,25 +238,45 @@ class AIController {
       return 'stop';
     }
     
-    // Check if ball is coming towards us
+    // Check if ball is coming towards us (based on calculated or existing velocity)
     const isComingTowardsUs = (playerNumber === 1 && ball.velocity.x < 0) || 
                               (playerNumber === 2 && ball.velocity.x > 0);
-
+    
     const paddleCenter = paddle.y + paddle.height / 2;
-    const targetY = ball.y + ball.size / 2;
+    const targetY = ball.y + (ball.size / 2);
+    
+    // Log position data
+    console.log(`Ball position: ${ball.x}, ${ball.y}, velocity: ${ball.velocity.x}, ${ball.velocity.y}`);
+    console.log(`Paddle ${playerNumber} position: y=${paddle.y}, center=${paddleCenter}`);
     
     // If ball is coming towards us, try to intercept it
     if (isComingTowardsUs) {
-      // Predict where the ball will hit
-      const predictedY = this.predictBallPosition(gameState, playerNumber);
-      
-      // Determine which direction to move paddle
-      const offset = diffSettings.paddleCenterOffset * paddle.height; // Intentional deviation to simulate imprecision
-      
-      if (paddleCenter < predictedY - offset) {
-        return 'down'; // Move down
-      } else if (paddleCenter > predictedY + offset) {
-        return 'up'; // Move up
+      try {
+        // Predict where the ball will hit using adapted data
+        const predictedY = this.predictBallPosition({ 
+          ball, 
+          paddles, 
+          dimensions 
+        }, playerNumber);
+        
+        console.log(`Predicted Y position: ${predictedY}`);
+        
+        if (typeof predictedY !== 'number') {
+          console.log(`Invalid predicted Y position for game ${gameId}`);
+          return 'stop';
+        }
+        
+        // Determine which direction to move paddle
+        const offset = diffSettings.paddleCenterOffset * paddle.height; // Intentional deviation to simulate imprecision
+        
+        if (paddleCenter < predictedY - offset) {
+          return 'down'; // Move down
+        } else if (paddleCenter > predictedY + offset) {
+          return 'up'; // Move up
+        }
+      } catch (error) {
+        console.error(`Error predicting ball position: ${error.message}`);
+        return 'stop';
       }
     } else {
       // If ball is moving away, try to return to center
@@ -207,47 +293,124 @@ class AIController {
   }
   
   predictBallPosition(gameState, playerNumber) {
-    const { ball, paddles, dimensions } = gameState;
-    const paddle = paddles[playerNumber - 1];
-    
-    // X position of player's side
-    const targetX = playerNumber === 1 ? paddle.width : dimensions.width - paddle.width;
-    
-    // Calculate how long it will take to reach player's side
-    const distX = Math.abs(targetX - ball.x);
-    const timeToImpact = distX / Math.abs(ball.velocity.x);
-    
-    // Predict Y position based on velocity and time
-    let predictedY = ball.y + ball.velocity.y * timeToImpact;
-    
-    // Adjust for bounces off top and bottom walls
-    const bounces = Math.floor(predictedY / dimensions.height);
-    if (bounces % 2 === 0) {
-      predictedY = predictedY % dimensions.height;
-    } else {
-      predictedY = dimensions.height - (predictedY % dimensions.height);
+    try {
+      const { ball, paddles, dimensions } = gameState;
+      
+      // Más registro detallado para debug
+      console.log(`predictBallPosition input: ball=${JSON.stringify(ball)}, playerNumber=${playerNumber}`);
+      console.log(`Paddles: ${JSON.stringify(paddles)}, Dimensions: ${JSON.stringify(dimensions)}`);
+      
+      // Validate required data
+      if (!ball || !paddles || !dimensions) {
+        console.log('Missing critical game state data in predictBallPosition');
+        return dimensions ? dimensions.height / 2 : 200; // Default to center or 200 if no dimensions
+      }
+      
+      // Check if we have a valid paddle for this player
+      if (!paddles[playerNumber - 1]) {
+        console.log(`No paddle data found for player ${playerNumber} in predictBallPosition`);
+        return dimensions.height / 2; // Default to center
+      }
+      
+      const paddle = paddles[playerNumber - 1];
+      
+      // Check if ball velocity exists and is valid
+      if (!ball.velocity || typeof ball.velocity.x !== 'number' || typeof ball.velocity.y !== 'number') {
+        console.log('Ball velocity data is invalid in predictBallPosition');
+        return dimensions.height / 2; // Default to center
+      }
+      
+      // If ball velocity is zero or near-zero, avoid division by zero
+      if (Math.abs(ball.velocity.x) < 0.001) {
+        return ball.y + (ball.size ? ball.size / 2 : 0);
+      }
+      
+      // X position of player's side
+      const targetX = playerNumber === 1 ? paddle.width : dimensions.width - paddle.width;
+      
+      // Calculate how long it will take to reach player's side
+      const distX = Math.abs(targetX - ball.x);
+      const timeToImpact = distX / Math.abs(ball.velocity.x);
+      
+      // Predict Y position based on velocity and time
+      let predictedY = ball.y + ball.velocity.y * timeToImpact;
+      
+      console.log(`Ball initial trajectory calculation: targetX=${targetX}, distX=${distX}, timeToImpact=${timeToImpact}, raw predictedY=${predictedY}`);
+      
+      // Adjust for bounces off top and bottom walls
+      if (dimensions.height > 0) {  // Prevent division by zero
+        // Handle multiple bounces if needed
+        if (predictedY < 0 || predictedY > dimensions.height) {
+          const bounceCount = Math.floor(Math.abs(predictedY) / dimensions.height);
+          console.log(`Ball would bounce ${bounceCount} times`);
+          
+          const normalizedY = ((predictedY % dimensions.height) + dimensions.height) % dimensions.height;
+          
+          if (bounceCount % 2 === 1) {
+            // Odd number of bounces means we need to flip
+            predictedY = dimensions.height - normalizedY;
+          } else {
+            // Even number of bounces
+            predictedY = normalizedY;
+          }
+        }
+      }
+      
+      console.log(`Final predicted Y position: ${predictedY}`);
+      return predictedY;
+    } catch (error) {
+      console.error(`Error in predictBallPosition: ${error.message}`);
+      console.error(error.stack);
+      return null;
     }
-    
-    return predictedY;
   }
   
   async sendMove(gameId, playerNumber, direction) {
     try {
       console.log(`Sending move for game ${gameId}: player=${playerNumber}, direction=${direction}`);
       
-      const response = await axios.post(`${this.gameServiceUrl}/${gameId}/move`, {
+      if (!direction) {
+        console.log(`Invalid move direction for game ${gameId}: ${direction}`);
+        return false;
+      }
+      
+      // Validate the URL before making the request
+      if (!this.gameServiceUrl) {
+        console.error(`Game service URL is not configured`);
+        return false;
+      }
+      
+      const moveUrl = `${this.gameServiceUrl}/${gameId}/move`;
+      console.log(`Making POST request to: ${moveUrl}`);
+      
+      const moveData = {
         player: playerNumber,
         direction
-      }, {
+      };
+      console.log(`Move data: ${JSON.stringify(moveData)}`);
+      
+      const response = await axios.post(moveUrl, moveData, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 2000
       });
       
-      console.log(`Move response for game ${gameId}: status=${response.status}, success=${response.data.success}`);
+      console.log(`Move response for game ${gameId}: status=${response.status}, data=${JSON.stringify(response.data)}`);
       
-      return response.status === 200 && response.data.success;
+      if (response.status === 200 && response.data.success) {
+        console.log(`Successfully sent move ${direction} for player ${playerNumber} in game ${gameId}`);
+        return true;
+      } else {
+        console.warn(`Failed to send move: server returned status ${response.status}, success=${response.data.success}`);
+        return false;
+      }
     } catch (error) {
       console.error(`Error sending move for game ${gameId}: ${error.message}`);
+      if (error.response) {
+        console.error(`Response status: ${error.response.status}, data: ${JSON.stringify(error.response.data)}`);
+      } else if (error.request) {
+        console.error(`No response received from server`);
+      }
+      console.error(`Stack trace: ${error.stack}`);
       return false;
     }
   }
