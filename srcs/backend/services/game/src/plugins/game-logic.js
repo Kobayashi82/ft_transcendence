@@ -113,35 +113,63 @@ class PongGame {
   }
 
   // RESET BALL
-  resetBall() {
+  resetBall(scoringPlayer = null) {
     // Center the ball
     this.ballX = this.width / 2;
     this.ballY = this.height / 2;
     
-    // Random angle between -45 and 45 degrees
-    const angle = (Math.random() * 90 - 45) * Math.PI / 180;
+    // Determinar la dirección basada en quién marcó
+    let direction;
+    if (scoringPlayer === 1) {
+      direction = 1;  // Ball goes to player 2 (right)
+    } else if (scoringPlayer === 2) {
+      direction = -1; // Ball goes to player 1 (left)
+    } else {
+      // Random direction for game start
+      direction = Math.random() > 0.5 ? 1 : -1;
+    }
     
-    // Random direction (left or right)
-    const direction = Math.random() > 0.5 ? 1 : -1;
+    // Generar un ángulo aleatorio con más variación
+    // Ahora permitimos ángulos entre -85° y 85°, incluyendo ángulos cercanos a 0° (trayectoria casi recta)
+    // Distribución ponderada para favorecer ángulos moderados pero permitir extremos
+    let angle;
     
-    // Modified velocity calculation to maintain consistent horizontal speed
-    // Horizontal speed is always consistent
-    this.ballVelX = direction * this.initialBallVelocity;
+    // 20% de probabilidad de una trayectoria casi recta (entre -10° y 10°)
+    if (Math.random() < 0.2) {
+      angle = (Math.random() * 20 - 10) * Math.PI / 180;
+    }
+    // 60% de probabilidad de un ángulo moderado (entre -45° y 45°, excluyendo -10° a 10°)
+    else if (Math.random() < 0.8) {
+      // Generar un ángulo entre -45° y 45°, pero excluyendo el rango de -10° a 10°
+      let rawAngle = Math.random() * 35 + 10; // 10-45
+      if (Math.random() > 0.5) rawAngle = -rawAngle; // 50% probabilidad de ser negativo
+      angle = rawAngle * Math.PI / 180;
+    }
+    // 20% de probabilidad de un ángulo más extremo (entre -85° y -45° o entre 45° y 85°)
+    else {
+      let rawAngle = Math.random() * 40 + 45; // 45-85
+      if (Math.random() > 0.5) rawAngle = -rawAngle; // 50% probabilidad de ser negativo
+      angle = rawAngle * Math.PI / 180;
+    }
     
-    // Vertical velocity is scaled by tangent of angle
-    this.ballVelY = this.ballVelX * Math.tan(angle);
+    // Calcular velocidades basadas en el ángulo
+    const baseSpeed = this.initialBallVelocity;
     
-    // Ensure minimum vertical velocity to avoid horizontal stalling
-    if (Math.abs(this.ballVelY) < 2) {
-      this.ballVelY = (Math.random() > 0.5 ? 1 : -1) * 2;
+    // Usar una fórmula trigonométrica para mantener una velocidad total consistente
+    this.ballVelX = direction * baseSpeed * Math.cos(angle);
+    this.ballVelY = baseSpeed * Math.sin(angle);
+    
+    // Asegurar velocidad vertical mínima para evitar trayectorias demasiado horizontales
+    if (Math.abs(this.ballVelY) < 0.5) {
+      this.ballVelY = (Math.random() > 0.5 ? 0.5 : -0.5);
     }
     
     // Reset hit flag
     this.ballHitRecently = false;
     
-    // NUEVO: Activar pausa de la bola por 500ms
+    // Activar pausa de la bola
     this.ballPaused = true;
-    this.ballReadyTime = Date.now() + 500; // La bola estará lista para moverse en 500ms
+    this.ballReadyTime = Date.now() + 500;
   }
   
   // START
@@ -401,13 +429,13 @@ class PongGame {
           // Player 2 scores
           this.player2Score++;
           this.checkWinCondition();
-          this.resetBall();
+          this.resetBall(2);
           break; // Exit the step loop after scoring
         } else if (this.ballX - this.ballSize/2 > this.width) {
           // Player 1 scores
           this.player1Score++;
           this.checkWinCondition();
-          this.resetBall();
+          this.resetBall(1);
           break; // Exit the step loop after scoring
         }
       }
@@ -424,12 +452,12 @@ class PongGame {
         // Player 2 scores
         this.player2Score++;
         this.checkWinCondition();
-        this.resetBall();
+        this.resetBall(2);
       } else if (this.ballX - this.ballSize/2 > this.width) {
         // Player 1 scores
         this.player1Score++;
         this.checkWinCondition();
-        this.resetBall();
+        this.resetBall(1);
       }
     }
   }

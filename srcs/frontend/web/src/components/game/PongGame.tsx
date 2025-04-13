@@ -67,10 +67,6 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
   // Performance detection
   const isLowPerformanceDevice = useRef(false);
   
-  // For ball hit effect
-  const ballHitEffectTimer = useRef<number | null>(null);
-  const ballHitColor = useRef("#ffffff");
-  
   // References for touch control
   const touchTargetsRef = useRef<{[key: number]: number}>({});
   
@@ -81,31 +77,14 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     net: "rgba(255, 255, 255, 0.2)",
     paddle: "#6366f1", // Indigo
     ball: "#ffffff",
-    ballHit: "#a5f3fc", // Light blue when ball hits paddle
-    score: "rgba(255, 255, 255, 0.7)",
-    scoreHighlight: "#6366f1", // Indigo
     activePlayer: "#60a5fa", // Lighter blue for active player's paddle
   };
   
   // Initialize and handle device detection
   useEffect(() => {
-    // Detect low performance devices
-    isLowPerformanceDevice.current = 
-      window.navigator.hardwareConcurrency < 4 || 
-      !!navigator.userAgent.match(/mobile|android/i);
-    
-    // Initial orientation detection
+    isLowPerformanceDevice.current = window.navigator.hardwareConcurrency < 4 || !!navigator.userAgent.match(/mobile|android/i);
     orientationRef.current = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
-    
-    // Initialize ball color
-    ballHitColor.current = colors.ball;
-    
-    // Clean up any existing timers on unmount
-    return () => {
-      if (ballHitEffectTimer.current !== null) {
-        clearTimeout(ballHitEffectTimer.current);
-      }
-    };
+    return () => {};
   }, []);
   
   // Draw function
@@ -174,36 +153,32 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       canvas.height - (scaledPadding * 2)
     );
     
-    // Draw dividing line for touch areas (only during game play)
-    if (gameState.gameState === "playing") {
-      // Vertical center line to indicate sides for touch control
-      ctx.beginPath();
-      ctx.setLineDash([Math.max(3, 5 * scaleFactor.current), Math.max(3, 5 * scaleFactor.current)]); // Scaled dashed line
-      ctx.moveTo(canvas.width / 2, scaledPadding);
-      ctx.lineTo(canvas.width / 2, canvas.height - scaledPadding);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-      ctx.stroke();
-      ctx.setLineDash([]); // Reset to solid line
-    }
-    
     // Draw net with scaled dimensions
     const netWidth = Math.max(1, Math.floor(2 * scaleFactor.current));
     const netX = canvas.width / 2 - netWidth / 2;
-    const netSegmentHeight = Math.max(5, Math.floor(10 * scaleFactor.current));
-    const netGap = Math.max(3, Math.floor(5 * scaleFactor.current));
     
+    // Dibujar línea divisoria sólida (no punteada)
     ctx.fillStyle = colors.net;
-    for (let y = scaledPadding + 5; y < canvas.height - scaledPadding - 5; y += netSegmentHeight + netGap) {
-      ctx.fillRect(netX, y, netWidth, netSegmentHeight);
-    }
+    ctx.fillRect(netX, scaledPadding, netWidth, canvas.height - (scaledPadding * 2));
     
-    // Draw center circle with scaled radius
-    const circleRadius = Math.max(10, Math.floor(20 * scaleFactor.current));
+    // Draw center circle with proper scaling based on canvas dimensions - pero mucho más pequeño
+    const minDimension = Math.min(canvas.width, canvas.height);
+    // Reducimos el tamaño del círculo significativamente (de 0.08 a 0.03)
+    const circleRadius = Math.max(5, minDimension * 0.03);
+    
+    // Dibujar un círculo sólido con borde
     ctx.beginPath();
     ctx.arc(canvas.width / 2, canvas.height / 2, circleRadius, 0, Math.PI * 2);
     ctx.strokeStyle = colors.net;
-    ctx.lineWidth = Math.max(1, Math.floor(1 * scaleFactor.current));
+    ctx.lineWidth = Math.max(1, minDimension * 0.003);
     ctx.stroke();
+    
+    // Dibujar un círculo interior más pequeño para mayor detalle
+    const innerCircleRadius = circleRadius * 0.5;
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, canvas.height / 2, innerCircleRadius, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)"; // Color sutilmente visible
+    ctx.fill();
     
     // Draw player 1 paddle with scaled corners
     const paddleRadius = Math.max(2, Math.floor(4 * scaleFactor.current));
@@ -232,26 +207,11 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     ctx.closePath();
     ctx.fill();
     
-    // Draw ball with scaled glow effect - use current ball color (changes on hit)
+    // Draw ball with scaled color
     ctx.beginPath();
     ctx.arc(scaledBall.x, scaledBall.y, scaledBall.size, 0, Math.PI * 2);
-    ctx.fillStyle = ballHitColor.current;
+    ctx.fillStyle = colors.ball;
     ctx.fill();
-    
-    // Only add glow on higher performance devices
-    if (!isLowPerformanceDevice.current) {
-      // Add a subtle glow to the ball
-      const gradient = ctx.createRadialGradient(
-        scaledBall.x, scaledBall.y, 0,
-        scaledBall.x, scaledBall.y, scaledBall.size * 2
-      );
-      gradient.addColorStop(0, "rgba(255, 255, 255, 0.2)");
-      gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(scaledBall.x, scaledBall.y, scaledBall.size * 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
   
     // If game is not playing, show overlay message
     if (gameState.gameState !== "playing") {
@@ -304,7 +264,6 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
       // El texto principal no debe ocupar más del 70% del ancho del área de juego
       // y el subtexto no debe ocupar más del 80%
       const maxMainFontSize = Math.min(gameAreaHeight * 0.15, gameAreaWidth * 0.05);
-      const maxSubFontSize = maxMainFontSize * 0.6;
       
       // Calcular tamaño base teniendo en cuenta el dispositivo
       const isMobile = window.innerWidth <= 767;
@@ -388,33 +347,6 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     };
   }, [gameState]);
   
-  // Ball hit effect - watch for ball position changes
-  useEffect(() => {
-    const lastState = lastRenderedStateRef.current;
-    if (!lastState || !gameState || gameState.gameState !== 'playing') return;
-    
-    // Check if ball position changed significantly (possible hit)
-    const ballVelocityX = gameState.ball.x - lastState.ball.x;
-    
-    // Detect when the ball changes horizontal direction (paddle hit)
-    if (lastState.ball.x !== gameState.ball.x && 
-       (Math.sign(ballVelocityX) !== Math.sign(ballVelocityX) || Math.abs(ballVelocityX) > 5)) {
-      
-      // Flash the ball color
-      ballHitColor.current = colors.ballHit;
-      
-      // Reset color after a short delay
-      if (ballHitEffectTimer.current !== null) {
-        clearTimeout(ballHitEffectTimer.current);
-      }
-      
-      ballHitEffectTimer.current = window.setTimeout(() => {
-        ballHitColor.current = colors.ball;
-        ballHitEffectTimer.current = null;
-      }, 100) as unknown as number;
-    }
-  }, [gameState?.ball.x, gameState?.ball.y]);
-  
   // Resize canvas effect
   useEffect(() => {
     const handleResize = () => {
@@ -480,8 +412,6 @@ const PongGame: React.FC<PongGameProps> = ({ gameState, playerNumber, onMove, on
     // Function to convert canvas coordinates to game coordinates
     const canvasToGameCoords = (canvasX: number, canvasY: number) => {
       if (!gameState || !gameState.config) return { x: 0, y: 0 };
-      
-      const rect = canvas.getBoundingClientRect();
       
       // Scale factors between canvas and game coordinates
       const scaleX = gameState.config.width / canvas.width;
