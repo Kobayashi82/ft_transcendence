@@ -195,13 +195,13 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                                   <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
                                     {t('stats.round')}
                                   </th>
-                                  <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
+                                  <th className="pb-2 px-4 text-gray-400 font-medium text-sm text-center">
                                     {t('stats.players')}
                                   </th>
-                                  <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
+                                  <th className="pb-2 px-4 text-gray-400 font-medium text-sm text-center">
                                     {t('stats.score')}
                                   </th>
-                                  <th className="pb-2 px-4 text-gray-400 font-medium text-sm">
+                                  <th className="pb-2 px-4 text-gray-400 font-medium text-sm text-center">
                                     {t('stats.duration')}
                                   </th>
                                 </tr>
@@ -212,11 +212,11 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                                     <td className="py-3 px-4 text-gray-300">
                                       {t('stats.round')} {index + 1}
                                     </td>
-                                    <td className="py-3 px-4 text-gray-300">
+                                    <td className="py-3 px-4 text-gray-300 text-center">
                                       {game.players.map(p => p.user_id).join(" 🆚 ")}
                                     </td>
-                                    <td className="py-3 px-4">
-                                      <div className="flex items-center">
+                                    <td className="py-3 px-4 text-center">
+                                      <div className="flex items-center justify-center">
                                         <span className={`font-bold ${game.players[0].user_id === userId ? 'text-blue-400' : 'text-gray-300'}`}>
                                           {game.players[0].score}
                                         </span>
@@ -226,7 +226,7 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                                         </span>
                                       </div>
                                     </td>
-                                    <td className="py-3 px-4 text-gray-300">
+                                    <td className="py-3 px-4 text-gray-300 text-center">
                                       {calculateDuration(game.start_time, game.end_time)}
                                     </td>
                                   </tr>
