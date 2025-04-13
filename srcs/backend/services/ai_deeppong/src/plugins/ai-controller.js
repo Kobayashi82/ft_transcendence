@@ -38,7 +38,10 @@ class AIController {
         lastDirection: null,
         gameState: null,
         intervalId: null,
-        moveIntervalId: null
+        moveIntervalId: null,
+        lastMoveTime: null,
+        continuousMovementDuration: 0, // Nuevo: para controlar movimientos continuos
+        lastGameState: null // Nuevo: para detectar cambios de estado
       };
       
       console.log(`Setting up game data: ${JSON.stringify(gameData)}`);
@@ -95,6 +98,9 @@ class AIController {
     gameData.pendingStopTime = null;
     gameData.previousBall = null;
     gameData.previousTime = null;
+    gameData.continuousMovementDuration = 0;
+    gameData.lastGameState = null;
+    gameData.lastMoveTime = Date.now();
     
     // AJUSTE DE VELOCIDAD ÓPTIMO:
     // La velocidad de la paleta en game-logic.js es constante cuando se mueve, a 5 * dt (dt ≈ 1/60)
@@ -145,8 +151,23 @@ class AIController {
           return;
         }
         
+        // NUEVO: Detectar cambio de estado del juego
+        if (gameData.lastGameState && gameData.lastGameState !== gameState.gameState) {
+          console.log(`AI ${gameId}: Game state changed from ${gameData.lastGameState} to ${gameState.gameState}`);
+          
+          // Si cambiamos a un estado que no es "playing", detener cualquier movimiento
+          if (gameState.gameState !== 'playing' && gameData.lastDirection !== 'stop') {
+            console.log(`AI ${gameId}: Game is not playing anymore, stopping paddle`);
+            await this.sendMove(gameId, gameData.playerNumber, 'stop');
+            gameData.lastDirection = 'stop';
+            gameData.pendingStopTime = null;
+            gameData.continuousMovementDuration = 0;
+          }
+        }
+        
         // Actualizar estado del juego
         gameData.gameState = gameState;
+        gameData.lastGameState = gameState.gameState;
         
         // Si no estamos jugando, no hacer nada más
         if (gameState.gameState !== 'playing') {
@@ -154,6 +175,28 @@ class AIController {
         }
         
         const now = Date.now();
+        
+        // NUEVO: Si llevamos demasiado tiempo en movimiento continuo, forzar una detención
+        if (gameData.lastDirection !== 'stop' && gameData.lastDirection !== null) {
+          gameData.continuousMovementDuration += (now - gameData.lastMoveTime);
+          
+          // Si hemos estado moviéndonos en la misma dirección por más de 3 segundos, forzar una parada
+          if (gameData.continuousMovementDuration > 3000) {
+            console.log(`AI ${gameId}: Forced stop after ${Math.round(gameData.continuousMovementDuration)}ms of continuous movement`);
+            await this.sendMove(gameId, gameData.playerNumber, 'stop');
+            gameData.lastDirection = 'stop';
+            gameData.pendingStopTime = null;
+            gameData.continuousMovementDuration = 0;
+            
+            // Esperar un breve momento antes de decidir la próxima acción
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        } else {
+          // Reiniciar contador si estamos detenidos
+          gameData.continuousMovementDuration = 0;
+        }
+        
+        gameData.lastMoveTime = now;
         
         // Actualizar velocidad de la bola si tenemos datos anteriores
         if (gameData.previousBall && gameData.previousTime && gameState.ball) {
@@ -199,22 +242,29 @@ class AIController {
     // Timer de seguridad: comprobar cada 200ms si es necesario detener la paleta
     gameData.moveIntervalId = setInterval(async () => {
       try {
-        if (!gameData.pendingStopTime) return;
+        // NUEVO: No hacer nada si el juego no está en estado "playing"
+        if (!gameData.gameState || gameData.gameState.gameState !== 'playing') return;
         
         const now = Date.now();
-        if (now >= gameData.pendingStopTime) {
-          console.log(`AI ${gameId}: Executing STOP command at ${now}`);
-          await this.sendMove(gameId, gameData.playerNumber, 'stop');
-          gameData.lastDirection = 'stop';
-          gameData.pendingStopTime = null;
+        
+        if (gameData.pendingStopTime) {
+          if (now >= gameData.pendingStopTime) {
+            console.log(`AI ${gameId}: Executing STOP command at ${now}`);
+            await this.sendMove(gameId, gameData.playerNumber, 'stop');
+            gameData.lastDirection = 'stop';
+            gameData.pendingStopTime = null;
+            gameData.continuousMovementDuration = 0;
+          }
         }
         
         // Verificar si ha pasado demasiado tiempo desde el último comando (para evitar bloqueos)
-        if (gameData.lastMoveTime && (now - gameData.lastMoveTime > 5000) && gameData.lastDirection !== 'stop') {
-          console.log(`AI ${gameId}: No movement detected for 5 seconds, sending STOP as failsafe`);
+        if (gameData.lastMoveTime && gameData.lastDirection !== 'stop' && 
+            (now - gameData.lastMoveTime > 2500)) { // Reducido de 5000ms a 2500ms
+          console.log(`AI ${gameId}: No movement detected for ${Math.round((now - gameData.lastMoveTime)/1000)}s, sending STOP as failsafe`);
           await this.sendMove(gameId, gameData.playerNumber, 'stop');
           gameData.lastDirection = 'stop';
           gameData.pendingStopTime = null;
+          gameData.continuousMovementDuration = 0;
         }
       } catch (error) {
         console.error(`Error in stop-timer loop ${gameId}: ${error.message}`);
@@ -228,8 +278,11 @@ class AIController {
     
     const { gameState, playerNumber, difficulty } = gameData;
     
+    // NUEVO: Verificar explícitamente que el juego está en estado "playing"
+    if (gameState.gameState !== 'playing') return;
+    
     // Verificar que tenemos los datos necesarios
-    if (!gameState.ball || gameState.gameState !== 'playing') return;
+    if (!gameState.ball) return;
     
     const now = Date.now();
     gameData.lastMoveTime = now; // Actualizar timestamp del último movimiento procesado
@@ -249,23 +302,31 @@ class AIController {
     // Distancia al objetivo
     const distanceToTarget = targetPosition - paddleCenter;
     
-    // Umbral basado en dificultad - Se mantiene como está
+    // MODIFICADO: Umbral basado en dificultad - Aumentado para mayor estabilidad y menos movimientos
     let threshold;
     switch (difficulty) {
-      case 'impossible': threshold = 5; break; // un poco más de margen
-      case 'hard': threshold = 10; break;
-      case 'medium': threshold = 20; break;
-      case 'easy': threshold = 30; break;
-      default: threshold = 15;
+      case 'impossible': threshold = 10; break; // Aumentado de 5 a 10
+      case 'hard': threshold = 20; break; // Aumentado de 10 a 20
+      case 'medium': threshold = 30; break; // Aumentado de 20 a 30
+      case 'easy': threshold = 40; break; // Aumentado de 30 a 40
+      default: threshold = 25; // Aumentado de 15 a 25
+    }
+    
+    // NUEVO: Si la paleta ya estaba detenida y la distancia sigue siendo pequeña
+    // mantenemos la paleta quieta incluso con un umbral mayor para evitar movimientos innecesarios
+    if (gameData.lastDirection === 'stop') {
+      // Umbral más amplio cuando ya estamos parados para evitar reiniciar movimiento por pequeños cambios
+      threshold *= 1.5; // 50% más de margen cuando ya estamos detenidos
     }
     
     // Si ya estamos suficientemente cerca, quedarnos quietos
     if (Math.abs(distanceToTarget) <= threshold) {
       if (gameData.lastDirection !== 'stop') {
-        console.log(`AI ${gameId}: Already at target position, stopping`);
+        console.log(`AI ${gameId}: Already at target position (distance=${Math.round(distanceToTarget)}px, threshold=${threshold}px), stopping`);
         this.sendMove(gameId, playerNumber, 'stop');
         gameData.lastDirection = 'stop';
         gameData.pendingStopTime = null; // Cancelar cualquier parada programada
+        gameData.continuousMovementDuration = 0; // Reiniciar contador de movimiento continuo
       }
       return;
     }
@@ -273,26 +334,42 @@ class AIController {
     // Determinar dirección
     const direction = distanceToTarget > 0 ? 'down' : 'up';
     
-    // Si ya tenemos programada una parada y no ha cambiado la dirección, respetar la parada
-    if (gameData.pendingStopTime !== null && gameData.lastDirection === direction) {
-      // Verificar que la parada programada aún tiene sentido (podría haber rebotado la bola)
-      const currentTimeToTarget = Math.abs(distanceToTarget) / gameData.paddleSpeed * 1000;
-      const projectedStopTime = now + currentTimeToTarget;
-      
-      // Si la diferencia es significativa (más de 100ms), actualizar el tiempo de parada
-      if (Math.abs(projectedStopTime - gameData.pendingStopTime) > 100) {
-        gameData.pendingStopTime = projectedStopTime;
-        console.log(`AI ${gameId}: Updated stop time to ${Math.round(currentTimeToTarget)}ms from now`);
+    // MODIFICADO: Si ya tenemos programada una parada pero la dirección ha cambiado, invalidar la parada
+    if (gameData.pendingStopTime !== null) {
+      if (gameData.lastDirection !== direction) {
+        // La dirección cambió, cancelar la parada programada
+        console.log(`AI ${gameId}: Direction changed from ${gameData.lastDirection} to ${direction}, cancelling scheduled stop`);
+        gameData.pendingStopTime = null;
+      } else {
+        // Verificar que la parada programada aún tiene sentido (podría haber rebotado la bola)
+        const currentTimeToTarget = Math.abs(distanceToTarget) / gameData.paddleSpeed * 1000;
+        const projectedStopTime = now + currentTimeToTarget;
+        
+        // Si la diferencia es significativa (más de 100ms), actualizar el tiempo de parada
+        if (Math.abs(projectedStopTime - gameData.pendingStopTime) > 100) {
+          gameData.pendingStopTime = projectedStopTime;
+          console.log(`AI ${gameId}: Updated stop time to ${Math.round(currentTimeToTarget)}ms from now`);
+        }
+        return;
       }
-      return;
     }
     
-    // Si no hay cambio de dirección y estamos en movimiento, no hacer nada
+    // MODIFICADO: Si no hay cambio de dirección y estamos en movimiento, verificar si debemos actualizar la parada
     if (direction === gameData.lastDirection && gameData.lastDirection !== 'stop') {
       // Pero actualizamos el tiempo de parada ya que la predicción puede haber cambiado
       const currentTimeToTarget = Math.abs(distanceToTarget) / gameData.paddleSpeed * 1000;
-      gameData.pendingStopTime = now + currentTimeToTarget;
-      console.log(`AI ${gameId}: Continuing ${direction}, updated stop time to ${Math.round(currentTimeToTarget)}ms from now`);
+      
+      // NUEVO: Limitar el tiempo máximo de movimiento continuo a 2 segundos
+      const maxMoveTime = 2000; // 2 segundos
+      const timeToStop = Math.min(currentTimeToTarget, maxMoveTime);
+      
+      gameData.pendingStopTime = now + timeToStop;
+      
+      if (timeToStop < currentTimeToTarget) {
+        console.log(`AI ${gameId}: Limiting continuous ${direction} movement to ${Math.round(timeToStop)}ms (was ${Math.round(currentTimeToTarget)}ms)`);
+      } else {
+        console.log(`AI ${gameId}: Continuing ${direction}, updated stop time to ${Math.round(currentTimeToTarget)}ms from now`);
+      }
       return;
     }
     
@@ -313,26 +390,29 @@ class AIController {
     
     const timeToTarget = Math.abs(distanceToTarget) / paddleSpeed * 1000 * correctionFactor; // en milisegundos
     
-    // Si la distancia es muy grande, podríamos no llegar, así que no programamos parada
-    if (timeToTarget > config.ai.updateInterval * 3) {
-      console.log(`AI ${gameId}: Moving ${direction}, target too far (${Math.round(timeToTarget)}ms), will recalculate later`);
-      this.sendMove(gameId, playerNumber, direction);
-      gameData.lastDirection = direction;
-      gameData.pendingStopTime = null;
-      return;
+    // MODIFICADO: Incluso para distancias grandes, programamos una parada máxima
+    let stopTime;
+    if (timeToTarget > config.ai.updateInterval * 2) {
+      console.log(`AI ${gameId}: Moving ${direction}, target far (${Math.round(timeToTarget)}ms), limiting movement time`);
+      // Limitar el movimiento a un máximo de 2 segundos antes de recalcular
+      stopTime = now + Math.min(2000, config.ai.updateInterval * 2);
+    } else {
+      // Programar la detención para el momento exacto con el factor de corrección aplicado
+      stopTime = now + timeToTarget;
     }
     
-    // Iniciar movimiento y programar la parada con tiempo corregido
     console.log(`AI ${gameId}: Moving ${direction} to target Y=${Math.round(targetPosition)}, ` +
-               `current Y=${Math.round(paddleCenter)}, distance=${Math.round(distanceToTarget)}, ` +
-               `will stop in ${Math.round(timeToTarget)}ms`);
-               
+                `current Y=${Math.round(paddleCenter)}, distance=${Math.round(distanceToTarget)}, ` +
+                `will stop in ${Math.round(stopTime - now)}ms`);
+                
     this.sendMove(gameId, playerNumber, direction);
     gameData.lastDirection = direction;
-    
-    // Programar la detención para el momento exacto con el factor de corrección aplicado
-    const stopTime = now + timeToTarget;
     gameData.pendingStopTime = stopTime;
+    
+    // Resetear contador de movimiento continuo al cambiar de dirección
+    if (direction !== gameData.lastDirection) {
+      gameData.continuousMovementDuration = 0;
+    }
   }
   
   calculateTargetPosition(gameId) {
@@ -349,9 +429,9 @@ class AIController {
     const gameWidth = config.width;
     const gameHeight = config.height;
     
-    // Si no tenemos datos de velocidad todavía, simplemente seguir la pelota
+    // Si no tenemos datos de velocidad todavía, mantener la paleta quieta en el centro
     if (!gameData.ballVelocity) {
-      return ball.y;
+      return gameHeight / 2; // Posición central
     }
     
     // Determinar si la bola viene hacia nosotros
@@ -359,25 +439,26 @@ class AIController {
     const isComingTowardsUs = (playerNumber === 1 && ballVelX < 0) ||
                              (playerNumber === 2 && ballVelX > 0);
     
-    // Si la bola no viene hacia nosotros, mantenerse cerca del centro
-    // pero con una ligera inclinación hacia la pelota para anticipar
+    // MODIFICADO: Si la bola no viene hacia nosotros, mantener la posición actual
+    // para evitar completamente los movimientos erráticos
     if (!isComingTowardsUs) {
-      // Más inclinado hacia la pelota en dificultades más altas
-      let followFactor;
-      switch (difficulty) {
-        case 'impossible': followFactor = 0.3; break; // Mayor anticipación
-        case 'hard': followFactor = 0.25; break;
-        case 'medium': followFactor = 0.2; break;
-        case 'easy': followFactor = 0.15; break; // Menos anticipación
-        default: followFactor = 0.2;
-      }
-      return gameHeight / 2 * (1 - followFactor) + ball.y * followFactor;
+      // Obtener la posición actual de la paleta
+      const myPlayer = playerNumber === 1 ? gameState.player1 : gameState.player2;
+      if (!myPlayer) return gameHeight / 2;
+      
+      const paddleY = myPlayer.y;
+      const paddleHeight = gameState.config.paddleHeight;
+      const paddleCenter = paddleY + paddleHeight / 2;
+      
+      // IMPORTANTE: Devolver la posición ACTUAL de la paleta para que no se mueva
+      return paddleCenter;
     }
     
+    // A partir de aquí es el código original para cuando la bola viene hacia nosotros
     // Calcular la posición X de nuestra paleta
     const paddleX = playerNumber === 1 ? config.paddleWidth : gameWidth - config.paddleWidth;
     
-    // Tiempo hasta el impacto
+    // Tiempo hasta el impacto - cálculo más preciso
     const distX = Math.abs(paddleX - ball.x);
     const timeToImpact = Math.abs(distX / ballVelX);
     
@@ -385,29 +466,28 @@ class AIController {
     let predictionAccuracy;
     switch (difficulty) {
       case 'impossible': predictionAccuracy = 1.0; break; // Predicción perfecta
-      case 'hard': predictionAccuracy = 0.98; break;
-      case 'medium': predictionAccuracy = 0.95; break;
-      case 'easy': predictionAccuracy = 0.9; break; // Predicción imprecisa
-      default: predictionAccuracy = 0.95;
+      case 'hard': predictionAccuracy = 0.99; break; // Muy preciso
+      case 'medium': predictionAccuracy = 0.96; break; // Bastante preciso
+      case 'easy': predictionAccuracy = 0.92; break; // Predicción menos precisa
+      default: predictionAccuracy = 0.96;
     }
     
     // Velocidad Y corregida para la predicción
     const correctedVelY = gameData.ballVelocity.y * predictionAccuracy;
     
-    // Predicción mejorada con múltiples rebotes
+    // ALGORITMO MEJORADO DE PREDICCIÓN CON MÚLTIPLES REBOTES
     let predictedY = ball.y;
     let remainingTime = timeToImpact;
     let currentVelY = correctedVelY;
+    let maxBounces = 10; // Limitar número de rebotes para evitar bucles infinitos
+    let bounceCount = 0;
     
     // Simular el movimiento de la pelota con rebotes hasta el tiempo de impacto
-    while (remainingTime > 0) {
+    while (remainingTime > 0 && bounceCount < maxBounces) {
       // Calcular tiempo hasta el siguiente rebote (si lo hay)
-      let timeToNextBounce = Infinity;
-      if (currentVelY > 0) {
-        timeToNextBounce = (gameHeight - predictedY) / currentVelY;
-      } else if (currentVelY < 0) {
-        timeToNextBounce = -predictedY / currentVelY;
-      }
+      let timeToTopBound = currentVelY < 0 ? -predictedY / currentVelY : Infinity;
+      let timeToBottomBound = currentVelY > 0 ? (gameHeight - predictedY) / currentVelY : Infinity;
+      let timeToNextBounce = Math.min(timeToTopBound, timeToBottomBound);
       
       // Si no hay rebote antes del impacto, calcular posición final
       if (timeToNextBounce >= remainingTime) {
@@ -415,35 +495,58 @@ class AIController {
         break;
       }
       
-      // Actualizar posición hasta el rebote
+      // Ajuste de precisión en los rebotes - simular pequeñas pérdidas de energía
+      // Más pronunciado en dificultades más bajas
+      let energyLoss = 0;
+      switch (difficulty) {
+        case 'impossible': energyLoss = 0; break; // Sin pérdida
+        case 'hard': energyLoss = 0.002; break; // Mínima pérdida
+        case 'medium': energyLoss = 0.005; break; // Pérdida moderada
+        case 'easy': energyLoss = 0.01; break; // Mayor pérdida
+        default: energyLoss = 0.005;
+      }
+      
+      // Actualizar posición hasta el rebote con mayor precisión
       predictedY += currentVelY * timeToNextBounce;
-      // Invertir velocidad Y (rebote)
-      currentVelY = -currentVelY;
+      
+      // Invertir velocidad Y (rebote) con pequeña pérdida de energía para mayor realismo
+      currentVelY = -currentVelY * (1 - energyLoss);
+      
+      // Corregir posición exactamente en los bordes para evitar errores
+      if (Math.abs(predictedY) < 0.001) predictedY = 0.001;
+      if (Math.abs(predictedY - gameHeight) < 0.001) predictedY = gameHeight - 0.001;
+      
       // Reducir tiempo restante
       remainingTime -= timeToNextBounce;
-      
-      // Ajustar posición después del rebote para evitar errores de punto flotante
-      if (predictedY <= 0) predictedY = 0.001;
-      if (predictedY >= gameHeight) predictedY = gameHeight - 0.001;
+      bounceCount++;
     }
     
     // Aplicar pequeñas variaciones aleatorias según dificultad
     // para simular comportamiento humano
     if (difficulty !== 'impossible') {
       const randomRange = {
-        'easy': 20,
-        'medium': 10,
-        'hard': 5
+        'easy': 25,
+        'medium': 12,
+        'hard': 6
       }[difficulty] || 0;
       
       if (randomRange > 0) {
-        const randomOffset = (Math.random() * 2 - 1) * randomRange;
+        // Generar una desviación que sigue una distribución más natural
+        // Más probable estar cerca del centro de la distribución
+        const randomOffset = (Math.random() + Math.random() - 1) * randomRange;
         predictedY += randomOffset;
       }
     }
     
     // Garantizar que permanezca dentro de los límites
-    predictedY = Math.max(0, Math.min(gameHeight, predictedY));
+    const paddleHeight = config.paddleHeight;
+    const paddleHalfHeight = paddleHeight / 2;
+    
+    // Ajustar para que el centro de la paleta esté en la posición calculada
+    predictedY = Math.max(paddleHalfHeight, Math.min(gameHeight - paddleHalfHeight, predictedY));
+    
+    // Guardar esta posición como la última calculada
+    gameData.lastTargetPosition = predictedY;
     
     return predictedY;
   }

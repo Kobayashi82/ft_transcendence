@@ -23,11 +23,11 @@ const config = {
   
   // Configuración de la IA
   ai: {
-    // Intervalo de actualización (ms) - DEBE SER EXACTAMENTE 1000ms (1 segundo)
-    updateInterval: 1000,
+    // Intervalo de actualización (ms) - Aumentado para reducir el temblor
+    updateInterval: 200,
     
-    // Desplazamiento del centro de la paleta para simular imprecisión
-    paddleCenterOffset: 0.1,
+    // Desplazamiento del centro de la paleta para simular imprecisión - Reducido para más estabilidad
+    paddleCenterOffset: 0.05,
     
     // Dificultad predeterminada
     defaultDifficulty: 'medium',
@@ -36,27 +36,27 @@ const config = {
     difficultyLevels: {
       easy: {
         errorRate: 0.3,
-        reactionDelay: 1,     // Reacción inmediata (1ms)
+        reactionDelay: 20,     // Reacción aumentada para reducir movimientos erráticos
         predictAccuracy: 0.7,
-        stabilityFactor: 0.4  // Menos estable (más movimientos aleatorios)
+        stabilityFactor: 0.7  // Aumentado para más estabilidad
       },
       medium: {
         errorRate: 0.15,
-        reactionDelay: 1,     // Reacción inmediata (1ms)
+        reactionDelay: 15,     // Reacción aumentada para reducir movimientos erráticos
         predictAccuracy: 0.85,
-        stabilityFactor: 0.6  // Estabilidad media
+        stabilityFactor: 0.8  // Aumentado para más estabilidad
       },
       hard: {
         errorRate: 0.05,
-        reactionDelay: 1,     // Reacción inmediata (1ms)
+        reactionDelay: 10,     // Pequeño retraso para movimientos más suaves
         predictAccuracy: 0.95,
-        stabilityFactor: 0.7  // Buena estabilidad
+        stabilityFactor: 0.9  // Aumentado para más estabilidad
       },
       impossible: {
         errorRate: 0.01,      // Casi nunca comete errores
-        reactionDelay: 1,     // Reacción inmediata (1ms)
+        reactionDelay: 5,     // Pequeño retraso para movimientos más naturales
         predictAccuracy: 0.99, // Alta precisión
-        stabilityFactor: 0.8  // Muy estable (casi sin movimientos erráticos)
+        stabilityFactor: 0.95  // Muy estable (casi sin movimientos erráticos)
       }
     }
   }
