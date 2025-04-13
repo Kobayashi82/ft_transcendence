@@ -14,6 +14,7 @@ interface GameModalProps {
   onClose: () => void;
   isTournament?: boolean;
   tournamentRound?: number;
+  tournamentName?: string;
 }
 
 type GameState = 'waiting' | 'playing' | 'paused' | 'finished' | 'next' | 'cancelled';
@@ -67,12 +68,7 @@ const GameModal: React.FC<GameModalProps> = ({
   gameId,
   player1,
   player2,
-  ballSpeed,
-  paddleSize,
-  winningScore,
-  accelerationEnabled,
   onClose,
-  isTournament = false,
   tournamentRound = 1
 }) => {
   const { t } = useLanguage();

@@ -40,7 +40,7 @@ const QuickMatchPage: React.FC = () => {
   const [showAIList, setShowAIList] = useState<number | null>(null);
 
   // Refs for dropdown areas
-  const dropdownRefs = React.useRef<(HTMLDivElement | null)[]>([null, null]);
+  const dropdownRefs = React.useRef<Array<HTMLDivElement | null>>([null, null]);
 
   // State for game settings
   const [ballSpeed, setBallSpeed] = useState<string>("medium");
@@ -98,8 +98,9 @@ const QuickMatchPage: React.FC = () => {
         
         // Check if the data is in the expected format
         if (data && data.data && Array.isArray(data.data)) {
-          // Ordenar jugadores alfabéticamente por user_id
-          const sortedPlayers = [...data.data].sort((a, b) => 
+          // Filtrar jugadores AI y ordenar alfabéticamente por user_id
+          const filteredPlayers = data.data.filter((player: Player) => !player.isAI);
+          const sortedPlayers = [...filteredPlayers].sort((a, b) => 
             a.user_id.localeCompare(b.user_id)
           );
           setPlayers(sortedPlayers);
@@ -357,7 +358,12 @@ const QuickMatchPage: React.FC = () => {
                         <label className="block text-gray-300 text-sm font-medium mb-2">
                           {t('quickMatch.player')} {index + 1}
                         </label>
-                        <div className="relative" ref={(el) => (dropdownRefs.current[index] = el)}>
+                        <div 
+                          className="relative" 
+                          ref={el => {
+                            dropdownRefs.current[index] = el;
+                          }}
+                        >
                           <input
                             type="text"
                             value={selectedPlayers[index]}
@@ -380,7 +386,7 @@ const QuickMatchPage: React.FC = () => {
                           </button>
                           {showAIList === index && (
                             <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                              <div className="flex h-40 mb-1">
+                              <div className="flex h-34 mb-1">
                                 {/* AI Opponents Column */}
                                 <div className="w-1/2 border-r border-gray-700 overflow-y-auto">
                                   <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
@@ -390,7 +396,7 @@ const QuickMatchPage: React.FC = () => {
                                     {getAIOpponents().map((ai) => (
                                       <div
                                         key={`ai-${ai}`}
-                                        className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
+                                        className="px-3 py-1 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
                                         onClick={() => selectPlayer(index, ai)}
                                       >
                                         {ai}
@@ -417,7 +423,7 @@ const QuickMatchPage: React.FC = () => {
                                       .map((player) => (
                                         <div
                                           key={player.id}
-                                          className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
+                                          className="px-3 py-1 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
                                           onClick={() => selectPlayer(index, player.user_id)}
                                         >
                                           {player.user_id}

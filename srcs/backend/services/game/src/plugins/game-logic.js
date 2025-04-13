@@ -83,6 +83,9 @@ class PongGame {
     this.pauseTime = null; // Timestamp when the game was paused
     this.totalPausedTime = 0; // Total time spent in pause (ms)
     this.pauseIntervals = []; // Track all pause intervals [start, end]
+
+    // Performance tracking for adaptive timing
+    this.consecutiveSlowFrames = 0;
   }
 
   // Método para verificar si un nombre corresponde a una IA
@@ -336,13 +339,25 @@ class PongGame {
   update() {
     if (this.gameState !== 'playing') return;
     
-    // Calculate time delta with maximum limit to prevent large jumps
+    // Calculate time delta with adaptive limits based on performance
     const now = Date.now();
-    const rawDt = (now - this.lastUpdate) / 16; // Normalize to 60 FPS
-    const dt = Math.min(rawDt, 3); // Limit maximum dt to 3 frames worth (prevents teleporting)
+    const rawDt = (now - this.lastUpdate) / 1000 * 60; // Convert to frames at 60 FPS
+    
+    // Adaptive maximum dt to prevent large jumps but still maintain smoothness
+    // Allow larger jumps on slow networks while maintaining game speed
+    const maxDt = Math.min(5, Math.max(3, this.consecutiveSlowFrames * 0.5));
+    const dt = Math.min(rawDt, maxDt);
+    
+    // Track performance for adaptive timing
+    if (rawDt > 3) {
+      this.consecutiveSlowFrames = Math.min(10, this.consecutiveSlowFrames + 1);
+    } else {
+      this.consecutiveSlowFrames = Math.max(0, this.consecutiveSlowFrames - 0.5);
+    }
+    
     this.lastUpdate = now;
     
-    // Update paddles based on movement state
+    // Update paddles based on movement state with variable speed
     const paddleSpeed = 5 * dt;
     
     if (this.player1Movement === 'up') {

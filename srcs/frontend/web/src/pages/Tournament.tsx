@@ -40,7 +40,7 @@ const TournamentPage: React.FC = () => {
   const [showAIList, setShowAIList] = useState<number | null>(null);
 
   // Refs for dropdown areas
-  const dropdownRefs = React.useRef<(HTMLDivElement | null)[]>([null, null, null, null]);
+  const dropdownRefs = React.useRef<Array<HTMLDivElement | null>>([null, null, null, null]);
 
   // State for game settings
   const [tournamentName, setTournamentName] = useState<string>("");
@@ -99,8 +99,8 @@ const TournamentPage: React.FC = () => {
         
         // Check if the data is in the expected format
         if (data && data.data && Array.isArray(data.data)) {
-          // Filtrar jugadores IA de la lista y ordenar alfabéticamente por user_id
-          const filteredPlayers = data.data.filter(player => !player.isAI);
+          // Filter out AI players from the list and sort alphabetically by user_id
+          const filteredPlayers = data.data.filter((player: Player) => !player.isAI);
           const sortedPlayers = [...filteredPlayers].sort((a, b) => 
             a.user_id.localeCompare(b.user_id)
           );
@@ -252,13 +252,6 @@ const TournamentPage: React.FC = () => {
     return aiNames.some(ai => ai.toLowerCase() === playerName.toLowerCase());
   };
 
-  // Normalizar el nombre de una IA para usar el formato exacto del backend
-  const normalizeAIName = (playerName: string) => {
-    const aiNames = getAIOpponents();
-    const matchedAI = aiNames.find(ai => ai.toLowerCase() === playerName.toLowerCase());
-    return matchedAI || playerName; // Devuelve el nombre normalizado o el original si no es IA
-  };
-
   // Get display text for speed/size options
   const getOptionDisplayText = (option: string) => {
     switch(option.toLowerCase()) {
@@ -366,7 +359,12 @@ const TournamentPage: React.FC = () => {
                           <label className="block text-gray-300 text-sm font-medium mb-2">
                             {t('tournament.player')} {index + 1}
                           </label>
-                          <div className="relative" ref={(el) => (dropdownRefs.current[index] = el)}>
+                          <div 
+                            className="relative" 
+                            ref={el => {
+                              dropdownRefs.current[index] = el;
+                            }}
+                          >
                             <input
                               type="text"
                               value={selectedPlayers[index]}
@@ -389,7 +387,7 @@ const TournamentPage: React.FC = () => {
                             </button>
                             {showAIList === index && (
                               <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                                <div className="flex h-40 mb-1">
+                                <div className="flex h-34 mb-1">
                                   {/* Human Players Column - Ahora ocupa el 100% del ancho */}
                                   <div className="w-full overflow-y-auto">
                                     <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
@@ -397,11 +395,18 @@ const TournamentPage: React.FC = () => {
                                     </div>
                                     <div className="p-2">
                                       {players
-                                        .filter(player => !selectedPlayers.includes(player.user_id) || player.user_id === selectedPlayers[index])
+                                        .filter(player => {
+                                          // Primero asegurarse de que no es una IA
+                                          const aiNames = getAIOpponents();
+                                          const isAI = aiNames.includes(player.user_id) || player.isAI;
+                                          
+                                          // Solo mostrar jugadores que no son IA y no están seleccionados en otra posición
+                                          return !isAI && (!selectedPlayers.includes(player.user_id) || player.user_id === selectedPlayers[index]);
+                                        })
                                         .map((player) => (
                                           <div
                                             key={player.id}
-                                            className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
+                                            className="px-3 py-1 hover:bg-gray-700 cursor-pointer text-gray-300 text-sm"
                                             onClick={() => selectPlayer(index, player.user_id)}
                                           >
                                             {player.user_id}
