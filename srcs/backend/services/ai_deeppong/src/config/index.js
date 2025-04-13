@@ -23,7 +23,7 @@ const config = {
   
   // Configuración de la IA
   ai: {
-    // Intervalo de actualización (ms)
+    // Intervalo de actualización (ms) - Volver a 1000ms (1 segundo)
     updateInterval: 1000,
     
     // Desplazamiento del centro de la paleta para simular imprecisión
@@ -35,24 +35,28 @@ const config = {
     // Niveles de dificultad
     difficultyLevels: {
       easy: {
-        errorRate: 0.4,       // Probabilidad de cometer un error
-        reactionDelay: 500,   // Retraso en la reacción (ms)
-        predictAccuracy: 0.6  // Precisión en la predicción de la trayectoria
+        errorRate: 0.3,
+        reactionDelay: 1,     // Reacción inmediata (1ms)
+        predictAccuracy: 0.7,
+        stabilityFactor: 0.4  // Menos estable (más movimientos aleatorios)
       },
       medium: {
-        errorRate: 0.2,
-        reactionDelay: 300,
-        predictAccuracy: 0.8
+        errorRate: 0.15,
+        reactionDelay: 1,     // Reacción inmediata (1ms)
+        predictAccuracy: 0.85,
+        stabilityFactor: 0.6  // Estabilidad media
       },
       hard: {
-        errorRate: 0.1,
-        reactionDelay: 150,
-        predictAccuracy: 0.9
+        errorRate: 0.05,
+        reactionDelay: 1,     // Reacción inmediata (1ms)
+        predictAccuracy: 0.95,
+        stabilityFactor: 0.7  // Buena estabilidad
       },
       impossible: {
-        errorRate: 0.05,
-        reactionDelay: 50,
-        predictAccuracy: 0.98
+        errorRate: 0.01,      // Casi nunca comete errores
+        reactionDelay: 1,     // Reacción inmediata (1ms)
+        predictAccuracy: 0.99, // Alta precisión
+        stabilityFactor: 0.8  // Muy estable (casi sin movimientos erráticos)
       }
     }
   }
