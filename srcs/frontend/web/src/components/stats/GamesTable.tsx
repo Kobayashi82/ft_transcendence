@@ -94,59 +94,6 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
     return opponent ? opponent.score : 0;
   };
 
-  // Format settings uniformly
-  const formatSettings = (settings: GameDetails['settings']) => {
-    if (!settings) return [];
-
-    const formattedSettings = [];
-
-    // Ball Speed
-    if (settings.ballSpeed) {
-      const speedKey = {
-        slow: t('stats.slow'),
-        medium: t('stats.medium'),
-        fast: t('stats.fast')
-      }[settings.ballSpeed];
-      
-      formattedSettings.push({
-        key: t('stats.ballSpeed'),
-        value: speedKey || settings.ballSpeed
-      });
-    }
-
-    // Paddle Size
-    if (settings.paddleSize) {
-      const sizeKey = {
-        slow: t('stats.slow'),
-        medium: t('stats.medium'),
-        fast: t('stats.fast')
-      }[settings.paddleSize];
-
-      formattedSettings.push({
-        key: t('stats.paddleSize'),
-        value: sizeKey || settings.paddleSize
-      });
-    }
-
-    // Speed Increment (acceleration)
-    if (settings.speedIncrement !== undefined) {
-      formattedSettings.push({
-        key: t('stats.speedIncrement'),
-        value: settings.speedIncrement ? t('stats.yes') : t('stats.no')
-      });
-    }
-
-    // Points to Win
-    if (settings.pointsToWin) {
-      formattedSettings.push({
-        key: t('stats.pointsToWin'),
-        value: settings.pointsToWin.toString()
-      });
-    }
-
-    return formattedSettings;
-  };
-
   return (
     <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl">
       <div className="h-2 bg-gradient-to-r from-purple-600 to-pink-600"></div>

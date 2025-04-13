@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Award, Zap, BarChart3, Users, Medal } from "lucide-react";
+import { Trophy, Award, Zap, BarChart3, Medal } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 
@@ -183,7 +183,7 @@ const LeaderboardPage: React.FC = () => {
   };
 
   // Get the right value to display based on the active category
-  const getDisplayValue = (entry: LeaderboardEntry, index: number): string => {
+  const getDisplayValue = (entry: LeaderboardEntry, _: number): string => {
     switch (activeCategory) {
       case 'wins':
         return formatValue(entry.wins);

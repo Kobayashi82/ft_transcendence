@@ -180,7 +180,7 @@ const RankingsPage: React.FC = () => {
         }));
         
         // Ordenar los usuarios alfabéticamente por user_id
-        const sortedUsers = users.sort((a, b) => a.user_id.localeCompare(b.user_id));
+        const sortedUsers = users.sort((a: User, b: User) => a.user_id.localeCompare(b.user_id));
         
         setUsersList(sortedUsers);
         setFilteredUsers(sortedUsers);

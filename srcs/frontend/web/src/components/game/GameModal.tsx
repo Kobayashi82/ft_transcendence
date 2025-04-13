@@ -81,11 +81,9 @@ const GameModal: React.FC<GameModalProps> = ({
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
-  const [connectionLost, setConnectionLost] = useState<boolean>(false);
   const [persistentConnectionLost, setPersistentConnectionLost] = useState<boolean>(false);
   const connectionLostTimeoutRef = useRef<number | null>(null);
   const [currentRound, setCurrentRound] = useState<number>(tournamentRound);
-  const [nextButtonEnabled, setNextButtonEnabled] = useState<boolean>(false);
   const [currentGameId, setCurrentGameId] = useState<string>(gameId);
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(window.innerHeight > window.innerWidth ? 'portrait' : 'landscape');
   const [screenSize, setScreenSize] = useState<'small' | 'medium' | 'large'>(window.innerWidth < 640 ? 'small' : window.innerWidth < 1024 ? 'medium' : 'large');
@@ -139,7 +137,6 @@ const GameModal: React.FC<GameModalProps> = ({
         ws.onopen = () => {
           setIsConnected(true);
           setError(null);
-          setConnectionLost(false);
           setPersistentConnectionLost(false);
           
           // Cancelar cualquier timeout de conexión perdida
@@ -180,8 +177,6 @@ const GameModal: React.FC<GameModalProps> = ({
             switch (message.type) {
               case "state":
                 setGameState(message.data);
-                if (message.data?.gameState === "next") setNextButtonEnabled(true);
-                else									setNextButtonEnabled(false);
                 break;            
               case "started":
                 setGameState(message.gameState);
@@ -232,15 +227,29 @@ const GameModal: React.FC<GameModalProps> = ({
         };
         
         // Handle connection close
-        ws.onclose = (event) => {
+        ws.onclose = () => {
           setIsConnected(false);
           
-          if (event.code === 1006) {           
-            setConnectionLost(true);
-            connectionLostTimeoutRef.current = window.setTimeout(() => { setPersistentConnectionLost(true); }, 5000);
-          }
+          // Update game state to show the game as cancelled due to connection loss
+          setGameState(prev => prev ? {
+            ...prev,
+            gameState: "cancelled"
+          } : null);
+         
+          // Set a timeout to update the persistent connection loss state
+          // This will show a more prominent message after a delay
+          connectionLostTimeoutRef.current = window.setTimeout(() => { 
+            setError(t ? t('quickMatch.connectionLostGameCancelled') : "Connection lost. Game has been cancelled.");
+            setPersistentConnectionLost(true); 
+          }, 2000);
         };
-        ws.onerror = (_) => setConnectionLost(true);
+        
+        ws.onerror = (_) => {
+          setGameState(prev => prev ? {
+            ...prev,
+            gameState: "cancelled"
+          } : null);
+        };
       } else if (wsRef.current.readyState === WebSocket.OPEN) {
         const stateRequest = { 
           type: "state", 

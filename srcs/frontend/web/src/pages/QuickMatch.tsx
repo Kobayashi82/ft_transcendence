@@ -40,7 +40,7 @@ const QuickMatchPage: React.FC = () => {
   const [showAIList, setShowAIList] = useState<number | null>(null);
 
   // Refs for dropdown areas
-  const dropdownRefs = React.useRef<Array<HTMLDivElement | null>>([null, null]);
+  const dropdownRefs = React.useRef<(HTMLDivElement | null)[]>([null, null]);
 
   // State for game settings
   const [ballSpeed, setBallSpeed] = useState<string>("medium");
@@ -358,12 +358,12 @@ const QuickMatchPage: React.FC = () => {
                         <label className="block text-gray-300 text-sm font-medium mb-2">
                           {t('quickMatch.player')} {index + 1}
                         </label>
-                        <div 
-                          className="relative" 
-                          ref={el => {
-                            dropdownRefs.current[index] = el;
-                          }}
-                        >
+						<div 
+                            className="relative" 
+                            ref={el => {
+                              dropdownRefs.current[index] = el;
+                            }}
+                          >
                           <input
                             type="text"
                             value={selectedPlayers[index]}
@@ -386,7 +386,7 @@ const QuickMatchPage: React.FC = () => {
                           </button>
                           {showAIList === index && (
                             <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                              <div className="flex h-34 mb-1">
+                              <div className="flex h-44">
                                 {/* AI Opponents Column */}
                                 <div className="w-1/2 border-r border-gray-700 overflow-y-auto">
                                   <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">

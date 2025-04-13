@@ -1,5 +1,5 @@
 import React from "react";
-import { Trophy, ChevronRight, ChevronDown, Medal, Award } from "lucide-react";
+import { Trophy, ChevronRight, ChevronDown } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import GameSetting from "./GameSetting";
 import PositionBadge from "./PositionBadge";
@@ -79,19 +79,6 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
     
     // Format as mm:ss
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  // Get position text
-  const getPositionText = (position: number | null) => {
-    if (!position) return t('stats.unknown');
-    
-    switch (position) {
-      case 1: return t('stats.first');
-      case 2: return t('stats.second');
-      case 3: return t('stats.third');
-      case 4: return t('stats.third');
-      default: return position.toString();
-    }
   };
 
   // Get winner of tournament

@@ -387,7 +387,7 @@ const TournamentPage: React.FC = () => {
                             </button>
                             {showAIList === index && (
                               <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                                <div className="flex h-34 mb-1">
+                                <div className="flex h-44">
                                   {/* Human Players Column - Ahora ocupa el 100% del ancho */}
                                   <div className="w-full overflow-y-auto">
                                     <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
