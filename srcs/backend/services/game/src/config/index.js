@@ -8,6 +8,16 @@ const AI = {
     name: 'DeepPong',
     url: process.env.AI_DEEPPONG_URL || "http://ai_deeppong:3000",
     timeout: 2000,
+  },
+  AI_K_Pong: {
+    name: 'K-Pong',
+    url: process.env.AI_DEEPPONG_URL || "http://ai_deeppong:3000",
+    timeout: 2000,
+  },
+  AI_DumbBot: {
+    name: 'DumbBot',
+    url: process.env.AI_DEEPPONG_URL || "http://ai_deeppong:3000",
+    timeout: 2000,
   }
 };
 
@@ -45,8 +55,8 @@ const config = {
       paddleSize: 'medium',       // short, medium, long
       ai_opponents: Object.values(AI).map(ai => ai.name),
     },
-    disconnectionTimeout: 30000,  // 30 seconds
-    inactivityTimeout: 3600000    // 1 hour
+    disconnectionTimeout: 35 * 1000,
+    inactivityTimeout: 60 * 10 * 1000
   },
   
 };
