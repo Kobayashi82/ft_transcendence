@@ -96,8 +96,30 @@ class AIController {
     gameData.previousBall = null;
     gameData.previousTime = null;
     
-    // VALOR FIJO para la velocidad de la paleta (unidades por segundo)
-    gameData.paddleSpeed = 300; // Valor más alto para asegurar que la paleta se mueva a una velocidad razonable
+    // AJUSTE DE VELOCIDAD ÓPTIMO:
+    // La velocidad de la paleta en game-logic.js es constante cuando se mueve, a 5 * dt (dt ≈ 1/60)
+    // Esto da aproximadamente 300 unidades por segundo (5 * 60)
+    // Este valor se usa SOLO para calcular cuándo enviar un comando "stop"
+    gameData.paddleSpeed = 300;
+    
+    // Ajustar la precisión de la predicción según la dificultad
+    switch (gameData.difficulty) {
+      case 'easy':
+        // Para nivel fácil: menor precisión en la parada y movimientos más lentos
+        gameData.paddleSpeed = 270; // Subestimación intencionada
+        break;
+      case 'medium':
+        gameData.paddleSpeed = 290; // Precisión media
+        break;
+      case 'hard':
+        gameData.paddleSpeed = 300; // Bastante preciso
+        break;
+      case 'impossible':
+        gameData.paddleSpeed = 305; // Casi perfecto
+        break;
+      default:
+        gameData.paddleSpeed = 290; // Valor predeterminado
+    }
     
     let failureCount = 0;
     const MAX_FAILURES = 3;
@@ -227,7 +249,7 @@ class AIController {
     // Distancia al objetivo
     const distanceToTarget = targetPosition - paddleCenter;
     
-    // Umbral basado en dificultad
+    // Umbral basado en dificultad - Se mantiene como está
     let threshold;
     switch (difficulty) {
       case 'impossible': threshold = 5; break; // un poco más de margen
@@ -253,19 +275,54 @@ class AIController {
     
     // Si ya tenemos programada una parada y no ha cambiado la dirección, respetar la parada
     if (gameData.pendingStopTime !== null && gameData.lastDirection === direction) {
+      // Verificar que la parada programada aún tiene sentido (podría haber rebotado la bola)
+      const currentTimeToTarget = Math.abs(distanceToTarget) / gameData.paddleSpeed * 1000;
+      const projectedStopTime = now + currentTimeToTarget;
+      
+      // Si la diferencia es significativa (más de 100ms), actualizar el tiempo de parada
+      if (Math.abs(projectedStopTime - gameData.pendingStopTime) > 100) {
+        gameData.pendingStopTime = projectedStopTime;
+        console.log(`AI ${gameId}: Updated stop time to ${Math.round(currentTimeToTarget)}ms from now`);
+      }
       return;
     }
     
     // Si no hay cambio de dirección y estamos en movimiento, no hacer nada
     if (direction === gameData.lastDirection && gameData.lastDirection !== 'stop') {
+      // Pero actualizamos el tiempo de parada ya que la predicción puede haber cambiado
+      const currentTimeToTarget = Math.abs(distanceToTarget) / gameData.paddleSpeed * 1000;
+      gameData.pendingStopTime = now + currentTimeToTarget;
+      console.log(`AI ${gameId}: Continuing ${direction}, updated stop time to ${Math.round(currentTimeToTarget)}ms from now`);
       return;
     }
     
-    // CÁLCULO BASADO EN TIEMPO usando paddleSpeed
+    // CÁLCULO MEJORADO DE TIEMPO PARA PARAR
+    // 1. Usar la velocidad definida que refleja las unidades por segundo
+    // 2. Aplicar un factor de corrección según la dificultad
     const paddleSpeed = gameData.paddleSpeed; // unidades por segundo
-    const timeToTarget = Math.abs(distanceToTarget) / paddleSpeed * 1000; // en milisegundos
     
-    // Iniciar movimiento y programar la parada
+    // Aplicar factor de corrección según dificultad para evitar paradas demasiado tempranas
+    let correctionFactor;
+    switch (difficulty) {
+      case 'impossible': correctionFactor = 1.0; break; // Sin error, tiempo exacto
+      case 'hard': correctionFactor = 0.98; break; // Pequeña subestimación para parar un poco tarde
+      case 'medium': correctionFactor = 0.95; break; // Mayor subestimación
+      case 'easy': correctionFactor = 0.9; break; // Gran subestimación para mayor "humanidad"
+      default: correctionFactor = 0.95;
+    }
+    
+    const timeToTarget = Math.abs(distanceToTarget) / paddleSpeed * 1000 * correctionFactor; // en milisegundos
+    
+    // Si la distancia es muy grande, podríamos no llegar, así que no programamos parada
+    if (timeToTarget > config.ai.updateInterval * 3) {
+      console.log(`AI ${gameId}: Moving ${direction}, target too far (${Math.round(timeToTarget)}ms), will recalculate later`);
+      this.sendMove(gameId, playerNumber, direction);
+      gameData.lastDirection = direction;
+      gameData.pendingStopTime = null;
+      return;
+    }
+    
+    // Iniciar movimiento y programar la parada con tiempo corregido
     console.log(`AI ${gameId}: Moving ${direction} to target Y=${Math.round(targetPosition)}, ` +
                `current Y=${Math.round(paddleCenter)}, distance=${Math.round(distanceToTarget)}, ` +
                `will stop in ${Math.round(timeToTarget)}ms`);
@@ -273,7 +330,7 @@ class AIController {
     this.sendMove(gameId, playerNumber, direction);
     gameData.lastDirection = direction;
     
-    // Programar la detención para el momento exacto
+    // Programar la detención para el momento exacto con el factor de corrección aplicado
     const stopTime = now + timeToTarget;
     gameData.pendingStopTime = stopTime;
   }

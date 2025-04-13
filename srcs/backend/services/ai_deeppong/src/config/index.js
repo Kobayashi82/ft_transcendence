@@ -23,7 +23,7 @@ const config = {
   
   // Configuración de la IA
   ai: {
-    // Intervalo de actualización (ms) - Volver a 1000ms (1 segundo)
+    // Intervalo de actualización (ms) - DEBE SER EXACTAMENTE 1000ms (1 segundo)
     updateInterval: 1000,
     
     // Desplazamiento del centro de la paleta para simular imprecisión
