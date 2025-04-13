@@ -7,7 +7,7 @@ const AI = {
   AI_deeppong: {
     name: 'DeepPong',
     url: process.env.AI_DEEPPONG_URL || "http://ai_deeppong:3000",
-    timeout: 5000,
+    timeout: 2000,
   }
 };
 

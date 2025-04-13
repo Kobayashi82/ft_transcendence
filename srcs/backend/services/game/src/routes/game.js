@@ -118,7 +118,7 @@ async function routes(fastify, options) {
   });
   
   // PADDLE MOVE
-  fastify.post('/:gameId/move', { schema: schemas.playerMove }, async (request, reply) => {
+  fastify.post('/:gameId/move', async (request, reply) => {
     const { gameId } = request.params;
     const { player, direction } = request.body;
     
@@ -135,7 +135,7 @@ async function routes(fastify, options) {
   });
   
   // PADDLE POSTITION
-  fastify.post('/:gameId/position', { schema: schemas.paddlePosition }, async (request, reply) => {
+  fastify.post('/:gameId/position', async (request, reply) => {
     const { gameId } = request.params;
     const { player, y } = request.body;
     
@@ -150,7 +150,7 @@ async function routes(fastify, options) {
   });
 
   // STATE
-  fastify.get('/:gameId', { schema: schemas.getGame }, async (request, reply) => {
+  fastify.get('/:gameId', async (request, reply) => {
     const { gameId } = request.params;
     const gameState = gameManager.getGameState(gameId);
     

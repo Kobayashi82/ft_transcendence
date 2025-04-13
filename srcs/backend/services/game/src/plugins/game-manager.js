@@ -4,7 +4,6 @@ const config = require('../config');
 const PongGame = require('./game-logic');
 const axios = require("axios");
 const { v4: uuidv4 } = require('uuid');
-const aiNotifier = require('./ai-notifier'); // Importar el notificador de IA
 
 // Importamos tournamentManager pero lo haremos después de exportar la instancia
 let tournamentManager;
@@ -106,34 +105,46 @@ class GameManager {
     return state;
   }
 
-  // ADD PLAYER - Modificado para notificar a la IA cuando se asigna un jugador IA
-  addPlayer(gameId, playerName, playerNumber) {
+  // ADD PLAYER
+  async addPlayer(gameId, playerName, playerNumber) {
     const gameEntry = this.games.get(gameId);
     if (!gameEntry) return false;
     
     gameEntry.game.setPlayer(playerNumber, playerName);
     this.players.set(playerName, { gameId, playerNumber });
     gameEntry.lastActivity = Date.now();
-    
-    // Verificar si el jugador es una IA (por el nombre)
+
     const isAI = this.isAIPlayer(playerName);
     if (isAI) {
       // Marcar el jugador como IA en el estado del juego para el frontend
       gameEntry.game['player' + playerNumber + 'IsAI'] = true;
       
       console.log(`Jugador ${playerNumber} (${playerName}) es una IA - Notificando a la IA`);
-      // Notificar a la IA sobre el juego asignado (sin necesidad de bloquear)
-      aiNotifier.notifyAI(gameId, playerName, playerNumber)
-        .then(success => {
-          if (success) {
-            console.log(`IA ${playerName} notificada exitosamente sobre el juego ${gameId}`);
-          } else {
-            console.error(`Error al notificar a la IA ${playerName} sobre el juego ${gameId}`);
-          }
-        })
-        .catch(error => {
-          console.error(`Excepción al notificar a la IA: ${error.message}`);
+      
+      try {
+        console.log(`Notificando a la IA ${playerName} sobre el juego ${gameId} como jugador ${playerNumber}`);
+        console.log(`Using AI service URL: ${config.AI.AI_deeppong.url}`);
+        
+        const response = await axios.post(`${config.AI.AI_deeppong.url}/join`, {
+          game_id: gameId,
+          ai_name: playerName,
+          player_number: playerNumber
+        }, {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: config.AI.AI_deeppong.timeout
         });
+        
+        if (response.status === 200) {
+          console.log(`IA ${playerName} notificada exitosamente sobre el juego ${gameId}`);
+        } else {
+          console.error(`Error al notificar a la IA ${playerName}: ${response.status} - ${JSON.stringify(response.data)}`);
+        }
+      } catch (error) {
+        console.error(`Excepción al notificar a la IA ${playerName}: ${error.message}`);
+        if (error.response) {
+          console.error(`Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`);
+        }
+      }
     }
     
     return true;
@@ -384,7 +395,6 @@ class GameManager {
     // Notificar que el juego ha terminado
     if (game.player1IsAI || game.player2IsAI) {
       console.log(`Juego ${gameId} cancelado - Notificando a las IAs`);
-      aiNotifier.clearNotificationsForGame(gameId);
     }
     
     if (success) this.broadcastGameState(gameId);     
@@ -481,7 +491,6 @@ class GameManager {
         // Notificar que el juego ha terminado
         if (gameEntry.game.player1IsAI || gameEntry.game.player2IsAI) {
           console.log(`Juego ${gameId} eliminado por inactividad - Notificando a las IAs`);
-          aiNotifier.clearNotificationsForGame(gameId);
         }
         
         // Remove game

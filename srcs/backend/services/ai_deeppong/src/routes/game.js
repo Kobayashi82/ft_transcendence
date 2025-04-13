@@ -1,31 +1,17 @@
 "use strict";
 
-// Import the singleton AI controller instance directly
 const { aiController } = require('../plugins/ai-controller');
 
-/**
- * Register all routes for the AI DeepPong service
- * @param {FastifyInstance} fastify - Fastify instance
- * @param {Object} options - Options object
- * @param {Function} done - Callback to signal completion
- */
 module.exports = function(fastify, options, done) {
-  /**
-   * Endpoint para que el servicio de juego asigne un juego a la IA
-   * Recibe:
-   * - game_id: ID del juego
-   * - player_number: Número de jugador (1 o 2)
-   * - ai_name: Nombre de la IA
-   * - difficulty (opcional): Nivel de dificultad
-   */
+
   fastify.post('/join', async (request, reply) => {
     try {
-      const { game_id, player_number, ai_name, difficulty } = request.body;
+      const { game_id, player_number, ai_name } = request.body;
       
+      const difficulty = 'medium'
       console.log(`Joining game ${game_id} with AI ${ai_name}`);
       console.log(`Request body: ${JSON.stringify(request.body)}`);
       
-      // Validar parámetros
       if (!game_id || !player_number || !ai_name) {
         return reply.code(400).send({
           success: false,
@@ -33,7 +19,6 @@ module.exports = function(fastify, options, done) {
         });
       }
       
-      // Asignar el juego a la IA
       console.log(`Calling aiController.joinGame with: ${game_id}, ${player_number}, ${ai_name}, ${difficulty}`);
       await aiController.joinGame(game_id, player_number, ai_name, difficulty);
       
@@ -43,7 +28,6 @@ module.exports = function(fastify, options, done) {
       });
     } catch (error) {
       console.error(`Error al asignar la IA al juego: ${error.message}`);
-      console.error(error.stack); // Print full error stack for debugging
       return reply.code(500).send({
         success: false,
         message: 'Error interno al procesar la solicitud'
@@ -51,9 +35,6 @@ module.exports = function(fastify, options, done) {
     }
   });
 
-  /**
-   * Obtiene el estado de los juegos activos
-   */
   fastify.get('/games', (request, reply) => {
     try {
       const activeGames = aiController.getActiveGames();
@@ -72,9 +53,6 @@ module.exports = function(fastify, options, done) {
     }
   });
 
-  /**
-   * Libera a la IA de un juego específico
-   */
   fastify.post('/leave', (request, reply) => {
     try {
       const { game_id } = request.body;
