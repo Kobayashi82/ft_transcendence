@@ -8,10 +8,12 @@ module.exports = function(fastify, options, done) {
     try {
       const { game_id, player_number, ai_name } = request.body;
       
-      const difficulty = 'hard'
-      console.log(`Joining game ${game_id} with AI ${ai_name}`);
-      console.log(`Request body: ${JSON.stringify(request.body)}`);
-      
+      let difficulty;
+      if      (ai_name == 'DeepPong') difficulty = 'hard';
+      else if (ai_name == 'K-Pong')   difficulty = 'medium';
+      else if (ai_name == 'DumbBot')  difficulty = 'easy';
+      else                            difficulty = 'hard';
+
       if (!game_id || !player_number || !ai_name) {
         return reply.code(400).send({
           success: false,
@@ -19,7 +21,6 @@ module.exports = function(fastify, options, done) {
         });
       }
       
-      console.log(`Calling aiController.joinGame with: ${game_id}, ${player_number}, ${ai_name}, ${difficulty}`);
       await aiController.joinGame(game_id, player_number, ai_name, difficulty);
       
       return reply.code(200).send({
@@ -27,7 +28,6 @@ module.exports = function(fastify, options, done) {
         message: `IA ${ai_name} asignada al juego ${game_id} como jugador ${player_number}`
       });
     } catch (error) {
-      console.error(`Error al asignar la IA al juego: ${error.message}`);
       return reply.code(500).send({
         success: false,
         message: 'Error interno al procesar la solicitud'
@@ -45,7 +45,6 @@ module.exports = function(fastify, options, done) {
         count: activeGames.length
       });
     } catch (error) {
-      console.error(`Error al obtener juegos activos: ${error.message}`);
       return reply.code(500).send({
         success: false,
         message: 'Error interno al procesar la solicitud'
@@ -97,7 +96,6 @@ module.exports = function(fastify, options, done) {
         message: `Todas las IAs liberadas del juego ${game_id}`
       });
     } catch (error) {
-      console.error(`Error al liberar a la IA del juego: ${error.message}`);
       return reply.code(500).send({
         success: false,
         message: 'Error interno al procesar la solicitud'
