@@ -7,7 +7,8 @@ const dns = require('dns');
 
 class AIController {
   constructor() {
-    this.activeGames = new Map(); // Map of active games: gameId -> {playerNumber, intervalId, gameState, difficulty}
+    // Cambiando el mapa para usar combinación de gameId y playerNumber como clave
+    this.activeGames = new Map(); // Map of active games: `${gameId}_${playerNumber}` -> {playerNumber, intervalId, gameState, difficulty}
     this.gameServiceUrl = config.services.game.url;
     console.log(`AI Controller initialized with game service URL: ${this.gameServiceUrl}`);
   }
@@ -18,9 +19,12 @@ class AIController {
     console.log(`Game service URL: ${this.gameServiceUrl}`);
     
     try {
-      // Check if already in this game
-      if (this.activeGames.has(gameId)) {
-        console.log(`AI is already playing in game ${gameId}, ignoring request`);
+      // Creamos una clave única que combina gameId y playerNumber
+      const gameKey = `${gameId}_${playerNumber}`;
+      
+      // Check if already in this game with this player number
+      if (this.activeGames.has(gameKey)) {
+        console.log(`AI is already playing in game ${gameId} as player ${playerNumber}, ignoring request`);
         return true;
       }
       
@@ -32,6 +36,7 @@ class AIController {
       
       // Setup game data
       const gameData = {
+        gameId, // Añadimos explícitamente el gameId
         playerNumber,
         aiName,
         difficulty: validDifficulty,
@@ -40,18 +45,18 @@ class AIController {
         intervalId: null,
         moveIntervalId: null,
         lastMoveTime: null,
-        continuousMovementDuration: 0, // Nuevo: para controlar movimientos continuos
-        lastGameState: null // Nuevo: para detectar cambios de estado
+        continuousMovementDuration: 0, 
+        lastGameState: null 
       };
       
       console.log(`Setting up game data: ${JSON.stringify(gameData)}`);
-      this.activeGames.set(gameId, gameData);
+      this.activeGames.set(gameKey, gameData);
       
       // Start update loop
-      console.log(`Starting game loop for game ${gameId}`);
-      this.startGameLoop(gameId);
+      console.log(`Starting game loop for game ${gameId} player ${playerNumber}`);
+      this.startGameLoop(gameKey);
       
-      console.log(`Successfully joined game ${gameId}`);
+      console.log(`Successfully joined game ${gameId} as player ${playerNumber}`);
       return true;
     } catch (error) {
       console.error(`Error setting up AI game: ${error.message}`);
@@ -82,15 +87,17 @@ class AIController {
     }
   }
   
-  startGameLoop(gameId) {
-    const gameData = this.activeGames.get(gameId);
+  startGameLoop(gameKey) {
+    const gameData = this.activeGames.get(gameKey);
     if (!gameData) return;
+    
+    const { gameId, playerNumber } = gameData;
     
     // Limpiar intervalos previos
     if (gameData.intervalId) clearInterval(gameData.intervalId);
     if (gameData.moveIntervalId) clearInterval(gameData.moveIntervalId);
     
-    console.log(`Starting AI game loop for game ${gameId} with update interval ${config.ai.updateInterval}ms`);
+    console.log(`Starting AI game loop for game ${gameId} player ${playerNumber} with update interval ${config.ai.updateInterval}ms`);
     
     // Inicializar variables de estado
     gameData.lastDirection = null;
@@ -138,7 +145,7 @@ class AIController {
         if (!gameState) {
           failureCount++;
           if (failureCount >= MAX_FAILURES) {
-            this.endGame(gameId);
+            this.endGame(gameKey);
           }
           return;
         }
@@ -147,7 +154,7 @@ class AIController {
         
         // Si el juego terminó, limpiar recursos
         if (gameState.gameState === 'finished' || gameState.gameState === 'cancelled') {
-          this.endGame(gameId);
+          this.endGame(gameKey);
           return;
         }
         
@@ -227,14 +234,14 @@ class AIController {
         }
         
         // Manejar movimiento en cada actualización
-        this.handleMovement(gameId);
+        this.handleMovement(gameKey);
         
       } catch (error) {
-        console.error(`Error in game loop ${gameId}: ${error.message}`);
+        console.error(`Error in game loop ${gameId} player ${playerNumber}: ${error.message}`);
         failureCount++;
         
         if (failureCount >= MAX_FAILURES) {
-          this.endGame(gameId);
+          this.endGame(gameKey);
         }
       }
     }, config.ai.updateInterval); // Usar EXACTAMENTE config.ai.updateInterval
@@ -272,11 +279,11 @@ class AIController {
     }, 200);  // Verificar cada 200ms (suficientemente rápido para reaccionar, pero no demasiado exigente)
   }
   
-  handleMovement(gameId) {
-    const gameData = this.activeGames.get(gameId);
+  handleMovement(gameKey) {
+    const gameData = this.activeGames.get(gameKey);
     if (!gameData || !gameData.gameState) return;
     
-    const { gameState, playerNumber, difficulty } = gameData;
+    const { gameId, gameState, playerNumber, difficulty } = gameData;
     
     // NUEVO: Verificar explícitamente que el juego está en estado "playing"
     if (gameState.gameState !== 'playing') return;
@@ -296,7 +303,7 @@ class AIController {
     const paddleCenter = paddleY + paddleHeight / 2;
     
     // Calcular la posición objetivo
-    const targetPosition = this.calculateTargetPosition(gameId);
+    const targetPosition = this.calculateTargetPosition(gameKey);
     if (targetPosition === null) return;
     
     // Distancia al objetivo
@@ -415,11 +422,11 @@ class AIController {
     }
   }
   
-  calculateTargetPosition(gameId) {
-    const gameData = this.activeGames.get(gameId);
+  calculateTargetPosition(gameKey) {
+    const gameData = this.activeGames.get(gameKey);
     if (!gameData || !gameData.gameState) return null;
     
-    const { gameState, playerNumber, difficulty } = gameData;
+    const { gameId, gameState, playerNumber, difficulty } = gameData;
     const ball = gameState.ball;
     const config = gameState.config;
     
@@ -601,9 +608,11 @@ class AIController {
     }
   }
   
-  endGame(gameId) {
-    const gameData = this.activeGames.get(gameId);
+  endGame(gameKey) {
+    const gameData = this.activeGames.get(gameKey);
     if (!gameData) return;
+    
+    const { gameId, playerNumber } = gameData;
     
     // Limpiar intervalos
     if (gameData.intervalId) clearInterval(gameData.intervalId);
@@ -611,20 +620,20 @@ class AIController {
     
     // Asegurarse de detener cualquier movimiento
     if (gameData.lastDirection !== 'stop') {
-      this.sendMove(gameId, gameData.playerNumber, 'stop').catch(err => {
+      this.sendMove(gameId, playerNumber, 'stop').catch(err => {
         console.error(`Error stopping paddle on game end: ${err.message}`);
       });
     }
     
-    this.activeGames.delete(gameId);
-    console.log(`Game ${gameId} ended and resources released`);
+    this.activeGames.delete(gameKey);
+    console.log(`Game ${gameId} player ${playerNumber} ended and resources released`);
   }
   
   getActiveGames() {
     const games = [];
-    this.activeGames.forEach((data, gameId) => {
+    this.activeGames.forEach((data, gameKey) => {
       games.push({
-        gameId,
+        gameId: data.gameId,
         playerNumber: data.playerNumber,
         aiName: data.aiName,
         difficulty: data.difficulty,
@@ -641,7 +650,7 @@ async function aiControllerPlugin(fastify, options) {
   fastify.decorate('ai', aiController);
   
   fastify.addHook('onClose', (instance, done) => {
-    aiController.activeGames.forEach((gameData, gameId) => {
+    aiController.activeGames.forEach((gameData, gameKey) => {
       if (gameData.intervalId) clearInterval(gameData.intervalId);
       if (gameData.moveIntervalId) clearInterval(gameData.moveIntervalId);
     });
