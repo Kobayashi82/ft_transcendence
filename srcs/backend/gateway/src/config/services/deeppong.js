@@ -5,7 +5,22 @@ module.exports = {
   url: process.env.DEEPPONG_SERVICE_URL || "http://deeppong:3000",
   prefix: "/deeppong",
   routes: {
-    
+    "/join": {
+      method: ["POST"],
+      path: "/join",
+      rateLimit: { max: 20, timeWindow: 10 }
+    },
+    "/games": {
+      method: ["GET"],
+      path: "/games",
+      rateLimit: { max: 20, timeWindow: 10 }
+    },
+    "/leave": {
+      method: ["POST"],
+      path: "/leave",
+      rateLimit: { max: 20, timeWindow: 10 }
+    },
+
     // Health check
     "/health": {
       method: ["GET"],
@@ -13,5 +28,5 @@ module.exports = {
       rateLimit: { max: 20, timeWindow: 10 }
     },
   },
-  timeout: 5000,
+  timeout: 2000,
 };

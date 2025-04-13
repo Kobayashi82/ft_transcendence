@@ -22,7 +22,7 @@ async function dbPlugin(fastify, options) {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         tournament_id INTEGER NULL,
         start_time DATETIME NOT NULL,
-        end_time DATETIME NOT NULL,
+        end_time DATETIME,
         settings TEXT NOT NULL,
         FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE SET NULL
       )

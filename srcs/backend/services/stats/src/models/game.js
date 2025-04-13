@@ -76,19 +76,28 @@ async function gameModelPlugin(fastify, options) {
     return game;
   }
 
-  // Update a game
   function updateGame(id, gameData) {
     const { tournament_id, end_time, settings } = gameData;
     
-    // Asegurarse de que end_time sea una cadena ISO o null
     const endTimeStr = end_time ? 
       (typeof end_time === 'object' && end_time instanceof Date ? 
         end_time.toISOString() : end_time) : null;
     
-    // Obtener configuración actual si no se proporciona una nueva
-    const currentSettings = settings 
-      ? JSON.stringify(settings) 
-      : db.prepare('SELECT settings FROM games WHERE id = ?').get(id)?.settings;
+    let currentSettings;
+    if (settings) {
+      currentSettings = JSON.stringify(settings);
+    } else {
+      const existingGame = db.prepare('SELECT settings FROM games WHERE id = ?').get(id);
+      if (existingGame) {
+        try {
+          currentSettings = JSON.stringify(JSON.parse(existingGame.settings));
+        } catch (e) {
+          currentSettings = '{}';
+        }
+      } else {
+        currentSettings = '{}';
+      }
+    }
     
     const result = db.prepare(`
       UPDATE games

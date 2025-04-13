@@ -76,11 +76,10 @@ services:
     environment:
       - SERVICE_URL=game:3000
     networks:
-      - backend-net
       - service-net
     restart: unless-stopped
     
-  # AI DeepPong (3000)
+  # DeepPong (3000)
   deeppong:
     container_name: deeppong
     build:
