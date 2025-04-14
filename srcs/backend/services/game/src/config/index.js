@@ -21,8 +21,8 @@ const AI = {
   }
 }
 
-const initialSpeeds = { slow: 4, medium: 6, fast: 8 };
-const paddleSizes = { short: 40, medium: 80, long: 120 };
+const initialSpeeds = { slow: 4, medium: 6, fast: 8 }
+const paddleSizes = { short: 40, medium: 80, long: 120 }
 
 const config = {
   // Server

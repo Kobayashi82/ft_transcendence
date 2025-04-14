@@ -18,7 +18,7 @@ async function healthRoutes(fastify) {
         timestamp: new Date().toISOString(),
       },
       services: serviceStatus,
-    };
+    }
     return gatewayStatus;
   });
 
@@ -26,7 +26,7 @@ async function healthRoutes(fastify) {
 
 // Check the status of services
 async function checkServices(services, startTime) {
-  const serviceStatus = {};
+  const serviceStatus = {}
 
   await Promise.all( Object.entries(services).map(async ([name, config]) => {
     try {
@@ -35,13 +35,13 @@ async function checkServices(services, startTime) {
       const responseTime = Date.now() - startTime;
       const status = response.status >= 200 && response.status < 300 ? "up" : "degraded";
       const serv_name = response.data.service.name || name;
-      serviceStatus[serv_name] = { status, statusCode: response.status, responseTime: `${responseTime}ms`, };
+      serviceStatus[serv_name] = { status, statusCode: response.status, responseTime: `${responseTime}ms`, }
     } catch (error) {
       let temp_name = name;
       if (name === 'game') temp_name = 'Game';
       if (name === 'stats') temp_name = 'Stats';
       if (name === 'deeppong') temp_name = 'DeepPong';
-      serviceStatus[temp_name] = { status: "down", error: error.code || error.message, };
+      serviceStatus[temp_name] = { status: "down", error: error.code || error.message, }
     }
   }));
 

@@ -81,10 +81,7 @@ async function rateLimitPlugin(fastify) {
         }
       }
 
-      return {
-        statusCode: 429,
-        message: message,
-      };
+      return { statusCode: 429, message: message }
     },
   });
 

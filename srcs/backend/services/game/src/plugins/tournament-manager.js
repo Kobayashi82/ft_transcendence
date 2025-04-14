@@ -41,7 +41,7 @@ class TournamentManager {
       settings: settings,
       players: shuffledPlayers,
       matches: []
-    };
+    }
 
     // Create both semifinal
     const semifinal1Id = this.createMatch(tournamentId, 1, shuffledPlayers[0], shuffledPlayers[1]);
@@ -64,7 +64,7 @@ class TournamentManager {
     this.tournaments.set(tournamentId, tournament);
     if (this.gameManager && typeof this.gameManager.registerTournament === 'function') this.gameManager.registerTournament(tournamentId, tournament);
 
-    return { tournamentId, tournamentName: tournament.name, firstMatchId: semifinal1Id, semifinal2Id: semifinal2Id, finalId: finalId, settings, players: shuffledPlayers };
+    return { tournamentId, tournamentName: tournament.name, firstMatchId: semifinal1Id, semifinal2Id: semifinal2Id, finalId: finalId, settings, players: shuffledPlayers }
   }
   
   // CREATE MATCH
@@ -128,7 +128,7 @@ class TournamentManager {
       else                              nextMatch.player2 = winnerId;
 
       // Check if both players for next match are ready
-      if (nextMatch.player1 && nextMatch.player2) return { matchId: match.nextMatchId, player1: nextMatch.player1, player2: nextMatch.player2, round: nextMatch.round };
+      if (nextMatch.player1 && nextMatch.player2) return { matchId: match.nextMatchId, player1: nextMatch.player1, player2: nextMatch.player2, round: nextMatch.round }
       return null;
     } catch (error) { return null; }
   }
@@ -147,8 +147,8 @@ class TournamentManager {
       let settings = gameSettings;
       const savedSettings = this.getTournamentSettings(tournamentId);
 
-      if (savedSettings)  settings = { ...savedSettings, tournamentMode: true, tournamentRound: match.round, isSecondSemifinal: isSecondSemifinal };
-      else                settings = { ...gameSettings, tournamentMode: true, tournamentRound: match.round, isSecondSemifinal: isSecondSemifinal };
+      if (savedSettings)  settings = { ...savedSettings, tournamentMode: true, tournamentRound: match.round, isSecondSemifinal: isSecondSemifinal }
+      else                settings = { ...gameSettings, tournamentMode: true, tournamentRound: match.round, isSecondSemifinal: isSecondSemifinal }
 
       // Create a new game
       const gameId = this.gameManager.createGame(settings);

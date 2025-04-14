@@ -19,7 +19,7 @@ async function playerModelPlugin(fastify) {
     if (player) return player;
 
     const result = db.prepare('INSERT INTO players (user_id) VALUES (?)').run(trimmedUserId);
-    return { id: result.lastInsertRowid, user_id: trimmedUserId };
+    return { id: result.lastInsertRowid, user_id: trimmedUserId }
   }
 
   // GET PLAYER BY ID
@@ -66,7 +66,7 @@ async function playerModelPlugin(fastify) {
   // GET PLAYER STATS
   function getPlayerStats(playerId) {
     const playerIdNum = parseInt(playerId, 10);
-    if (isNaN(playerIdNum)) return { totalGames: 0, totalTournaments: 0, wins: 0, tournamentWins: 0, winRate: 0 };
+    if (isNaN(playerIdNum)) return { totalGames: 0, totalTournaments: 0, wins: 0, tournamentWins: 0, winRate: 0 }
     
     const totalGames = db.prepare('SELECT COUNT(*) as count FROM game_players WHERE player_id = ?').get(playerIdNum).count;
     const totalTournaments = db.prepare('SELECT COUNT(*) as count FROM tournament_players WHERE player_id = ?').get(playerIdNum).count;
@@ -87,7 +87,7 @@ async function playerModelPlugin(fastify) {
       WHERE player_id = ? AND final_position = 1
     `).get(playerIdNum).count;
     
-    return { totalGames, totalTournaments, wins, tournamentWins, winRate: totalGames > 0 ? (wins / totalGames) * 100 : 0 };
+    return { totalGames, totalTournaments, wins, tournamentWins, winRate: totalGames > 0 ? (wins / totalGames) * 100 : 0 }
   }
 
   fastify.decorate('playerModel', { getOrCreatePlayer, getPlayerById, getAllPlayers, getPlayerGames, getPlayerTournaments, getPlayerStats });

@@ -45,7 +45,7 @@ async function statsRoutes(fastify) {
         LIMIT ?
       `).all(limit);
       
-      return { data: leaderboard };
+      return { data: leaderboard }
     } catch (err) {
       return reply.code(500).send({ error: 'Failed to get leaderboard' });
     }
@@ -93,7 +93,7 @@ async function statsRoutes(fastify) {
         LIMIT ?
       `).all(minGames, limit);
       
-      return { data: leaderboard };
+      return { data: leaderboard }
     } catch (err) {
       return reply.code(500).send({ error: 'Failed to get leaderboard' });
     }
@@ -127,7 +127,7 @@ async function statsRoutes(fastify) {
         LIMIT ?
       `).all(limit);
       
-      return { data: leaderboard };
+      return { data: leaderboard }
     } catch (err) {
       return reply.code(500).send({ error: 'Failed to get leaderboard' });
     }
@@ -163,7 +163,7 @@ async function statsRoutes(fastify) {
         LIMIT ?
       `).all(limit);
       
-      return { data: leaderboard };
+      return { data: leaderboard }
     } catch (err) {
       return reply.code(500).send({ error: 'Failed to get total games leaderboard' });
     }
@@ -217,7 +217,7 @@ async function statsRoutes(fastify) {
         LIMIT ?
       `).all(limit);
       
-      return { data: leaderboard };
+      return { data: leaderboard }
     } catch (err) {
       return reply.code(500).send({ error: 'Failed to get fastest wins leaderboard' });
     }
@@ -297,7 +297,7 @@ async function statsRoutes(fastify) {
           ORDER BY t.start_time DESC
           LIMIT 5
         `).all(player.id)
-      };
+      }
     } catch (err) {
       return reply.code(500).send({ error: 'Failed to get user stats' });
     }

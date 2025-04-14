@@ -77,12 +77,12 @@ async function tournamentRoutes(fastify) {
 
       if (!players || players.length === 0) return reply.code(400).send({ error: 'At least one player is required' });
 
-      const tournamentData = { name, start_time, settings, players };
+      const tournamentData = { name, start_time, settings, players }
       const tournament = tournamentModel.createTournament(tournamentData);
 
       if (games && games.length > 0) {
         const createdGames = games.map(gameData => {
-          const fullGameData = { ...gameData, tournament_id: tournament.id };
+          const fullGameData = { ...gameData, tournament_id: tournament.id }
           return fastify.gameModel.createGame(fullGameData);
         });
         tournament.games = createdGames;
@@ -160,7 +160,7 @@ async function tournamentRoutes(fastify) {
       const success = tournamentModel.updateTournamentResults(id, results);
       if (!success) return reply.code(400).send({ error: 'Failed to update tournament results' });
       
-      return { success: true };
+      return { success: true }
     } catch (err) {
       return reply.code(500).send({ error: 'Failed to update tournament results' });
     }

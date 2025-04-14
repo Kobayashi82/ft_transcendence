@@ -10,7 +10,7 @@ async function playerRoutes(fastify) {
   fastify.get('/players', async (_, reply) => {
     try {
       const players = playerModel.getAllPlayers();
-      return { data: players };
+      return { data: players }
     } catch (err) {
       return reply.code(500).send({ error: 'Failed to get players' });
     }

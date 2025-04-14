@@ -3,7 +3,6 @@ import { Calendar, Settings } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import GameSetting from "./GameSetting";
 
-// Types
 interface RecentGame {
   id: number;
   start_time: string;
@@ -22,7 +21,7 @@ interface GameDetails {
     speedIncrement: number | boolean;
     pointsToWin: number;
     [key: string]: any;
-  };
+  }
   players: {
     id: number;
     user_id: string;
@@ -39,34 +38,27 @@ interface GamesTableProps {
 const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) => {
   const { t } = useLanguage();
 
-  // Format date to local string
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-  };
+  }
 
-  // Calculate game duration in mm:ss format
   const calculateDuration = (start: string, end: string) => {
     const startTime = new Date(start).getTime();
     const endTime = new Date(end).getTime();
-    const durationMs = Math.max(0, endTime - startTime); // Prevenir duraciones negativas
-    
-    // Calculate minutes and seconds
+    const durationMs = Math.max(0, endTime - startTime);
     const totalSeconds = Math.floor(durationMs / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    
-    // Format as mm:ss
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
 
-  // Get opponent for a game
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
   const getOpponent = (game: GameDetails, playerUserId: string) => {
     const opponent = game.players.find(player => player.user_id !== playerUserId);
     return opponent ? opponent.user_id : t('stats.unknown');
-  };
+  }
 
-  // Get game result text (win or loss)
   const getGameResult = (game: GameDetails, playerUserId: string) => {
     const player = game.players.find(p => p.user_id === playerUserId);
     const opponent = game.players.find(p => p.user_id !== playerUserId);
@@ -80,19 +72,17 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
     } else {
       return `${t('stats.draw')}`;
     }
-  };
+  }
 
-  // Get player score for a game
   const getPlayerScore = (game: GameDetails, playerUserId: string) => {
     const playerInGame = game.players.find(player => player.user_id === playerUserId);
     return playerInGame ? playerInGame.score : 0;
-  };
+  }
 
-  // Get opponent score for a game
   const getOpponentScore = (game: GameDetails, playerUserId: string) => {
     const opponent = game.players.find(player => player.user_id !== playerUserId);
     return opponent ? opponent.score : 0;
-  };
+  }
 
   return (
     <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl">
@@ -204,6 +194,6 @@ const GamesTable: React.FC<GamesTableProps> = ({ games, gameDetails, userId }) =
       </div>
     </div>
   );
-};
+}
 
 export default GamesTable;

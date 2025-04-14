@@ -3,7 +3,6 @@ import { Trophy, Award, Zap, BarChart3, Medal } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 
-// Types for API responses
 interface LeaderboardEntry {
   player_id: number;
   user_id: string;
@@ -12,7 +11,7 @@ interface LeaderboardEntry {
   win_rate?: number;
   tournament_wins?: number;
   total_tournaments?: number;
-  fastest_win?: number; // Duration in seconds
+  fastest_win?: number;
 }
 
 type LeaderboardCategory = 'wins' | 'winrate' | 'tournaments' | 'fastest' | 'totalGames';
@@ -21,101 +20,53 @@ const LeaderboardPage: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<LeaderboardCategory>('wins');
-  const [leaderboards, setLeaderboards] = useState<Record<LeaderboardCategory, LeaderboardEntry[]>>({
-    wins: [],
-    winrate: [],
-    tournaments: [],
-    fastest: [],
-    totalGames: []
-  });
+  const [leaderboards, setLeaderboards] = useState<Record<LeaderboardCategory, LeaderboardEntry[]>>({ wins: [], winrate: [], tournaments: [], fastest: [], totalGames: [] });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch leaderboards data
   useEffect(() => {
     const fetchLeaderboards = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
-        // Fetch most wins leaderboard
         const winsResponse = await fetch('/api/stats/stats/leaderboard/wins?limit=10');
-        let winsData: { data: LeaderboardEntry[] } = { data: [] };
-        
-        if (winsResponse.ok) {
-          winsData = await winsResponse.json();
-        }
-        
-        // Fetch win rate leaderboard
+        let winsData: { data: LeaderboardEntry[] } = { data: [] }
+
+        if (winsResponse.ok) winsData = await winsResponse.json();
+
         const winRateResponse = await fetch('/api/stats/stats/leaderboard/winrate?limit=10&min_games=5');
-        let winRateData: { data: LeaderboardEntry[] } = { data: [] };
-        
-        if (winRateResponse.ok) {
-          winRateData = await winRateResponse.json();
-        }
-        
-        // Fetch tournament wins leaderboard
+        let winRateData: { data: LeaderboardEntry[] } = { data: [] }
+
+        if (winRateResponse.ok) winRateData = await winRateResponse.json();
+
         const tournamentResponse = await fetch('/api/stats/stats/leaderboard/tournaments?limit=10');
-        let tournamentData: { data: LeaderboardEntry[] } = { data: [] };
-        
-        if (tournamentResponse.ok) {
-          tournamentData = await tournamentResponse.json();
-        }
-        
-        // We'll fetch fastest wins from the same data
-        // In a real implementation, this should be fetched from a dedicated endpoint
-        // For now, we'll use empty data (will be replaced with proper API call)
-        
-        // Fetch total games data
-        const totalGamesResponse = await fetch('/api/stats/stats/leaderboard/totalgames?limit=10');
-        let totalGamesData: { data: LeaderboardEntry[] } = { data: [] };
-        
-        if (totalGamesResponse.ok) {
-          totalGamesData = await totalGamesResponse.json();
-        } else {
-          // If the API doesn't exist, we'll show empty data
-          totalGamesData = { data: [] };
-        }
-        
-        // Fetch fastest wins data
+        let tournamentData: { data: LeaderboardEntry[] } = { data: [] }
+        if (tournamentResponse.ok) tournamentData = await tournamentResponse.json();
+
+		const totalGamesResponse = await fetch('/api/stats/stats/leaderboard/totalgames?limit=10');
+        let totalGamesData: { data: LeaderboardEntry[] } = { data: [] }
+
+        if (totalGamesResponse.ok)	totalGamesData = await totalGamesResponse.json();
+        else						totalGamesData = { data: [] }
+
         const fastestWinsResponse = await fetch('/api/stats/stats/leaderboard/fastest?limit=10');
-        let fastestWinsData: { data: LeaderboardEntry[] } = { data: [] };
-        
-        if (fastestWinsResponse.ok) {
-          fastestWinsData = await fastestWinsResponse.json();
-        } else {
-          // If the API doesn't exist, we'll show empty data
-          fastestWinsData = { data: [] };
-        }
-        
-        setLeaderboards({
-          wins: winsData.data || [],
-          winrate: winRateData.data || [],
-          tournaments: tournamentData.data || [],
-          fastest: fastestWinsData.data || [],
-          totalGames: totalGamesData.data || []
-        });
-      } catch (err) {
-        setError(t('leaderboard.errorFetching'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
+        let fastestWinsData: { data: LeaderboardEntry[] } = { data: [] }
+
+        if (fastestWinsResponse.ok) fastestWinsData = await fastestWinsResponse.json();
+        else						fastestWinsData = { data: [] }
+
+        setLeaderboards({ wins: winsData.data || [], winrate: winRateData.data || [], tournaments: tournamentData.data || [], fastest: fastestWinsData.data || [], totalGames: totalGamesData.data || [] });
+      } catch (err) { setError(t('leaderboard.errorFetching'));
+      } finally { setIsLoading(false); }
+    }
+
     fetchLeaderboards();
   }, [t]);
-  
-  // Handle navigating to player details
-  const navigateToPlayerDetails = (userId: string) => {
-    navigate(`/rankings?user=${userId}`);
-  };
-  
-  // Get the correct data based on active category
-  const getActiveLeaderboard = (): LeaderboardEntry[] => {
-    return leaderboards[activeCategory] || [];
-  };
-  
-  // Category tabs configuration
+
+  const navigateToPlayerDetails = (userId: string) => { navigate(`/rankings?user=${userId}`); }
+  const getActiveLeaderboard = (): LeaderboardEntry[] => { return leaderboards[activeCategory] || []; }
+
   const categories = [
     { 
       id: 'wins' as LeaderboardCategory, 
@@ -148,8 +99,7 @@ const LeaderboardPage: React.FC = () => {
       color: 'from-rose-400 to-red-600' 
     }
   ];
-  
-  // Get medal styling for top positions
+
   const getMedalStyle = (position: number) => {
     switch (position) {
       case 0: // 1st place
@@ -161,69 +111,47 @@ const LeaderboardPage: React.FC = () => {
       default:
         return 'bg-gray-700 text-gray-300';
     }
-  };
-  
-  // Format a value for display, handling undefined/null values
+  }
+
   const formatValue = (value: number | undefined, suffix: string = ''): string => {
-    if (value === undefined || value === null) {
-      return '-';
-    }
+    if (value === undefined || value === null) return '-';
     return `${value}${suffix}`;
-  };
-  
-  // Format time in seconds to mm:ss format
+  }
+
   const formatTime = (seconds: number | undefined): string => {
-    if (seconds === undefined || seconds === null) {
-      return '-';
-    }
-    
+    if (seconds === undefined || seconds === null) return '-';
+
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
+  }
 
-  // Get the right value to display based on the active category
   const getDisplayValue = (entry: LeaderboardEntry, _: number): string => {
     switch (activeCategory) {
-      case 'wins':
-        return formatValue(entry.wins);
-      case 'winrate':
-        return formatValue(entry.win_rate, '%');
-      case 'tournaments':
-        return formatValue(entry.tournament_wins);
-      case 'fastest':
-        return formatTime(entry.fastest_win);
-      case 'totalGames':
-        return formatValue(entry.total_games);
-      default:
-        return '-';
+      case 'wins':			return formatValue(entry.wins);
+      case 'winrate':		return formatValue(entry.win_rate, '%');
+      case 'tournaments':	return formatValue(entry.tournament_wins);
+      case 'fastest':		return formatTime(entry.fastest_win);
+      case 'totalGames':	return formatValue(entry.total_games);
+      default:				return '-';
     }
-  };
+  }
   
-  // Get column header based on active category
   const getColumnHeader = (): string => {
     switch (activeCategory) {
-      case 'wins':
-        return t('leaderboard.wins');
-      case 'winrate':
-        return t('leaderboard.winRate');
-      case 'tournaments':
-        return t('leaderboard.tournaments');
-      case 'fastest':
-        return t('leaderboard.time');
-      case 'totalGames':
-        return t('leaderboard.games');
-      default:
-        return '';
+      case 'wins':			return t('leaderboard.wins');
+      case 'winrate':		return t('leaderboard.winRate');
+      case 'tournaments':	return t('leaderboard.tournaments');
+      case 'fastest':		return t('leaderboard.time');
+      case 'totalGames':	return t('leaderboard.games');
+      default:				return '';
     }
-  };
+  }
 
-  // Generate rows, using real data for as many entries as available, then filling with placeholders up to 10
   const generateTableRows = () => {
     const activeLeaderboard = getActiveLeaderboard();
     const rows = [];
 
-    // First add all available data rows
     for (let i = 0; i < activeLeaderboard.length; i++) {
       const entry = activeLeaderboard[i];
       rows.push(
@@ -250,7 +178,6 @@ const LeaderboardPage: React.FC = () => {
       );
     }
 
-    // Then fill with placeholder rows up to 10
     for (let i = activeLeaderboard.length; i < 10; i++) {
       rows.push(
         <tr key={`placeholder-${i}`} className="hover:bg-gray-700/30">
@@ -270,7 +197,7 @@ const LeaderboardPage: React.FC = () => {
     }
 
     return rows;
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-indigo-950 py-12 px-4 sm:px-6 lg:px-8">
@@ -341,6 +268,6 @@ const LeaderboardPage: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default LeaderboardPage;

@@ -278,6 +278,6 @@ const translations = {
   'notFound.message': 'Looks like this page is out of the playing field',
   'notFound.backToHome': 'Back to Home Page',
 
-};
+}
 
 export default translations;

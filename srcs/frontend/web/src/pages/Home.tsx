@@ -6,42 +6,20 @@ import { useLanguage } from "../contexts/LanguageContext";
 
 const Home: React.FC = () => {
   const { t } = useLanguage();
-  
-  // State for animation effects
   const [isLoaded, setIsLoaded] = useState(false);
   const [hoverItem, setHoverItem] = useState<string | null>(null);
-  
-  // Animated background elements
   const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, size: number, speed: number}>>([]);
 
   useEffect(() => {
-    // Set loaded state for entrance animations
     setIsLoaded(true);
-    
-    // Create background particles
-    const newParticles = Array.from({ length: 100 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 4 + 1,
-      speed: Math.random() * 0.5 + 0.1
-    }));
+
+	const newParticles = Array.from({ length: 100 }, (_, i) => ({ id: i, x: Math.random() * 100, y: Math.random() * 100, size: Math.random() * 4 + 1, speed: Math.random() * 0.5 + 0.1 }));
     setParticles(newParticles);
-    
-    // Animate particles
-    const interval = setInterval(() => {
-      setParticles(prevParticles => 
-        prevParticles.map(particle => ({
-          ...particle,
-          y: particle.y - particle.speed < 0 ? 100 : particle.y - particle.speed
-        }))
-      );
-    }, 50);
+    const interval = setInterval(() => { setParticles(prevParticles => prevParticles.map(particle => ({ ...particle, y: particle.y - particle.speed < 0 ? 100 : particle.y - particle.speed }))); }, 50);
     
     return () => clearInterval(interval);
   }, []);
 
-  // Game mode cards data - using translations
   const gameModes = [
     {
       id: "quickmatch",
@@ -211,6 +189,6 @@ const Home: React.FC = () => {
       `}</style>
     </div>
   );
-};
+}
 
 export default Home;

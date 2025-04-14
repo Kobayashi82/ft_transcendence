@@ -36,7 +36,7 @@ async function gameRoutes(fastify) {
     }
   }, async (request, reply) => {
     try {
-      const requestBody = { ...request.body };
+      const requestBody = { ...request.body }
       if (requestBody.tournament_id) requestBody.tournament_id = parseInt(requestBody.tournament_id);
       if (requestBody.players) requestBody.players = requestBody.players.map(player => ({ ...player, score: parseInt(player.score) }));
       

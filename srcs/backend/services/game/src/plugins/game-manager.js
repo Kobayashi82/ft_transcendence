@@ -359,7 +359,7 @@ class GameManager {
           for (const matchId of tournament.matches) {
             const match = tournamentManager.matches.get(matchId);
             if (match && match.gameId === gameId) {
-              matchInfo = { tournamentId: tournamentId, matchId: matchId, round: match.round || (gameState.settings.tournamentRound || 1) };
+              matchInfo = { tournamentId: tournamentId, matchId: matchId, round: match.round || (gameState.settings.tournamentRound || 1) }
               if (tournament.dbId) tournamentDbId = tournament.dbId;
               break;
             }
@@ -395,7 +395,7 @@ class GameManager {
             score: gameState.player2.score
           }
         ]
-      };
+      }
 
       if (matchInfo && tournamentDbId) {
         gamePayload.tournament_id = tournamentDbId;
@@ -425,7 +425,7 @@ class GameManager {
   findMatchInfoForGame(gameId) {
     for (const [tournamentId, tournament] of this.tournaments.entries()) {
       const matchInfo = tournament.matches.find(match => match.gameId === gameId);
-      if (matchInfo) return { tournamentId, round: matchInfo.round };
+      if (matchInfo) return { tournamentId, round: matchInfo.round }
     }
 
     return null;

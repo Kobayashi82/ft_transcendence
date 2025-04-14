@@ -278,6 +278,6 @@ const translations = {
   'notFound.message': 'On dirait que cette page est hors du terrain de jeu',
   'notFound.backToHome': 'Retour à la Page d\'Accueil',
 
-};
+}
 
 export default translations;

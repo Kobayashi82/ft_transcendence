@@ -7,13 +7,9 @@ interface PositionBadgeProps {
   showText?: boolean;
 }
 
-/**
- * Componente que muestra un icono y opcionalmente texto para la posición en un torneo
- */
 const PositionBadge: React.FC<PositionBadgeProps> = ({ position, showText = true }) => {
   const { t } = useLanguage();
   
-  // Si no hay posición, mostrar icono de desconocido
   if (position === null || position === undefined) {
     return (
       <div className="flex items-center" title={t('stats.unknown')}>
@@ -23,38 +19,37 @@ const PositionBadge: React.FC<PositionBadgeProps> = ({ position, showText = true
     );
   }
 
-  // Configuraciones según la posición
   let icon;
   let bgColor;
   let textColor;
   let labelText;
 
   switch (position) {
-    case 1: // Primer lugar
+    case 1:
       icon = <Trophy size={18} className="text-yellow-300" />;
       bgColor = 'bg-yellow-500/20';
       textColor = 'text-yellow-300';
       labelText = t('stats.first');
       break;
-    case 2: // Segundo lugar
+    case 2:
       icon = <Medal size={18} className="text-gray-300" />;
       bgColor = 'bg-gray-400/20';
       textColor = 'text-gray-300';
       labelText = t('stats.second');
       break;
-    case 3: // Tercer lugar
+    case 3:
       icon = <Award size={18} className="text-amber-600" />;
       bgColor = 'bg-amber-600/20';
       textColor = 'text-amber-500';
       labelText = t('stats.third');
       break;
-    case 4: // Cuarto lugar (participante)
+    case 4:
       icon = <Award size={18} className="text-blue-400" />;
       bgColor = 'bg-blue-500/20';
       textColor = 'text-blue-400';
       labelText = t('stats.fourth');
       break;
-    default: // Otras posiciones
+    default:
       icon = <HelpCircle size={18} className="text-gray-400" />;
       bgColor = 'bg-gray-500/20';
       textColor = 'text-gray-400';
@@ -70,6 +65,6 @@ const PositionBadge: React.FC<PositionBadgeProps> = ({ position, showText = true
       {showText && <span className={`ml-1.5 ${textColor} text-sm font-medium`}>{labelText}</span>}
     </div>
   );
-};
+}
 
 export default PositionBadge;

@@ -10,7 +10,6 @@ interface GameSettingProps {
 const GameSetting: React.FC<GameSettingProps> = ({ type, value }) => {
   const { t } = useLanguage();
 
-  // Ball Speed setting visualization
   const renderBallSpeed = () => {
     let speedColor = "";
     let speedSize = 16;
@@ -18,15 +17,15 @@ const GameSetting: React.FC<GameSettingProps> = ({ type, value }) => {
     if (typeof value === 'string') {
       switch (value.toLowerCase()) {
         case 'slow':
-          speedColor = "text-green-500"; // Verde para slow
+          speedColor = "text-green-500";
           speedSize = 14;
           break;
         case 'medium':
-          speedColor = "text-yellow-500"; // Amarillo para medium
+          speedColor = "text-yellow-500";
           speedSize = 16;
           break;
         case 'fast':
-          speedColor = "text-blue-500"; // Azul para fast
+          speedColor = "text-blue-500";
           speedSize = 18;
           break;
         default:
@@ -43,9 +42,8 @@ const GameSetting: React.FC<GameSettingProps> = ({ type, value }) => {
         />
       </div>
     );
-  };
+  }
 
-  // Paddle Size setting visualization - solo la parte de color
   const renderPaddleSize = () => {
     let sizeClass = "";
     let sizeHeight = "10px";
@@ -77,9 +75,8 @@ const GameSetting: React.FC<GameSettingProps> = ({ type, value }) => {
         title={`${t('stats.paddleSize')}: ${t(`stats.${value.toString().toLowerCase()}`)}`}
       />
     );
-  };
+  }
 
-  // Speed Increment setting visualization
   const renderSpeedIncrement = () => {
     const isEnabled = value === true || value === 'true' || value === 1;
     
@@ -91,9 +88,8 @@ const GameSetting: React.FC<GameSettingProps> = ({ type, value }) => {
         />
       </div>
     );
-  };
+  }
 
-  // Points to Win setting visualization
   const renderPointsToWin = () => {
     const points = typeof value === 'number' ? value : parseInt(value.toString());
     
@@ -106,7 +102,7 @@ const GameSetting: React.FC<GameSettingProps> = ({ type, value }) => {
         <span className="text-gray-300 text-sm">{points}</span>
       </div>
     );
-  };
+  }
 
   return (
     <div className="inline-flex items-center space-x-4">
@@ -116,6 +112,6 @@ const GameSetting: React.FC<GameSettingProps> = ({ type, value }) => {
       {type === 'pointsToWin' && renderPointsToWin()}
     </div>
   );
-};
+}
 
 export default GameSetting;

@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, X, Info } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
-
-// Component imports
 import PlayerOverview from "../components/stats/PlayerOverview";
 import GamesTable from "../components/stats/GamesTable";
 import TournamentsTable from "../components/stats/TournamentsTable";
@@ -13,7 +11,6 @@ interface Player {
 	user_id: string;
   }
 
-// Types for API responses
 interface PlayerStats {
   player_id: number;
   user_id: string;
@@ -53,7 +50,7 @@ interface GameDetails {
     speedIncrement: number;
     pointsToWin: number;
     [key: string]: any;
-  };
+  }
   players: {
     id: number;
     user_id: string;
@@ -70,7 +67,7 @@ interface TournamentDetails {
     format: string;
     pointsToWin: number;
     [key: string]: any;
-  };
+  }
   status: string;
   players: {
     id: number;
@@ -80,18 +77,9 @@ interface TournamentDetails {
   games: GameDetails[];
 }
 
-// Extended tournament interface with expanded state
-interface TournamentWithExpand extends TournamentDetails {
-  isExpanded: boolean;
-}
+interface TournamentWithExpand extends TournamentDetails { isExpanded: boolean; }
+interface User { id: string; user_id: string; }
 
-// User interface for dropdown users list
-interface User {
-  id: string;
-  user_id: string;
-}
-
-// Estilos personalizados para el select
 const customSelectStyles = `
   /* Estilos para el select */
   .custom-select {
@@ -125,8 +113,6 @@ const customSelectStyles = `
 const RankingsPage: React.FC = () => {
   const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
-  
-  // State variables
   const [userId, setUserId] = useState<string>(searchParams.get("user") || "");
   const [error, setError] = useState<string | null>(null);
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
@@ -137,71 +123,42 @@ const RankingsPage: React.FC = () => {
   const [_, setFilteredUsers] = useState<User[]>([]);
   const selectRef = useRef<HTMLSelectElement>(null);
 
-  // Effect to load users list when component mounts
-  useEffect(() => {
-    fetchUsersList();
-  }, []);
-
-  // Effect to load data when userId in URL changes
+  useEffect(() => { fetchUsersList(); }, []);
   useEffect(() => {
     const userIdFromUrl = searchParams.get("user");
-    if (userIdFromUrl) {
-      setUserId(userIdFromUrl);
-      fetchUserStats(userIdFromUrl);
-    }
+    if (userIdFromUrl) { setUserId(userIdFromUrl); fetchUserStats(userIdFromUrl); }
   }, [searchParams]);
 
-  // Effect to filter users when input changes
   useEffect(() => {
     if (userId) {
-      const filtered = usersList.filter(user => 
-        user.user_id.toLowerCase().includes(userId.toLowerCase())
-      );
+      const filtered = usersList.filter(user => user.user_id.toLowerCase().includes(userId.toLowerCase()));
       setFilteredUsers(filtered);
-    } else {
-      setFilteredUsers(usersList);
-    }
+    } else setFilteredUsers(usersList);
   }, [userId, usersList]);
 
-  // Fetch users list
   const fetchUsersList = async () => {
     try {
       const response = await fetch('/api/stats/players');
-      if (!response.ok) {
-        throw new Error(`Error fetching users: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Error fetching users: ${response.status}`);
       const data = await response.json();
-      // Check if the data is in the expected format
       if (data && data.data && Array.isArray(data.data)) {
-        // Transform the data to match our User interface
-        const users = data.data.map((player: Player) => ({
-          id: player.id ? player.id.toString() : '',
-          user_id: player.user_id
-        }));
-        
-        // Ordenar los usuarios alfabéticamente por user_id
+        const users = data.data.map((player: Player) => ({ id: player.id ? player.id.toString() : '', user_id: player.user_id }));
         const sortedUsers = users.sort((a: User, b: User) => a.user_id.localeCompare(b.user_id));
-        
+
         setUsersList(sortedUsers);
         setFilteredUsers(sortedUsers);
-      } else {
-        console.error("Unexpected data format:", data);
       }
-    } catch (err) {
-      console.error("Failed to fetch users list:", err);
-    }
-  };
+    } catch (err) {}
+  }
 
-  // Handle search form submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId.trim()) return;
-    
+
     setSearchParams({ user: userId });
     fetchUserStats(userId);
-  };
+  }
 
-  // Clear search results
   const clearSearch = () => {
     setUserId("");
     setPlayerStats(null);
@@ -209,32 +166,18 @@ const RankingsPage: React.FC = () => {
     setTournaments([]);
     setError(null);
     setSearchParams({});
-    if (selectRef.current) {
-      selectRef.current.selectedIndex = 0;
-    }
-  };
+    if (selectRef.current) selectRef.current.selectedIndex = 0;
+  }
 
-  // Handle select change
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (e.target.value) {
       setUserId(e.target.value);
       setSearchParams({ user: e.target.value });
       fetchUserStats(e.target.value);
     }
-  };
+  }
 
-  // Toggle tournament expansion to show games
-  const toggleTournamentExpand = (tournamentId: number) => {
-    setTournaments(prevTournaments => 
-      prevTournaments.map(tournament => 
-        tournament.id === tournamentId 
-          ? { ...tournament, isExpanded: !tournament.isExpanded } 
-          : tournament
-      )
-    );
-  };
-
-  // Fetch user statistics
+  const toggleTournamentExpand = (tournamentId: number) => { setTournaments(prevTournaments => prevTournaments.map(tournament => tournament.id === tournamentId ? { ...tournament, isExpanded: !tournament.isExpanded } : tournament)); }
   const fetchUserStats = async (userId: string) => {
     setIsLoading(true);
     setError(null);
@@ -242,34 +185,24 @@ const RankingsPage: React.FC = () => {
       const response = await fetch(`/api/stats/stats/user/${userId}`);
       
       if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error(t('stats.userNotFound'));
-        }
+        if (response.status === 404) throw new Error(t('stats.userNotFound'));
         throw new Error(`${t('stats.errorFetchingStats')}: ${response.status}`);
       }
       
       const data: PlayerStats = await response.json();
       setPlayerStats(data);
       
-      // Fetch detailed information for each game
       await fetchGameDetails(data.recent_games);
-      
-      // Fetch detailed information for each tournament
       await fetchTournamentDetails(data.recent_tournaments);
-      
     } catch (err) {
-      console.error("Failed to fetch user stats:", err);
       setError(err instanceof Error ? err.message : t('stats.unknownError'));
       setPlayerStats(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    } finally { setIsLoading(false); }
+  }
 
-  // Fetch detailed information for games
   const fetchGameDetails = async (games: RecentGame[]) => {
-    const gameDetailsMap: Record<number, GameDetails> = {};
-    
+    const gameDetailsMap: Record<number, GameDetails> = {}
+
     for (const game of games) {
       try {
         const response = await fetch(`/api/stats/games/${game.id}`);
@@ -277,18 +210,14 @@ const RankingsPage: React.FC = () => {
           const data: GameDetails = await response.json();
           gameDetailsMap[game.id] = data;
         }
-      } catch (err) {
-        console.error(`Failed to fetch details for game ${game.id}:`, err);
-      }
+      } catch (err) {}
     }
-    
     setGameDetails(gameDetailsMap);
-  };
+  }
 
-  // Fetch detailed information for tournaments
   const fetchTournamentDetails = async (tournaments: RecentTournament[]) => {
     const tournamentsList: TournamentWithExpand[] = [];
-    
+
     for (const tournament of tournaments) {
       try {
         const response = await fetch(`/api/stats/tournaments/${tournament.id}`);
@@ -296,22 +225,15 @@ const RankingsPage: React.FC = () => {
           const data: TournamentDetails = await response.json();
           tournamentsList.push({ ...data, isExpanded: false });
         }
-      } catch (err) {
-        console.error(`Failed to fetch details for tournament ${tournament.id}:`, err);
-      }
+      } catch (err) {}
     }
-    
     setTournaments(tournamentsList);
-  };
+  }
 
-  // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserId(e.target.value);
-    // Reset select element when typing
-    if (selectRef.current) {
-      selectRef.current.selectedIndex = 0;
-    }
-  };
+    if (selectRef.current) selectRef.current.selectedIndex = 0;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-indigo-950 py-12 px-4 sm:px-6 lg:px-8">
@@ -416,7 +338,7 @@ const RankingsPage: React.FC = () => {
           </div>
         )}
         
-        {/* Empty state - show only if not loading and no stats */}
+        {/* Empty state */}
         {!isLoading && !playerStats && !error && (
           <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl p-8 text-center">
             <Info className="h-12 w-12 text-blue-400 mx-auto mb-4" />
@@ -427,6 +349,6 @@ const RankingsPage: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default RankingsPage;

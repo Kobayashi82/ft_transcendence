@@ -2,7 +2,6 @@ import React from "react";
 import { User } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 
-// Types
 interface PlayerStats {
   player_id: number;
   user_id: string;
@@ -14,9 +13,7 @@ interface PlayerStats {
   tournament_wins: number;
 }
 
-interface PlayerOverviewProps {
-  playerStats: PlayerStats;
-}
+interface PlayerOverviewProps { playerStats: PlayerStats; }
 
 const PlayerOverview: React.FC<PlayerOverviewProps> = ({ playerStats }) => {
   const { t } = useLanguage();
@@ -55,6 +52,6 @@ const PlayerOverview: React.FC<PlayerOverviewProps> = ({ playerStats }) => {
       </div>
     </div>
   );
-};
+}
 
 export default PlayerOverview;

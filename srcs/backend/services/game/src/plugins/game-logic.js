@@ -498,7 +498,7 @@ class PongGame {
         currentTime: now, // Añadimos el tiempo actual para cálculos de cliente
         gameStateChangeTime: this.gameStateChangeTime || now // Tiempo de último cambio de estado
       }
-    };
+    }
   }
 
   // Calculate the effective playing time (excluding pauses)

@@ -4,7 +4,6 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import GameSetting from "./GameSetting";
 import PositionBadge from "./PositionBadge";
 
-// Types
 interface TournamentDetails {
   id: number;
   name: string;
@@ -17,7 +16,7 @@ interface TournamentDetails {
     pointsToWin?: number;
     format?: string;
     [key: string]: any;
-  };
+  }
   status: string;
   players: {
     id: number;
@@ -38,7 +37,7 @@ interface GameDetails {
     speedIncrement: number;
     pointsToWin: number;
     [key: string]: any;
-  };
+  }
   players: {
     id: number;
     user_id: string;
@@ -46,10 +45,7 @@ interface GameDetails {
   }[];
 }
 
-// Extended tournament interface with expanded state
-interface TournamentWithExpand extends TournamentDetails {
-  isExpanded: boolean;
-}
+interface TournamentWithExpand extends TournamentDetails { isExpanded: boolean; }
 
 interface TournamentsTableProps {
   tournaments: TournamentWithExpand[];
@@ -60,37 +56,28 @@ interface TournamentsTableProps {
 const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId, onToggleExpand }) => {
   const { t } = useLanguage();
 
-  // Format date to local string
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-  };
+  }
 
-  // Calculate game duration in mm:ss format
   const calculateDuration = (start: string, end: string) => {
     const startTime = new Date(start).getTime();
     const endTime = new Date(end).getTime();
-    const durationMs = Math.max(0, endTime - startTime); // Evitar duraciones negativas
-    
-    // Calculate minutes and seconds
+    const durationMs = Math.max(0, endTime - startTime);
     const totalSeconds = Math.floor(durationMs / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    
-    // Format as mm:ss
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
 
-  // Get winner of tournament
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
   const getTournamentWinner = (tournament: TournamentDetails) => {
     const winner = tournament.players.find(player => player.final_position === 1);
     return winner ? winner.user_id : t('stats.unknown');
-  };
+  }
 
-  // Format participants list
-  const formatParticipants = (players: { user_id: string }[]) => {
-    return players.map(player => player.user_id).join(", ");
-  };
+  const formatParticipants = (players: { user_id: string }[]) => { return players.map(player => player.user_id).join(", "); }
 
   return (
     <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl">
@@ -180,7 +167,7 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
                     </td>
                   </tr>
                   
-                  {/* Expanded tournament games */}
+                  {/* tournament games */}
                   {tournament.isExpanded && (
                     <tr>
                       <td colSpan={7} className="py-0 px-0">
@@ -262,6 +249,6 @@ const TournamentsTable: React.FC<TournamentsTableProps> = ({ tournaments, userId
       </div>
     </div>
   );
-};
+}
 
 export default TournamentsTable;

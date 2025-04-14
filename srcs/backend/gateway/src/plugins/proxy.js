@@ -49,7 +49,7 @@ const getAllowedHttpMethods = (routes) => {
 async function proxyPlugin(fastify) {
 
   const { services, routeMap } = fastify.config;
-  const wsProxies = {};
+  const wsProxies = {}
   const activeConnections = new Map();
 
   // Add a preHandler hook to check allowed methods
@@ -153,7 +153,7 @@ async function proxyPlugin(fastify) {
         },
         serviceName,
         serviceUrl
-      };
+      }
     }
   }
 
@@ -172,7 +172,7 @@ async function proxyPlugin(fastify) {
       'x-target': serviceName,
       'x-request-id': requestId,
       'x-gateway-timestamp': Date.now().toString()
-    };
+    }
 
     const options = {
       host: target.host,
@@ -180,7 +180,7 @@ async function proxyPlugin(fastify) {
       path: pathname,
       headers: headers,
       method: 'GET'
-    };
+    }
 
     const proxyReq = require('http').request(options);
     proxyReq.on('upgrade', (proxyRes, proxySocket) => {
@@ -199,7 +199,7 @@ async function proxyPlugin(fastify) {
         path: pathname,
         clientIp: request.socket.remoteAddress,
         connectedAt: new Date(),
-      };
+      }
 
       activeConnections.set(requestId, connection);
 
@@ -210,7 +210,7 @@ async function proxyPlugin(fastify) {
       proxySocket.on('error', (_) => { socket.destroy(); if (activeConnections.has(requestId)) activeConnections.delete(requestId); });
       socket.on('error', (_) => { proxySocket.destroy(); if (activeConnections.has(requestId)) activeConnections.delete(requestId); });
 
-      const closeHandler = () => { if (activeConnections.has(requestId)) activeConnections.delete(requestId); };
+      const closeHandler = () => { if (activeConnections.has(requestId)) activeConnections.delete(requestId); }
       proxySocket.on('close', closeHandler);
       socket.on('close', closeHandler);
     });

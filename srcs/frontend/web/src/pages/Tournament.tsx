@@ -3,11 +3,10 @@ import { Trophy, Users, Settings, Info, Check, ChevronDown, Type } from "lucide-
 import { useLanguage } from "../contexts/LanguageContext";
 import GameModal from "../components/game/GameModal";
 
-// Default game options type
 interface GameOptions {
   ballSpeed: string[];
   paddleSize: string[];
-  winningScore: { min: number; max: number };
+  winningScore: { min: number; max: number }
   accelerationEnabled: boolean[];
   default?: {
     ballSpeed: string;
@@ -15,10 +14,9 @@ interface GameOptions {
     accelerationEnabled: boolean;
     paddleSize: string;
     ai_opponents?: string[];
-  };
+  }
 }
 
-// Player type definition
 interface Player {
   id: number;
   user_id: string;
@@ -27,47 +25,33 @@ interface Player {
 
 const TournamentPage: React.FC = () => {
   const { t } = useLanguage();
-  
-  // State for game configuration
   const [options, setOptions] = useState<GameOptions | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
-  // State for player selection
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>(["", "", "", ""]);
   const [showAIList, setShowAIList] = useState<number | null>(null);
-
-  // Refs for dropdown areas
   const dropdownRefs = React.useRef<Array<HTMLDivElement | null>>([null, null, null, null]);
-
-  // State for game settings
   const [tournamentName, setTournamentName] = useState<string>("");
   const [ballSpeed, setBallSpeed] = useState<string>("medium");
   const [paddleSize, setPaddleSize] = useState<string>("medium");
   const [winningScore, setWinningScore] = useState<number>(5);
   const [accelerationEnabled, setAccelerationEnabled] = useState<boolean>(false);
-  
-  // State for game creation and modal
   const [gameId, setGameId] = useState<string | null>(null);
   const [isGameModalOpen, setIsGameModalOpen] = useState<boolean>(false);
 
-  // Fetch game options
   useEffect(() => {
     const fetchOptions = async () => {
       try {
         setLoading(true);
         const response = await fetch("/api/game/options");
-        
-        if (!response.ok) {
-          throw new Error(`Error fetching game options: ${response.status}`);
-        }
-        
+
+        if (!response.ok) throw new Error(`Error fetching game options: ${response.status}`);
+
         const data: GameOptions = await response.json();
         setOptions(data);
-        
-        // Set default values if available
+
         if (data.default) {
           setBallSpeed(data.default.ballSpeed);
           setPaddleSize(data.default.paddleSize);
@@ -76,72 +60,45 @@ const TournamentPage: React.FC = () => {
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
-        
-        // Set fallback default values
         setBallSpeed("medium");
         setPaddleSize("medium");
         setWinningScore(5);
         setAccelerationEnabled(false);
-      } finally {
-        setLoading(false);
-      }
-    };
+      } finally { setLoading(false); }
+    }
     
     const fetchPlayers = async () => {
       try {
         const response = await fetch("/api/stats/players");
-        
-        if (!response.ok) {
-          throw new Error(`Error fetching players: ${response.status}`);
-        }
-        
+
+        if (!response.ok) throw new Error(`Error fetching players: ${response.status}`);
+
         const data = await response.json();
-        
-        // Check if the data is in the expected format
         if (data && data.data && Array.isArray(data.data)) {
-          // Filter out AI players from the list and sort alphabetically by user_id
           const filteredPlayers = data.data.filter((player: Player) => !player.isAI);
-          const sortedPlayers = [...filteredPlayers].sort((a, b) => 
-            a.user_id.localeCompare(b.user_id)
-          );
+          const sortedPlayers = [...filteredPlayers].sort((a, b) => a.user_id.localeCompare(b.user_id));
           setPlayers(sortedPlayers);
         }
       } catch (err) {}
-    };
-    
+    }
+
     fetchOptions();
     fetchPlayers();
   }, []);
 
   // Create a tournament
   const createTournament = async () => {
-    // Verificar que todos los jugadores están seleccionados y no están vacíos ni contienen solo espacios
     const validPlayers = selectedPlayers.filter(p => p.trim() !== "");
-    if (validPlayers.length !== 4) {
-      setError(t('tournament.error.selectExactlyFourPlayers'));
-      return;
-    }
-    
-    // Verificar que se ha proporcionado un nombre de torneo válido
-    if (!tournamentName.trim()) {
-      setError(t('tournament.error.provideTournamentName'));
-      return;
-    }
-    
-    // Verificar que no hay IAs en la lista de jugadores seleccionados
+    if (validPlayers.length !== 4) { setError(t('tournament.error.selectExactlyFourPlayers')); return; }
+
+    if (!tournamentName.trim()) { setError(t('tournament.error.provideTournamentName')); return; }
+
     const hasAI = selectedPlayers.some(player => isAIPlayer(player.trim()));
-    if (hasAI) {
-      setError(t('tournament.error.noAIAllowed'));
-      return;
-    }
-    
-    // Verificar que no hay jugadores humanos duplicados
+    if (hasAI) { setError(t('tournament.error.noAIAllowed')); return; }
+
     const uniquePlayers = new Set(selectedPlayers.map(p => p.trim().toLowerCase()));
-    if (uniquePlayers.size !== selectedPlayers.length) {
-      setError(t('tournament.error.duplicatePlayers'));
-      return;
-    }
-    
+    if (uniquePlayers.size !== selectedPlayers.length) { setError(t('tournament.error.duplicatePlayers')); return; }
+
     try {
       setLoading(true);
       setError(null);
@@ -155,147 +112,102 @@ const TournamentPage: React.FC = () => {
           paddleSize,
           winningScore: Number(winningScore),
           accelerationEnabled,
-          useConfigForAllRounds: true // Añadir flag para usar la misma configuración en todas las rondas
+          useConfigForAllRounds: true
         }
-      };
-      
+      }
+
       const response = await fetch("/api/game/tournament/create", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(tournamentData),
       });
-                  
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Error creating game: ${response.status}`);
       }
 
-      const data = await response.json();
-
+	  const data = await response.json();
       setGameId(data.firstMatchId);
       setIsGameModalOpen(true);
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  };
+    } catch (err) { setError(err instanceof Error ? err.message : "Unknown error");
+    } finally { setLoading(false); }
+  }
 
-  // Handle closing the game modal
   const handleCloseGame = () => {
     setIsGameModalOpen(false);
     setGameId(null);
-  };
+  }
 
-  // Toggle AI list display
   const toggleAIList = (playerIndex: number) => {
-    if (showAIList === playerIndex) {
-      setShowAIList(null);
-    } else {
-      setShowAIList(playerIndex);
-    }
-  };
-  
-  // Click outside handler for dropdowns
+    if (showAIList === playerIndex) setShowAIList(null);
+    else 							setShowAIList(playerIndex);
+  }
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showAIList !== null) {
         const ref = dropdownRefs.current[showAIList];
-        if (ref && !ref.contains(event.target as Node)) {
-          setShowAIList(null);
-        }
-      }
-    };
-    
-    // Add event listener
-    document.addEventListener('mousedown', handleClickOutside);
-    
-    // Clean up
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showAIList]);
-
-  // Select a player
-  const selectPlayer = (playerIndex: number, userId: string) => {
-    // Verificar si el jugador ya está seleccionado en otra posición
-    const aiNames = getAIOpponents();
-    const isAI = aiNames.includes(userId);
-    
-    // Si es una IA, permitimos seleccionarla múltiples veces
-    if (!isAI) {
-      const isDuplicate = selectedPlayers.some((player, idx) => idx !== playerIndex && player === userId);
-      if (isDuplicate) {
-        setError(t('tournament.error.playerAlreadySelected'));
-        return;
+        if (ref && !ref.contains(event.target as Node)) setShowAIList(null);
       }
     }
     
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => { document.removeEventListener('mousedown', handleClickOutside); }
+  }, [showAIList]);
+
+  const selectPlayer = (playerIndex: number, userId: string) => {
+    const aiNames = getAIOpponents();
+    const isAI = aiNames.includes(userId);
+
+	if (!isAI) {
+      const isDuplicate = selectedPlayers.some((player, idx) => idx !== playerIndex && player === userId);
+      if (isDuplicate) { setError(t('tournament.error.playerAlreadySelected')); return; }
+    }
+
     const newSelectedPlayers = [...selectedPlayers];
     newSelectedPlayers[playerIndex] = userId;
     setSelectedPlayers(newSelectedPlayers);
     setShowAIList(null);
-  };
+  }
 
-  // Get AI opponents from options
   const getAIOpponents = () => {
     return options?.default?.ai_opponents || [];
-  };
-  
-  // Verificar si un nombre coincide con una IA
+  }
+
   const isAIPlayer = (playerName: string) => {
     const aiNames = getAIOpponents();
-    // Comprobación insensible a mayúsculas/minúsculas
     return aiNames.some(ai => ai.toLowerCase() === playerName.toLowerCase());
-  };
+  }
 
-  // Get display text for speed/size options
   const getOptionDisplayText = (option: string) => {
     switch(option.toLowerCase()) {
-      case 'slow':
-        return t('tournament.slow');
-      case 'medium':
-        return t('tournament.medium');
-      case 'fast':
-        return t('tournament.fast');
-      case 'short':
-        return t('tournament.short');
-      case 'long':
-        return t('tournament.long');
-      default:
-        return option.charAt(0).toUpperCase() + option.slice(1);
+      case 'slow':		return t('tournament.slow');
+      case 'medium':	return t('tournament.medium');
+      case 'fast':		return t('tournament.fast');
+      case 'short':		return t('tournament.short');
+      case 'long':		return t('tournament.long');
+      default:			return option.charAt(0).toUpperCase() + option.slice(1);
     }
-  };
+  }
 
-  // Manejar cambios en el input de puntos para ganar
   const handleWinningScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    // Permite borrar completamente el input para ingresar un nuevo valor
-    if (inputValue === '') {
-      setWinningScore(0);
-      return;
-    }
-    
+    if (inputValue === '') { setWinningScore(0); return; }
+
     const val = parseInt(inputValue);
     const min = options?.winningScore?.min || 1;
     const max = options?.winningScore?.max || 20;
     
-    if (!isNaN(val) && val >= min && val <= max) {
-      setWinningScore(val);
-    }
-  };
-  
-  // Manejar cuando el input pierde el foco
+    if (!isNaN(val) && val >= min && val <= max) setWinningScore(val);
+  }
+
   const handleWinningScoreBlur = () => {
-    // Si el valor es 0, restaurar al mínimo permitido
     if (winningScore === 0) {
       const min = options?.winningScore?.min || 1;
       setWinningScore(min);
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-950 to-indigo-950 py-12 px-4 sm:px-6 lg:px-8">
@@ -388,7 +300,7 @@ const TournamentPage: React.FC = () => {
                             {showAIList === index && (
                               <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
                                 <div className="flex h-44">
-                                  {/* Human Players Column - Ahora ocupa el 100% del ancho */}
+                                  {/* Human Players Column */}
                                   <div className="w-full overflow-y-auto">
                                     <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-2 z-10">
                                       <div className="font-medium text-purple-400 px-2 py-1 text-sm">{t('tournament.humanPlayers')}</div>
@@ -396,11 +308,8 @@ const TournamentPage: React.FC = () => {
                                     <div className="p-2">
                                       {players
                                         .filter(player => {
-                                          // Primero asegurarse de que no es una IA
                                           const aiNames = getAIOpponents();
                                           const isAI = aiNames.includes(player.user_id) || player.isAI;
-                                          
-                                          // Solo mostrar jugadores que no son IA y no están seleccionados en otra posición
                                           return !isAI && (!selectedPlayers.includes(player.user_id) || player.user_id === selectedPlayers[index]);
                                         })
                                         .map((player) => (
@@ -601,8 +510,8 @@ const TournamentPage: React.FC = () => {
       {isGameModalOpen && gameId && (
         <GameModal
           gameId={gameId}
-          player1={selectedPlayers[0]} // Only needed for initial display, will be overridden by WebSocket
-          player2={selectedPlayers[1]} // Only needed for initial display, will be overridden by WebSocket
+          player1={selectedPlayers[0]}
+          player2={selectedPlayers[1]}
           ballSpeed={ballSpeed}
           paddleSize={paddleSize}
           winningScore={winningScore}
@@ -610,11 +519,11 @@ const TournamentPage: React.FC = () => {
           onClose={handleCloseGame}
           isTournament={true}
           tournamentName={tournamentName}
-          tournamentRound={1} // Initial round
+          tournamentRound={1}
         />
       )}
     </div>
   );
-};
+}
 
 export default TournamentPage;

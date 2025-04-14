@@ -62,7 +62,7 @@ async function websocketHandler(fastify) {
         paddleSize: tournament.settings?.paddleSize || "medium",
         speedIncrement: tournament.settings?.accelerationEnabled || false,
         pointsToWin: tournament.settings?.winningScore || 5
-      };
+      }
      
       // Create payload
       const tournamentPayload = {
@@ -72,7 +72,7 @@ async function websocketHandler(fastify) {
         settings: tournamentSettings,
         status: 'completed',
         players: tournament.players.map(playerId => ({ user_id: playerId }))
-      };
+      }
 
       const gameEntry1 = semifinal1Match?.gameId ? gameManager.games.get(semifinal1Match.gameId) : null;
       const gameEntry2 = semifinal2Match?.gameId ? gameManager.games.get(semifinal2Match.gameId) : null;
@@ -81,7 +81,7 @@ async function websocketHandler(fastify) {
       const semi2GameState = semifinal2Match?.gameId ? gameManager.getGameState(semifinal2Match.gameId) : null;
 
       function realTimePlayed(gameEntry, gameState) {
-        if (!gameEntry || !gameState) return { startTime: null, endTime: null };
+        if (!gameEntry || !gameState) return { startTime: null, endTime: null }
         
         const startTime = new Date(gameEntry.startTime || Date.now());
         const finishTime = gameEntry.finishTime ? new Date(gameEntry.finishTime) : new Date();
@@ -90,7 +90,7 @@ async function websocketHandler(fastify) {
         if (gameState.timing && gameState.timing.totalPausedTime) totalPausedMs = gameState.timing.totalPausedTime;
         const effectiveEndTime = new Date(finishTime.getTime() - totalPausedMs);
         
-        return { startTime, endTime: effectiveEndTime };
+        return { startTime, endTime: effectiveEndTime }
       }
       
       tournamentPayload.games = [];
@@ -153,7 +153,7 @@ async function websocketHandler(fastify) {
         else if (playerId === thirdPlace)   position = 3;
         else if (playerId === fourthPlace)  position = 4;
         
-        return { user_id: playerId, position: position };
+        return { user_id: playerId, position: position }
       });
       
       // Send Results to stats service
@@ -372,7 +372,7 @@ async function websocketHandler(fastify) {
           tournamentMode: true,
           tournamentRound: currentMatchIndex === 0 ? 1 : 2,
           isSecondSemifinal: currentMatchIndex === 0
-        };
+        }
 
         if (currentMatchIndex === 1) {
           // Going to final

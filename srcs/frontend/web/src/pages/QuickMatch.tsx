@@ -3,11 +3,10 @@ import { Gamepad2, Users, Settings, Info, Check, ChevronDown } from "lucide-reac
 import { useLanguage } from "../contexts/LanguageContext";
 import GameModal from "../components/game/GameModal";
 
-// Default game options type
 interface GameOptions {
   ballSpeed: string[];
   paddleSize: string[];
-  winningScore: { min: number; max: number };
+  winningScore: { min: number; max: number }
   accelerationEnabled: boolean[];
   default?: {
     ballSpeed: string;
@@ -15,10 +14,9 @@ interface GameOptions {
     accelerationEnabled: boolean;
     paddleSize: string;
     ai_opponents?: string[];
-  };
+  }
 }
 
-// Player type definition
 interface Player {
   id: number;
   user_id: string;
@@ -27,47 +25,32 @@ interface Player {
 
 const QuickMatchPage: React.FC = () => {
   const { t } = useLanguage();
-
-  // State for game configuration
   const [options, setOptions] = useState<GameOptions | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
-  // State for player selection
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>(["", ""]);
   const [showAIList, setShowAIList] = useState<number | null>(null);
-
-  // Refs for dropdown areas
   const dropdownRefs = React.useRef<(HTMLDivElement | null)[]>([null, null]);
-
-  // State for game settings
   const [ballSpeed, setBallSpeed] = useState<string>("medium");
   const [paddleSize, setPaddleSize] = useState<string>("medium");
   const [winningScore, setWinningScore] = useState<number>(5);
   const [accelerationEnabled, setAccelerationEnabled] = useState<boolean>(false);
-  
-  // State for game creation and modal
   const [gameId, setGameId] = useState<string | null>(null);
   const [isGameModalOpen, setIsGameModalOpen] = useState<boolean>(false);
 
-  // Fetch game options
   useEffect(() => {
     const fetchOptions = async () => {
       try {
         setLoading(true);
         const response = await fetch("/api/game/options");
-        
-        if (!response.ok) {
-          throw new Error(`Error fetching game options: ${response.status}`);
-        }
-        
+        if (!response.ok) throw new Error(`Error fetching game options: ${response.status}`);
+
         const data: GameOptions = await response.json();
         setOptions(data);
-        
-        // Set default values if available
-        if (data.default) {
+
+		if (data.default) {
           setBallSpeed(data.default.ballSpeed);
           setPaddleSize(data.default.paddleSize);
           setWinningScore(data.default.winningScore);
@@ -75,73 +58,54 @@ const QuickMatchPage: React.FC = () => {
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
-        
-        // Set fallback default values
-        setBallSpeed("medium");
+		setBallSpeed("medium");
         setPaddleSize("medium");
         setWinningScore(5);
         setAccelerationEnabled(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
+      } finally { setLoading(false); }
+    }
+
     const fetchPlayers = async () => {
       try {
         const response = await fetch("/api/stats/players");
-        
-        if (!response.ok) {
-          throw new Error(`Error fetching players: ${response.status}`);
-        }
-        
+
+        if (!response.ok) throw new Error(`Error fetching players: ${response.status}`);
+
         const data = await response.json();
-        
-        // Check if the data is in the expected format
         if (data && data.data && Array.isArray(data.data)) {
-          // Filtrar jugadores AI y ordenar alfabéticamente por user_id
           const filteredPlayers = data.data.filter((player: Player) => !player.isAI);
-          const sortedPlayers = [...filteredPlayers].sort((a, b) => 
-            a.user_id.localeCompare(b.user_id)
-          );
+          const sortedPlayers = [...filteredPlayers].sort((a, b) => a.user_id.localeCompare(b.user_id));
           setPlayers(sortedPlayers);
         }
       } catch (err) {}
-    };
-    
+    }
+
     fetchOptions();
     fetchPlayers();
   }, []);
 
   // Create a new game
   const createGame = async () => {
-    // Validar que los nombres de los jugadores no están vacíos ni contienen solo espacios en blanco
     if (!selectedPlayers[0].trim() || !selectedPlayers[1].trim()) {
       setError(t('quickMatch.error.selectBothPlayers'));
       return;
     }
-    
-    // Normalizar los nombres de jugadores
+
     const normalizedPlayers = selectedPlayers.map(player => normalizeAIName(player.trim()));
-    
-    // Validar que no se hayan seleccionado jugadores duplicados (excepto IAs)
     const player1IsAI = isAIPlayer(normalizedPlayers[0]);
     const player2IsAI = isAIPlayer(normalizedPlayers[1]);
-    
-    // Verificamos duplicados solo si NO son ambos IAs
-    if (normalizedPlayers[0].toLowerCase() === normalizedPlayers[1].toLowerCase() && 
-        !(player1IsAI && player2IsAI)) {
+
+	if (normalizedPlayers[0].toLowerCase() === normalizedPlayers[1].toLowerCase() && !(player1IsAI && player2IsAI)) {
       setError(t('quickMatch.error.duplicatePlayers'));
       return;
     }
-    
+
     try {
       setLoading(true);
       setError(null);
       setSuccess(null);
-    
-      // Ya no es necesario transformar los nombres de IAs con el prefijo AI_
-      // Usamos directamente los nombres normalizados
-      const gameData = {
+
+	  const gameData = {
         players: normalizedPlayers,
         settings: {
           ballSpeed,
@@ -149,154 +113,107 @@ const QuickMatchPage: React.FC = () => {
           winningScore: Number(winningScore),
           accelerationEnabled
         }
-      };
-      
+      }
+
       const response = await fetch("/api/game/create", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(gameData),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Error creating game: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       setGameId(data.gameId);
       setSelectedPlayers(normalizedPlayers);
       setIsGameModalOpen(true);
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  };
+    } catch (err) { setError(err instanceof Error ? err.message : "Unknown error");
+    } finally { setLoading(false); }
+  }
 
-  // Handle closing the game modal
   const handleCloseGame = () => {
     setIsGameModalOpen(false);
     setGameId(null);
-  };
+  }
 
-  // Toggle AI list display
   const toggleAIList = (playerIndex: number) => {
-    if (showAIList === playerIndex) {
-      setShowAIList(null);
-    } else {
-      setShowAIList(playerIndex);
-    }
-  };
+    if (showAIList === playerIndex) setShowAIList(null);
+    else 							setShowAIList(playerIndex);
+  }
   
-  // Click outside handler for dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showAIList !== null) {
         const ref = dropdownRefs.current[showAIList];
-        if (ref && !ref.contains(event.target as Node)) {
-          setShowAIList(null);
-        }
+        if (ref && !ref.contains(event.target as Node)) setShowAIList(null);
       }
-    };
-    
-    // Add event listener
+    }
+
     document.addEventListener('mousedown', handleClickOutside);
-    
-    // Clean up
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => { document.removeEventListener('mousedown', handleClickOutside); }
   }, [showAIList]);
 
-  // Select a player
   const selectPlayer = (playerIndex: number, userId: string) => {
-    // Verificar si el jugador ya está seleccionado en la otra posición
     const otherPlayerIndex = playerIndex === 0 ? 1 : 0;
-    
-    // Permitimos seleccionar la misma IA para ambos jugadores
     const aiNames = getAIOpponents();
     const isAI = aiNames.includes(userId);
-    
-    // Solo verificamos duplicados si NO es una IA
+
     if (userId === selectedPlayers[otherPlayerIndex] && !isAI) {
-      // Si el jugador ya está seleccionado en la otra posición y no es una IA, mostrar un error
       setError(t('quickMatch.error.playerAlreadySelected'));
       return;
     }
 
-    const newSelectedPlayers = [...selectedPlayers];
+	const newSelectedPlayers = [...selectedPlayers];
     newSelectedPlayers[playerIndex] = userId;
     setSelectedPlayers(newSelectedPlayers);
     setShowAIList(null);
-  };
+  }
 
-  // Get AI opponents from options
-  const getAIOpponents = () => {
-    return options?.default?.ai_opponents || [];
-  };
+  const getAIOpponents = () => { return options?.default?.ai_opponents || []; }
 
-  // Verificar si un nombre coincide con una IA
   const isAIPlayer = (playerName: string) => {
     const aiNames = getAIOpponents();
-    // Comprobación insensible a mayúsculas/minúsculas
     return aiNames.some(ai => ai.toLowerCase() === playerName.toLowerCase());
-  };
+  }
 
-  // Normalizar el nombre de una IA para usar el formato exacto del backend
   const normalizeAIName = (playerName: string) => {
     const aiNames = getAIOpponents();
     const matchedAI = aiNames.find(ai => ai.toLowerCase() === playerName.toLowerCase());
-    return matchedAI || playerName; // Devuelve el nombre normalizado o el original si no es IA
-  };
+    return matchedAI || playerName;
+  }
 
-  // Get display text for speed/size options
   const getOptionDisplayText = (option: string) => {
     switch(option.toLowerCase()) {
-      case 'slow':
-        return t('quickMatch.slow');
-      case 'medium':
-        return t('quickMatch.medium');
-      case 'fast':
-        return t('quickMatch.fast');
-      case 'short':
-        return t('quickMatch.short');
-      case 'long':
-        return t('quickMatch.long');
-      default:
-        return option.charAt(0).toUpperCase() + option.slice(1);
+      case 'slow':		return t('quickMatch.slow');
+      case 'medium':	return t('quickMatch.medium');
+      case 'fast':		return t('quickMatch.fast');
+      case 'short':		return t('quickMatch.short');
+      case 'long':		return t('quickMatch.long');
+      default:			return option.charAt(0).toUpperCase() + option.slice(1);
     }
-  };
+  }
 
-  // Manejar cambios en el input de puntos para ganar
   const handleWinningScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    // Permite borrar completamente el input para ingresar un nuevo valor
-    if (inputValue === '') {
-      setWinningScore(0);
-      return;
-    }
-    
+    if (inputValue === '') { setWinningScore(0); return; }
+
     const val = parseInt(inputValue);
     const min = options?.winningScore?.min || 1;
     const max = options?.winningScore?.max || 20;
-    
-    if (!isNaN(val) && val >= min && val <= max) {
-      setWinningScore(val);
-    }
-  };
+
+    if (!isNaN(val) && val >= min && val <= max) setWinningScore(val);
+  }
   
-  // Manejar cuando el input pierde el foco
   const handleWinningScoreBlur = () => {
-    // Si el valor es 0, restaurar al mínimo permitido
     if (winningScore === 0) {
       const min = options?.winningScore?.min || 1;
       setWinningScore(min);
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-indigo-950 py-12 px-4 sm:px-6 lg:px-8">
@@ -605,6 +522,6 @@ const QuickMatchPage: React.FC = () => {
       )}
     </div>
   );
-};
+}
 
 export default QuickMatchPage;

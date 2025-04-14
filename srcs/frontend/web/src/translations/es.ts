@@ -278,6 +278,6 @@ const translations = {
   'notFound.message': 'Parece que esta página está fuera del campo de juego',
   'notFound.backToHome': 'Volver a la Página Principal',
 
-};
+}
 
 export default translations;

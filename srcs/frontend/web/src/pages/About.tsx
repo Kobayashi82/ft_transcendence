@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, Github, Linkedin, IdCard  } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
-
-// Import local developer images
 import vzurera from '../assets/developers/vzurera.jpg';
 import person2 from '../assets/developers/person2.jpg';
 import person3 from '../assets/developers/person3.jpg';
@@ -23,15 +21,8 @@ const AboutPage: React.FC = () => {
   const { t } = useLanguage();
   const [selectedDev, setSelectedDev] = useState<string | null>(null);
   
-  // Scroll to top whenever selectedDev changes
-  useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  }, [selectedDev]);
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [selectedDev]);
 
-  // Developer profiles with local images and 42 Intranet links
   const developers: Developer[] = [
     {
       id: "dev1",
@@ -65,12 +56,7 @@ const AboutPage: React.FC = () => {
     }
   ];
 
-  // Get developer by ID
-  const getDevById = (id: string): Developer | undefined => {
-    return developers.find(dev => dev.id === id);
-  };
-
-  // Selected developer details
+  const getDevById = (id: string): Developer | undefined => { return developers.find(dev => dev.id === id); }
   const selectedDeveloper = selectedDev ? getDevById(selectedDev) : null;
 
   return (
@@ -220,6 +206,6 @@ const AboutPage: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default AboutPage;
