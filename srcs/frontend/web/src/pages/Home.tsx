@@ -1,15 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { 
-  Trophy, 
-  Gamepad2, 
-  Users, 
-  ChevronRight, 
-  BarChart3,
-  Info,
-  ActivitySquare
-} from "lucide-react";
-import PingPongGame from "../components/PingPongHome";
+import { Trophy, Gamepad2, Users, ChevronRight, BarChart3,Info, ActivitySquare } from "lucide-react";
+import PingPongGame from "../components/PingPongGame";
 import { useLanguage } from "../contexts/LanguageContext";
 
 const Home: React.FC = () => {
@@ -158,7 +150,7 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-          {/* Hero Image - Now visible on mobile at smaller size */}
+          {/* Pong Game */}
           <div className="mt-8 lg:mt-0">
             <div className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[400px]">
               <PingPongGame className="w-full h-full" />
