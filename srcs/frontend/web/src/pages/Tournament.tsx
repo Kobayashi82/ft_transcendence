@@ -320,7 +320,7 @@ const TournamentPage: React.FC = () => {
               className="text-green-300 hover:text-green-100 text-sm underline mt-1"
               onClick={() => setSuccess(null)}
             >
-              {t('common.clear')}
+              clear
             </button>
           </div>
         )}
@@ -333,7 +333,7 @@ const TournamentPage: React.FC = () => {
               className="text-red-300 hover:text-red-100 text-sm underline mt-1"
               onClick={() => setError(null)}
             >
-              {t('common.clear')}
+              clear
             </button>
           </div>
         )}

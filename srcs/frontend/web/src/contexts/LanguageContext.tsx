@@ -10,14 +10,7 @@ interface LanguageContextType {
   isLoaded: boolean;
 }
 
-const LanguageContext = createContext<LanguageContextType>({
-  language: 'en',
-  setLanguage: () => {},
-  t: () => '',
-  isUserSelected: false,
-  isLoaded: false,
-});
-
+const LanguageContext = createContext<LanguageContextType>({ language: 'en', setLanguage: () => {}, t: () => '', isUserSelected: false, isLoaded: false });
 interface LanguageProviderProps { children: ReactNode; }
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
@@ -26,18 +19,18 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     const savedLanguage = localStorage.getItem('language') as LanguageCode;
     const hasUserPreference = localStorage.getItem('hasUserSelectedLanguage') === 'true';
     
-    if (savedLanguage && hasUserPreference && ['en', 'es', 'fr'].includes(savedLanguage)) return { code: savedLanguage, isUserSelected: true };
+    if (savedLanguage && hasUserPreference && ['en', 'es', 'fr'].includes(savedLanguage)) return { code: savedLanguage, isUserSelected: true }
     
     try {
       const browserLangs = navigator.languages || [navigator.language];
       for (const lang of browserLangs) {
         const langCode = lang.split('-')[0].toLowerCase();
-        if (['en', 'es', 'fr'].includes(langCode)) return { code: langCode as LanguageCode, isUserSelected: false };
+        if (['en', 'es', 'fr'].includes(langCode)) return { code: langCode as LanguageCode, isUserSelected: false }
       }
     } catch (error) {}   
 
-    return { code: 'en', isUserSelected: false };
-  };
+    return { code: 'en', isUserSelected: false }
+  }
 
   const initialLanguageData = getInitialLanguage();
   const [language, setLanguageState] = useState<LanguageCode>(initialLanguageData.code);
@@ -54,7 +47,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       localStorage.setItem('hasUserSelectedLanguage', 'true');
       document.documentElement.lang = newLanguage;
     }, 10);
-  };
+  }
 
   useEffect(() => {
     const loadTranslations = async () => {
@@ -69,22 +62,22 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
           setTimeout(() => { setIsLoaded(true); }, 50);
         }
       }
-    };
+    }
     loadTranslations();
   }, [language]);
 
   useEffect(() => { document.documentElement.lang = language; }, [language]);
-  
+
   const t = (key: string): string => { 
     if (!isLoaded) return ' ';
     return translations[key] || key; 
-  };
+  }
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t, isUserSelected, isLoaded }}>
       {children}
     </LanguageContext.Provider>
   );
-};
+}
 
 export const useLanguage = () => useContext(LanguageContext);

@@ -47,20 +47,17 @@ const renderFlag = () => {
       default:
         return <Globe className="h-5 w-5" />;
     }
-  };
+  }
 
   return renderFlag();
-};
-
-interface LanguageSelectorProps {
-  isMobile?: boolean;
 }
+
+interface LanguageSelectorProps { isMobile?: boolean; }
 
 const LanguageSelector: React.FC<LanguageSelectorProps> = ({ isMobile = false }) => {
   const { language, setLanguage, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
   const languages = [
     { code: 'en', name: t('english') },
     { code: 'es', name: t('spanish') },
@@ -72,16 +69,16 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ isMobile = false })
 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) { setIsOpen(false); }
-    };
+    }
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => { document.removeEventListener('mousedown', handleClickOutside); };
+    return () => { document.removeEventListener('mousedown', handleClickOutside); }
   }, [isMobile]);
 
   const handleLanguageChange = (code: LanguageCode) => {
     setLanguage(code);
     setIsOpen(false);
-  };
+  }
 
   // Mobile
   if (isMobile) {
@@ -146,6 +143,6 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ isMobile = false })
       )}
     </div>
   );
-};
+}
 
 export default LanguageSelector;

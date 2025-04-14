@@ -37,7 +37,7 @@ const AppContent = () => {
       </main>
     </div>
   );
-};
+}
 
 function App() {
   return (
