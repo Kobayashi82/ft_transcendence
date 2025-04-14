@@ -33,7 +33,7 @@ const start = async () => {
     process.on("SIGINT", shutdown);
     process.on("SIGTERM", shutdown);
   } catch (err) {
-    console.error('Server failed');
+    console.error('Server failed', err);
     process.exit(1);
   }
 }

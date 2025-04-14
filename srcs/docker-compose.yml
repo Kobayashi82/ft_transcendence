@@ -21,7 +21,7 @@ services:
     container_name: web
     build:
       context: ./frontend/web
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     volumes:
       - ./frontend/web:/app
     networks:
@@ -34,7 +34,7 @@ services:
     container_name: gateway
     build:
       context: ./backend/gateway
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     volumes:
       - ./backend/gateway/src:/app/src
     environment:
@@ -55,7 +55,7 @@ services:
     container_name: stats
     build:
       context: ./backend/services/stats
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     volumes:
       - ./backend/services/stats/src:/app/src
       - stats_data:/app/data
@@ -70,7 +70,7 @@ services:
     container_name: game
     build:
       context: ./backend/services/game
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     volumes:
       - ./backend/services/game/src:/app/src
     environment:
@@ -84,7 +84,7 @@ services:
     container_name: deeppong
     build:
       context: ./backend/services/deeppong
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     volumes:
       - ./backend/services/deeppong/src:/app/src
     environment:

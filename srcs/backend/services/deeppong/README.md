@@ -1,1 +1,1 @@
-# AI DeepPong
+# DeepPong
