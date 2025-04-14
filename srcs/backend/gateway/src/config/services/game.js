@@ -73,7 +73,7 @@ module.exports = {
       rateLimit: { max: 20, timeWindow: 10 }
     },
   },
+  timeout: 5000,
   wsEnabled: true,
   wsPath: "/game/ws/pong",
-  timeout: 5000,
 };

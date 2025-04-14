@@ -5,7 +5,6 @@ module.exports = {
   url: process.env.STATS_SERVICE_URL || "http://stats:3000",
   prefix: "/stats",
   routes: {
-    // Rutas de jugadores
     "/players": {
       method: ["GET"],
       path: "/players",
@@ -37,7 +36,6 @@ module.exports = {
       rateLimit: { max: 20, timeWindow: 10 }
     },
     
-    // Rutas de juegos
     "/games": {
       method: ["GET", "POST"],
       path: "/games",
@@ -54,7 +52,6 @@ module.exports = {
       rateLimit: { max: 20, timeWindow: 10 }
     },
     
-    // Rutas de torneos
     "/tournaments": {
       method: ["GET", "POST"],
       path: "/tournaments",
@@ -81,7 +78,6 @@ module.exports = {
       rateLimit: { max: 20, timeWindow: 10 }
     },
     
-    // Rutas de estadísticas
     "/stats": {
       method: ["GET"],
       path: "/stats",
@@ -118,7 +114,6 @@ module.exports = {
       rateLimit: { max: 20, timeWindow: 10 }
     },
     
-    // Health check
     "/health": {
       method: ["GET"],
       path: "/health",

@@ -64,12 +64,6 @@ const config = {
       allow: false,
     },
   },
-
-  // Rate limiting
-  rateLimit: {
-    max: process.env.RATE_LIMIT_MAX || 100,
-    timeWindow: process.env.RATE_LIMIT_WINDOW || "1 minute",
-  },
 };
 
 module.exports = config;

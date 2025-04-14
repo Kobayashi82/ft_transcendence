@@ -2,9 +2,8 @@
 
 const fp = require("fastify-plugin");
 
-async function errorHandlerPlugin(fastify, options) {
+async function errorHandlerPlugin(fastify) {
 
-  // Not found handler
   fastify.setNotFoundHandler((request, reply) => {
     reply.code(404).send({
       error: "Resource not found",
@@ -13,7 +12,6 @@ async function errorHandlerPlugin(fastify, options) {
     });
   });
 
-  // Error handler
   fastify.setErrorHandler((error, request, reply) => {
 
     console.error("Request failed", {

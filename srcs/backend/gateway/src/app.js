@@ -32,7 +32,6 @@ const start = async () => {
     await app.ready();
     await app.listen({ port: config.port, host: config.host });
     console.log('Server ready');
-
     process.on("SIGINT", gracefulShutdown);
     process.on("SIGTERM", gracefulShutdown);
   } catch (err) {

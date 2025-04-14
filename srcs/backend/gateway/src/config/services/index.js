@@ -1,18 +1,17 @@
 'use strict'
 
-const serviceStats = require('./stats')
 const serviceGame = require('./game')
+const serviceStats = require('./stats')
 const serviceDeepPong = require('./deeppong')
 
 const buildServicesConfig = () => {
 
   const services = {
-    [serviceStats.name]: serviceStats,
     [serviceGame.name]: serviceGame,
+    [serviceStats.name]: serviceStats,
     [serviceDeepPong.name]: serviceDeepPong,
   }
   
-  // Build route map with prefix as key and service name as value
   const routeMap = {}
   
   Object.values(services).forEach(service => {

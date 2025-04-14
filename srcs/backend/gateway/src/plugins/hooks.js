@@ -2,7 +2,7 @@
 
 const fp = require("fastify-plugin");
 
-async function securityHooksPlugin(fastify, options) {
+async function securityHooksPlugin(fastify) {
 
   fastify.addHook("onRequest", (request, reply, done) => {
     // HTTPS Enforcement
@@ -31,8 +31,8 @@ async function securityHooksPlugin(fastify, options) {
       reply.header("Expires", "0");
     }
   
-    // Response size limits (1 MB)
-    const maxSize = 1 * 1024 * 1024;
+    // Response size limits (1 KB)
+    const maxSize = 1024;
     if (payload && payload.length > maxSize) {
       console.warn("Response size exceeds limit", {
         url: request.url,
