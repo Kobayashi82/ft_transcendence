@@ -4,6 +4,7 @@ const { aiController } = require('../plugins/ai-controller');
 
 async function gameRoutes(fastify) {
 
+  // JOIN
   fastify.post('/join', async (request, reply) => {
     try {
       const { game_id, player_number, ai_name } = request.body;
@@ -22,6 +23,7 @@ async function gameRoutes(fastify) {
     }
   });
 
+  // GAMES
   fastify.get('/games', (_, reply) => {
     try {
       const activeGames = aiController.getActiveGames();      
@@ -31,6 +33,7 @@ async function gameRoutes(fastify) {
     }
   });
 
+  // LEAVE
   fastify.post('/leave', (request, reply) => {
     try {
       const { game_id, player_number } = request.body;     

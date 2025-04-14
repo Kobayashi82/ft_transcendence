@@ -2,7 +2,7 @@
 
 const fp = require('fastify-plugin');
 
-async function gameRoutes(fastify, options) {
+async function gameRoutes(fastify) {
   const { gameModel } = fastify;
 
   // CREATE
@@ -36,24 +36,13 @@ async function gameRoutes(fastify, options) {
     }
   }, async (request, reply) => {
     try {
-      // Ensure settings is an object (not a string)
       const requestBody = { ...request.body };
-      
-      // Convert tournament_id to integer if provided
       if (requestBody.tournament_id) requestBody.tournament_id = parseInt(requestBody.tournament_id);
-      
-      // Ensure player scores are integers
-      if (requestBody.players) {
-        requestBody.players = requestBody.players.map(player => ({
-          ...player,
-          score: parseInt(player.score)
-        }));
-      }
+      if (requestBody.players) requestBody.players = requestBody.players.map(player => ({ ...player, score: parseInt(player.score) }));
       
       const game = gameModel.createGame(requestBody);
       return reply.code(201).send(game);
     } catch (err) {
-      request.log.error(err);
       return reply.code(500).send({ error: 'Failed to create game' });
     }
   });
@@ -72,19 +61,17 @@ async function gameRoutes(fastify, options) {
   }, async (request, reply) => {
     try {
       const id = parseInt(request.params.id);
-      
       if (isNaN(id)) return reply.code(400).send({ error: 'Invalid game ID' });
      
-      const game = gameModel.getGameById(id);
-      
+      const game = gameModel.getGameById(id);      
       if (!game) return reply.code(404).send({ error: 'Game not found' });
       
       return game;
     } catch (err) {
-      request.log.error(err);
       return reply.code(500).send({ error: 'Failed to get game' });
     }
   });
+
 }
 
 module.exports = fp(gameRoutes, { name: 'game-routes', dependencies: ['game-model'] });

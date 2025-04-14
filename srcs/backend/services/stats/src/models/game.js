@@ -1,41 +1,26 @@
-// models/game.js
+"use strict";
+
 const fp = require('fastify-plugin');
 
-async function gameModelPlugin(fastify, options) {
+async function gameModelPlugin(fastify) {
+
   const { db } = fastify;
 
-  // Create a new game
+  // CREATE GAME
   function createGame(gameData) {
-    const { tournament_id, start_time, end_time, settings, players } = gameData;
+    const { tournament_id, start_time, end_time, settings, players } = gameData;   
+    const startTimeStr = start_time ? (typeof start_time === 'object' && start_time instanceof Date ? start_time.toISOString() : start_time) : null;    
+    const endTimeStr = end_time ? (typeof end_time === 'object' && end_time instanceof Date ? end_time.toISOString() : end_time) : null;
     
-    // Asegurarse de que las fechas sean cadenas ISO
-    const startTimeStr = start_time ? 
-      (typeof start_time === 'object' && start_time instanceof Date ? 
-        start_time.toISOString() : start_time) : null;
-        
-    const endTimeStr = end_time ? 
-      (typeof end_time === 'object' && end_time instanceof Date ? 
-        end_time.toISOString() : end_time) : null;
-    
-    // Start a database transaction
     const transaction = db.transaction(() => {
-      // Insert game
       const gameResult = db.prepare(`
         INSERT INTO games (tournament_id, start_time, end_time, settings)
         VALUES (?, ?, ?, ?)
-      `).run(
-        tournament_id || null,
-        startTimeStr,
-        endTimeStr,
-        JSON.stringify(settings)
-      );
+      `).run(tournament_id || null, startTimeStr, endTimeStr, JSON.stringify(settings));
       
       const gameId = gameResult.lastInsertRowid;
-      
-      // Insert player data
       for (const playerData of players) {
         const player = fastify.playerModel.getOrCreatePlayer(playerData.user_id);
-        
         db.prepare(`
           INSERT INTO game_players (game_id, player_id, score)
           VALUES (?, ?, ?)
@@ -45,27 +30,18 @@ async function gameModelPlugin(fastify, options) {
       return gameId;
     });
     
-    // Execute the transaction
     const gameId = transaction();
-    
-    // Return the created game
     return getGameById(gameId);
   }
 
-  // Get game by ID
+  // GET GAME BY ID
   function getGameById(id) {
     const game = db.prepare(`
       SELECT * FROM games WHERE id = ?
     `).get(id);
     
-    if (!game) {
-      return null;
-    }
-    
-    // Parse the settings JSON
+    if (!game) return null;
     game.settings = JSON.parse(game.settings);
-    
-    // Get players and scores for this game
     game.players = db.prepare(`
       SELECT p.id, p.user_id, gp.score
       FROM game_players gp
@@ -76,27 +52,19 @@ async function gameModelPlugin(fastify, options) {
     return game;
   }
 
+  // UPDATE GAME
   function updateGame(id, gameData) {
     const { tournament_id, end_time, settings } = gameData;
-    
-    const endTimeStr = end_time ? 
-      (typeof end_time === 'object' && end_time instanceof Date ? 
-        end_time.toISOString() : end_time) : null;
+    const endTimeStr = end_time ? (typeof end_time === 'object' && end_time instanceof Date ? end_time.toISOString() : end_time) : null;
     
     let currentSettings;
-    if (settings) {
-      currentSettings = JSON.stringify(settings);
-    } else {
+    if (settings) currentSettings = JSON.stringify(settings);
+    else {
       const existingGame = db.prepare('SELECT settings FROM games WHERE id = ?').get(id);
       if (existingGame) {
-        try {
-          currentSettings = JSON.stringify(JSON.parse(existingGame.settings));
-        } catch (e) {
-          currentSettings = '{}';
-        }
-      } else {
-        currentSettings = '{}';
-      }
+        try { currentSettings = JSON.stringify(JSON.parse(existingGame.settings));
+        } catch (e) { currentSettings = '{}';}
+      } else { currentSettings = '{}'; }
     }
     
     const result = db.prepare(`
@@ -105,23 +73,18 @@ async function gameModelPlugin(fastify, options) {
           end_time = ?,
           settings = ?
       WHERE id = ?
-    `).run(
-      tournament_id || null,
-      endTimeStr,
-      currentSettings,
-      id
-    );
-    
+    `).run(tournament_id || null, endTimeStr, currentSettings, id);
+
     return result.changes > 0;
   }
 
-  // Delete a game
+  // DELETE GAME
   function deleteGame(id) {
     const result = db.prepare('DELETE FROM games WHERE id = ?').run(id);
     return result.changes > 0;
   }
 
-  // Get all games
+  // GET ALL GAMES
   function getAllGames(limit = 100, offset = 0) {
     const games = db.prepare(`
       SELECT * FROM games
@@ -129,7 +92,6 @@ async function gameModelPlugin(fastify, options) {
       LIMIT ? OFFSET ?
     `).all(limit, offset);
     
-    // Parse settings and get player data for each game
     return games.map(game => {
       game.settings = JSON.parse(game.settings);
       game.players = db.prepare(`
@@ -143,7 +105,7 @@ async function gameModelPlugin(fastify, options) {
     });
   }
 
-  // Get games by tournament ID
+  // GET GAME BY TOURNAMENT ID
   function getGamesByTournament(tournamentId) {
     const games = db.prepare(`
       SELECT * FROM games
@@ -151,7 +113,6 @@ async function gameModelPlugin(fastify, options) {
       ORDER BY start_time ASC
     `).all(tournamentId);
     
-    // Parse settings and get player data for each game
     return games.map(game => {
       game.settings = JSON.parse(game.settings);
       game.players = db.prepare(`
@@ -165,7 +126,7 @@ async function gameModelPlugin(fastify, options) {
     });
   }
 
-  // Get games by user ID
+  // GET GAMES BY USER
   function getGamesByUser(userId) {
     const games = db.prepare(`
       SELECT g.*
@@ -176,7 +137,6 @@ async function gameModelPlugin(fastify, options) {
       ORDER BY g.start_time DESC
     `).all(userId);
     
-    // Parse settings and get player data for each game
     return games.map(game => {
       game.settings = JSON.parse(game.settings);
       game.players = db.prepare(`
@@ -190,19 +150,8 @@ async function gameModelPlugin(fastify, options) {
     });
   }
 
-  // Decorate fastify with game model functions
-  fastify.decorate('gameModel', {
-    createGame,
-    getGameById,
-    updateGame,
-    deleteGame,
-    getAllGames,
-    getGamesByTournament,
-    getGamesByUser
-  });
+  fastify.decorate('gameModel', { createGame, getGameById, updateGame, deleteGame, getAllGames, getGamesByTournament, getGamesByUser });
+
 }
 
-module.exports = fp(gameModelPlugin, {
-  name: 'game-model',
-  dependencies: ['db', 'player-model']
-});
+module.exports = fp(gameModelPlugin, { name: 'game-model', dependencies: ['db', 'player-model'] });

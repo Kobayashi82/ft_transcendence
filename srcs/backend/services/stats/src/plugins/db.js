@@ -1,22 +1,18 @@
 // db/config.js
 const fp = require('fastify-plugin');
-const SQLite = require('better-sqlite3');
 const path = require('path');
+const SQLite = require('better-sqlite3');
 
 async function dbPlugin(fastify, options) {
   
-  // Get database path from options or use default
   const dbPath = path.resolve(options.database?.path || './data/stats.db');
-  
-  // Connect to SQLite database
   const db = new SQLite(dbPath);
   
   // Enable foreign keys
   db.pragma('foreign_keys = ON');
   
-  // Initialize database schema
   function initializeDatabase() {
-    // Create games table
+    // GAMES
     db.exec(`
       CREATE TABLE IF NOT EXISTS games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,7 +24,7 @@ async function dbPlugin(fastify, options) {
       )
     `);
 
-    // Create players table
+    // PLAYERS
     db.exec(`
       CREATE TABLE IF NOT EXISTS players (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,7 +32,7 @@ async function dbPlugin(fastify, options) {
       )
     `);
 
-    // Create game_players table (for the many-to-many relationship between games and players)
+    // GAME_PLAYERS (for the relationship between games and players)
     db.exec(`
       CREATE TABLE IF NOT EXISTS game_players (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,7 +45,7 @@ async function dbPlugin(fastify, options) {
       )
     `);
 
-    // Create tournaments table
+    // TOURNAMENTS
     db.exec(`
       CREATE TABLE IF NOT EXISTS tournaments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,7 +57,7 @@ async function dbPlugin(fastify, options) {
       )
     `);
 
-    // Create tournament_players table
+    // TOURNAMENTS_PLAYERS
     db.exec(`
       CREATE TABLE IF NOT EXISTS tournament_players (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,21 +70,13 @@ async function dbPlugin(fastify, options) {
       )
     `);
 
-    fastify.log.info('Database schema initialized');
   }
   
-  // Initialize the database
   initializeDatabase();
-  
-  // Make the database connection available through the fastify instance
   fastify.decorate('db', db);
   
-  // Close the database connection when fastify is shutting down
-  fastify.addHook('onClose', (instance, done) => {
-    if (db) {
-      instance.log.info('Closing database connection');
-      db.close();
-    }
+  fastify.addHook('onClose', (_, done) => {
+    if (db) db.close();
     done();
   });
 }

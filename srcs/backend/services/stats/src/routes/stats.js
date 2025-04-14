@@ -2,7 +2,8 @@
 
 const fp = require('fastify-plugin');
 
-async function statsRoutes(fastify, options) {
+async function statsRoutes(fastify) {
+
   const { db } = fastify;
 
   // MOST WINS
@@ -46,7 +47,6 @@ async function statsRoutes(fastify, options) {
       
       return { data: leaderboard };
     } catch (err) {
-      request.log.error(err);
       return reply.code(500).send({ error: 'Failed to get leaderboard' });
     }
   });
@@ -95,7 +95,6 @@ async function statsRoutes(fastify, options) {
       
       return { data: leaderboard };
     } catch (err) {
-      request.log.error(err);
       return reply.code(500).send({ error: 'Failed to get leaderboard' });
     }
   });
@@ -130,7 +129,6 @@ async function statsRoutes(fastify, options) {
       
       return { data: leaderboard };
     } catch (err) {
-      request.log.error(err);
       return reply.code(500).send({ error: 'Failed to get leaderboard' });
     }
   });
@@ -167,7 +165,6 @@ async function statsRoutes(fastify, options) {
       
       return { data: leaderboard };
     } catch (err) {
-      request.log.error(err);
       return reply.code(500).send({ error: 'Failed to get total games leaderboard' });
     }
   });
@@ -222,7 +219,6 @@ async function statsRoutes(fastify, options) {
       
       return { data: leaderboard };
     } catch (err) {
-      request.log.error(err);
       return reply.code(500).send({ error: 'Failed to get fastest wins leaderboard' });
     }
   });
@@ -260,7 +256,6 @@ async function statsRoutes(fastify, options) {
         WHERE player_id = ?
       `).get(player.id);
       
-      // Get total tournaments and wins
       const tournamentStats = db.prepare(`
         SELECT 
           COUNT(*) as total_tournaments,
@@ -269,17 +264,13 @@ async function statsRoutes(fastify, options) {
         WHERE player_id = ?
       `).get(player.id);
       
-      // Get average score
       const avgScore = db.prepare(`
         SELECT AVG(score) as avg_score
         FROM game_players
         WHERE player_id = ?
       `).get(player.id).avg_score || 0;
       
-      // Calculate win rate
-      const winRate = gameStats.total_games > 0 
-        ? (gameStats.wins * 100.0 / gameStats.total_games).toFixed(2) 
-        : 0;
+      const winRate = gameStats.total_games > 0 ? (gameStats.wins * 100.0 / gameStats.total_games).toFixed(2) : 0;
       
       return {
         player_id: player.id,
@@ -308,10 +299,10 @@ async function statsRoutes(fastify, options) {
         `).all(player.id)
       };
     } catch (err) {
-      request.log.error(err);
       return reply.code(500).send({ error: 'Failed to get user stats' });
     }
   });
+
 }
 
 module.exports = fp(statsRoutes, { name: 'stats-routes', dependencies: ['db'] });

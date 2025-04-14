@@ -32,7 +32,7 @@ class AIController {
         lastMoveTime: null,
         continuousMovementDuration: 0, 
         lastGameState: null 
-      };
+      }
       
       this.activeGames.set(gameKey, gameData);      
       this.startGameLoop(gameKey);
@@ -152,7 +152,7 @@ class AIController {
             gameData.ballVelocity = {
               x: ballVelX,
               y: ballVelY
-            };
+            }
           }
         }
         
@@ -161,7 +161,7 @@ class AIController {
           gameData.previousBall = { 
             x: gameState.ball.x, 
             y: gameState.ball.y 
-          };
+          }
           gameData.previousTime = now;
         }
         
@@ -514,7 +514,7 @@ class AIController {
       const moveData = {
         player: playerNumber,
         direction
-      };
+      }
 
       const response = await axios.post(moveUrl, moveData, {
         headers: { 'Content-Type': 'application/json' },

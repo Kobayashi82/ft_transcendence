@@ -1,34 +1,23 @@
-// models/tournament.js
+"use strict";
+
 const fp = require('fastify-plugin');
 
 async function tournamentModelPlugin(fastify, options) {
+
   const { db } = fastify;
 
-  // Create a new tournament
+  // CREATE TOURNAMENT
   function createTournament(tournamentData) {
     const { name, start_time, settings, players } = tournamentData;
-    
-    // Asegurarse de que start_time sea una cadena ISO
-    const startTimeStr = start_time ? 
-      (typeof start_time === 'object' && start_time instanceof Date ? 
-        start_time.toISOString() : start_time) : null;
-    
-    // Start a database transaction
+
+    const startTimeStr = start_time ? (typeof start_time === 'object' && start_time instanceof Date ? start_time.toISOString() : start_time) : null;
     const transaction = db.transaction(() => {
-      // Insert tournament
       const tournamentResult = db.prepare(`
         INSERT INTO tournaments (name, start_time, settings, status)
         VALUES (?, ?, ?, ?)
-      `).run(
-        name,
-        startTimeStr,
-        JSON.stringify(settings),
-        'pending'
-      );
+      `).run(name, startTimeStr, JSON.stringify(settings), 'pending');
       
       const tournamentId = tournamentResult.lastInsertRowid;
-      
-      // Insert player data if provided
       if (players && players.length > 0) {
         for (const playerData of players) {
           const player = fastify.playerModel.getOrCreatePlayer(playerData.user_id);
@@ -43,27 +32,19 @@ async function tournamentModelPlugin(fastify, options) {
       return tournamentId;
     });
     
-    // Execute the transaction
     const tournamentId = transaction();
-    
-    // Return the created tournament
     return getTournamentById(tournamentId);
   }
 
-  // Get tournament by ID
+  // GET TOURNAMENT BY ID
   function getTournamentById(id) {
     const tournament = db.prepare(`
       SELECT * FROM tournaments WHERE id = ?
     `).get(id);
     
-    if (!tournament) {
-      return null;
-    }
+    if (!tournament) return null;
     
-    // Parse the settings JSON
     tournament.settings = JSON.parse(tournament.settings);
-    
-    // Get players for this tournament
     tournament.players = db.prepare(`
       SELECT p.id, p.user_id, tp.final_position
       FROM tournament_players tp
@@ -72,24 +53,16 @@ async function tournamentModelPlugin(fastify, options) {
       ORDER BY tp.final_position NULLS LAST, p.id
     `).all(id);
     
-    // Get games for this tournament
     tournament.games = fastify.gameModel.getGamesByTournament(id);
-    
     return tournament;
   }
 
-  // Update a tournament
+  // UPDATE TOURNAMENT
   function updateTournament(id, tournamentData) {
     const { name, end_time, settings, status } = tournamentData;
     
-    // Asegurarse de que end_time sea una cadena ISO o null
-    const endTimeStr = end_time ? 
-      (typeof end_time === 'object' && end_time instanceof Date ? 
-        end_time.toISOString() : end_time) : null;
-    
-    // Asegurarse de que settings sea JSON si se proporciona
+    const endTimeStr = end_time ? (typeof end_time === 'object' && end_time instanceof Date ? end_time.toISOString() : end_time) : null;
     const settingsStr = settings ? JSON.stringify(settings) : null;
-    
     const result = db.prepare(`
       UPDATE tournaments
       SET name = COALESCE(?, name),
@@ -97,24 +70,18 @@ async function tournamentModelPlugin(fastify, options) {
           settings = COALESCE(?, settings),
           status = COALESCE(?, status)
       WHERE id = ?
-    `).run(
-      name,
-      endTimeStr,
-      settingsStr,
-      status,
-      id
-    );
-    
+    `).run(name, endTimeStr, settingsStr, status, id);
+
     return result.changes > 0;
   }
 
-  // Delete a tournament
+  // DELETE TOURNAMENT
   function deleteTournament(id) {
     const result = db.prepare('DELETE FROM tournaments WHERE id = ?').run(id);
     return result.changes > 0;
   }
 
-  // Get all tournaments
+  // GET ALL TOURNAMENTS
   function getAllTournaments(limit = 100, offset = 0) {
     const tournaments = db.prepare(`
       SELECT * FROM tournaments
@@ -122,7 +89,6 @@ async function tournamentModelPlugin(fastify, options) {
       LIMIT ? OFFSET ?
     `).all(limit, offset);
     
-    // Parse settings and get player data for each tournament
     return tournaments.map(tournament => {
       tournament.settings = JSON.parse(tournament.settings);
       tournament.players = db.prepare(`
@@ -137,7 +103,7 @@ async function tournamentModelPlugin(fastify, options) {
     });
   }
 
-  // Get tournaments by user ID
+  // GET TOURNAMENT BY USER
   function getTournamentsByUser(userId) {
     const tournaments = db.prepare(`
       SELECT t.*
@@ -148,7 +114,6 @@ async function tournamentModelPlugin(fastify, options) {
       ORDER BY t.start_time DESC
     `).all(userId);
     
-    // Parse settings and get player data for each tournament
     return tournaments.map(tournament => {
       tournament.settings = JSON.parse(tournament.settings);
       tournament.players = db.prepare(`
@@ -163,7 +128,7 @@ async function tournamentModelPlugin(fastify, options) {
     });
   }
 
-  // Add player to tournament
+  // ADD PLAYER TO TOURNAMENT
   function addPlayerToTournament(tournamentId, userId) {
     const player = fastify.playerModel.getOrCreatePlayer(userId);
     
@@ -174,13 +139,10 @@ async function tournamentModelPlugin(fastify, options) {
       `).run(tournamentId, player.id);
       
       return true;
-    } catch (err) {
-      fastify.log.error('Error adding player to tournament:', err);
-      return false;
-    }
+    } catch (err) { return false; }
   }
 
-  // Update tournament results
+  // UPDATE TOURNAMENT RESULTS
   function updateTournamentResults(tournamentId, results) {
     const transaction = db.transaction(() => {
       for (const result of results) {
@@ -192,11 +154,8 @@ async function tournamentModelPlugin(fastify, options) {
           )
         `).run(result.position, tournamentId, result.user_id);
       }
-      
-      // Update tournament status to completed
-      // Utilizar la fecha actual en formato ISO string
-      const currentDate = new Date().toISOString();
-      
+
+      const currentDate = new Date().toISOString(); 
       db.prepare(`
         UPDATE tournaments
         SET status = 'completed', end_time = ?
@@ -204,29 +163,12 @@ async function tournamentModelPlugin(fastify, options) {
       `).run(currentDate, tournamentId);
     });
     
-    try {
-      transaction();
-      return true;
-    } catch (err) {
-      fastify.log.error('Error updating tournament results:', err);
-      return false;
-    }
+    try { transaction(); return true; }
+    catch (err) { return false; }
   }
 
-  // Decorate fastify with tournament model functions
-  fastify.decorate('tournamentModel', {
-    createTournament,
-    getTournamentById,
-    updateTournament,
-    deleteTournament,
-    getAllTournaments,
-    getTournamentsByUser,
-    addPlayerToTournament,
-    updateTournamentResults
-  });
+  fastify.decorate('tournamentModel', { createTournament, getTournamentById, updateTournament, deleteTournament, getAllTournaments, getTournamentsByUser, addPlayerToTournament, updateTournamentResults });
+
 }
 
-module.exports = fp(tournamentModelPlugin, {
-  name: 'tournament-model',
-  dependencies: ['db', 'player-model', 'game-model']
-});
+module.exports = fp(tournamentModelPlugin, { name: 'tournament-model', dependencies: ['db', 'player-model', 'game-model'] });

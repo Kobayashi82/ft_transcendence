@@ -1,59 +1,44 @@
-// models/player.js
+"use strict";
+
 const fp = require('fastify-plugin');
 
-async function playerModelPlugin(fastify, options) {
+async function playerModelPlugin(fastify) {
+
   const { db } = fastify;
 
-  // Get or create a player by user_id (case-insensitive)
+  // GET or CREATE PLAYER
   function getOrCreatePlayer(userId) {
-    // Trim the user ID but preserve its original case
     const trimmedUserId = userId ? String(userId).trim() : null;
     
-    if (!trimmedUserId) {
-      throw new Error('User ID is required');
-    }
-    
-    // Search for player case-insensitively
+    if (!trimmedUserId) throw new Error('User ID is required');
     const player = db.prepare(`
       SELECT * FROM players 
       WHERE LOWER(user_id) = LOWER(?)
     `).get(trimmedUserId);
     
-    if (player) {
-      return player;
-    }
+    if (player) return player;
 
-    // Create player with the original case
     const result = db.prepare('INSERT INTO players (user_id) VALUES (?)').run(trimmedUserId);
-    return {
-      id: result.lastInsertRowid,
-      user_id: trimmedUserId
-    };
+    return { id: result.lastInsertRowid, user_id: trimmedUserId };
   }
 
-  // Get player by ID
+  // GET PLAYER BY ID
   function getPlayerById(id) {
-    // Ensure id is a number
     const playerId = parseInt(id, 10);
-    if (isNaN(playerId)) {
-      return null;
-    }
+    if (isNaN(playerId)) return null;
     
     return db.prepare('SELECT * FROM players WHERE id = ?').get(playerId);
   }
 
-  // Get all players
+  // GET ALL PLAYERS
   function getAllPlayers() {
     return db.prepare('SELECT * FROM players').all();
   }
 
-  // Get all games for a specific player
+  // GET GAMES BY PLAYER
   function getPlayerGames(playerId) {
-    // Ensure playerId is a number
     const playerIdNum = parseInt(playerId, 10);
-    if (isNaN(playerIdNum)) {
-      return [];
-    }
+    if (isNaN(playerIdNum)) return [];
     
     return db.prepare(`
       SELECT g.*, gp.score
@@ -64,13 +49,10 @@ async function playerModelPlugin(fastify, options) {
     `).all(playerIdNum);
   }
 
-  // Get all tournaments for a specific player
+  // GET TOURNAMENTS BY PLAYER
   function getPlayerTournaments(playerId) {
-    // Ensure playerId is a number
     const playerIdNum = parseInt(playerId, 10);
-    if (isNaN(playerIdNum)) {
-      return [];
-    }
+    if (isNaN(playerIdNum)) return [];
     
     return db.prepare(`
       SELECT t.*, tp.final_position
@@ -81,23 +63,13 @@ async function playerModelPlugin(fastify, options) {
     `).all(playerIdNum);
   }
 
-  // Get player statistics
+  // GET PLAYER STATS
   function getPlayerStats(playerId) {
-    // Ensure playerId is a number
     const playerIdNum = parseInt(playerId, 10);
-    if (isNaN(playerIdNum)) {
-      return {
-        totalGames: 0,
-        totalTournaments: 0,
-        wins: 0,
-        tournamentWins: 0,
-        winRate: 0
-      };
-    }
+    if (isNaN(playerIdNum)) return { totalGames: 0, totalTournaments: 0, wins: 0, tournamentWins: 0, winRate: 0 };
     
     const totalGames = db.prepare('SELECT COUNT(*) as count FROM game_players WHERE player_id = ?').get(playerIdNum).count;
     const totalTournaments = db.prepare('SELECT COUNT(*) as count FROM tournament_players WHERE player_id = ?').get(playerIdNum).count;
-    
     const wins = db.prepare(`
       SELECT COUNT(*) as count 
       FROM game_players gp1 
@@ -115,27 +87,11 @@ async function playerModelPlugin(fastify, options) {
       WHERE player_id = ? AND final_position = 1
     `).get(playerIdNum).count;
     
-    return {
-      totalGames,
-      totalTournaments,
-      wins,
-      tournamentWins,
-      winRate: totalGames > 0 ? (wins / totalGames) * 100 : 0
-    };
+    return { totalGames, totalTournaments, wins, tournamentWins, winRate: totalGames > 0 ? (wins / totalGames) * 100 : 0 };
   }
 
-  // Add model functions to fastify instance
-  fastify.decorate('playerModel', {
-    getOrCreatePlayer,
-    getPlayerById,
-    getAllPlayers,
-    getPlayerGames,
-    getPlayerTournaments,
-    getPlayerStats
-  });
+  fastify.decorate('playerModel', { getOrCreatePlayer, getPlayerById, getAllPlayers, getPlayerGames, getPlayerTournaments, getPlayerStats });
+
 }
 
-module.exports = fp(playerModelPlugin, {
-  name: 'player-model',
-  dependencies: ['db']
-});
+module.exports = fp(playerModelPlugin, { name: 'player-model', dependencies: ['db'] });
