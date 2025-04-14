@@ -1,6 +1,7 @@
 "use strict";
 
 module.exports = {
+
   name: "stats",
   url: process.env.STATS_SERVICE_URL || "http://stats:3000",
   prefix: "/stats",
@@ -121,4 +122,5 @@ module.exports = {
     },
   },
   timeout: 5000,
-};
+
+}

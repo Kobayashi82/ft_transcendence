@@ -3,6 +3,7 @@
 const fp = require("fastify-plugin");
 
 async function rateLimitPlugin(fastify) {
+
   const routeRateLimits = [];
   
   // Specific limit for /health
@@ -86,6 +87,7 @@ async function rateLimitPlugin(fastify) {
       };
     },
   });
+
 }
 
 module.exports = fp(rateLimitPlugin, { name: "rate-limit" });

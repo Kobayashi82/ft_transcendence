@@ -17,6 +17,6 @@ const config = {
   
   // AI
   AI_update: 1000,
-};
+}
 
 module.exports = config;

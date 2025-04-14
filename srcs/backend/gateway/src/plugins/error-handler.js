@@ -12,21 +12,11 @@ async function errorHandlerPlugin(fastify) {
     });
   });
 
-  fastify.setErrorHandler((error, request, reply) => {
-
-    console.error("Request failed", {
-      error: error.message,
-      url: request.url,
-      method: request.method,
-      statusCode: error.statusCode || 500,
-    });
-
+  fastify.setErrorHandler((error, _, reply) => {
     const statusCode = error.statusCode || 500;
-    reply.status(statusCode).send({
-      statusCode,
-      error: statusCode >= 500 ? "Internal Server Error" : error.message
-    });
+    reply.status(statusCode).send({ error: statusCode >= 500 ? "Internal Server Error" : error.message });
   });
+
 }
 
 module.exports = fp(errorHandlerPlugin, { name: "errorHandler" });

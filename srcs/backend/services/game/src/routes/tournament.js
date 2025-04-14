@@ -1,12 +1,12 @@
 "use strict";
 
 const schemas = require('../schemas');
-const tournamentManager = require('../plugins/tournament-manager');
 const gameManager = require('../plugins/game-manager');
+const tournamentManager = require('../plugins/tournament-manager');
 
-async function routes(fastify, options) {
+async function routes(fastify) {
 
-  // Create a tournament
+  // CREATE
   fastify.post('/tournament/create', { schema: schemas.createTournament }, async (request, reply) => {
     try {
       const { players, settings, name } = request.body;      
@@ -14,30 +14,21 @@ async function routes(fastify, options) {
       
       if (playerConflicts.length > 0) {
         reply.code(409);
-        return { 
-          success: false, 
-          message: `Players already in game: ${playerConflicts.join(', ')}` 
-        };
+        return { success: false, message: `Players already in game: ${playerConflicts.join(', ')}` };
       }
       
       // Nueva validación: No permitir jugadores IA en los torneos
       const aiPlayers = players.filter(playerName => gameManager.isAIPlayer(playerName));
       if (aiPlayers.length > 0) {
         reply.code(400);
-        return {
-          success: false,
-          message: `AI players are not allowed in tournaments: ${aiPlayers.join(', ')}`
-        };
+        return { success: false, message: `AI players are not allowed in tournaments: ${aiPlayers.join(', ')}` };
       }
       
       // Validar que se proporciona un nombre para el torneo
       const tournamentName = name ? name.trim() : "";
       if (!tournamentName) {
         reply.code(400);
-        return {
-          success: false,
-          message: "Tournament name is required"
-        };
+        return { success: false, message: "Tournament name is required" };
       }
       
       // Create tournament with name
@@ -91,15 +82,11 @@ async function routes(fastify, options) {
       };
     } catch (error) { 
       reply.code(500);
-      console.error(error);
-      return { 
-        success: false, 
-        message: error.message 
-      };
+      return { success: false, message: error.message };
     }
   });
   
-  // Cancel a tournament
+  // CANCEL
   fastify.post('/tournament/:tournamentId/cancel', { schema: schemas.cancelTournament }, async (request, reply) => {
     const { tournamentId } = request.params;
     const success = tournamentManager.cancelTournament(tournamentId);
@@ -108,9 +95,9 @@ async function routes(fastify, options) {
       reply.code(404);
       return { success: false, message: 'Tournament not found' };
     }
-
     return { success: true, message: 'Tournament cancelled successfully' };
   });
+
 }
 
 module.exports = routes;

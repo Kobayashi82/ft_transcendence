@@ -13,6 +13,6 @@ const config = {
     path: "./data/stats.sqlite",
     operationTimeout: 5000,
   },
-};
+}
 
 module.exports = config;

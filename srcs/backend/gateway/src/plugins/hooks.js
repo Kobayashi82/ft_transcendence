@@ -13,7 +13,7 @@ async function securityHooksPlugin(fastify) {
         ip: request.ip,
         userAgent: request.headers["user-agent"],
       });
-  
+
       reply.redirect(`https://${request.hostname}${request.url}`);
       return done();
     }
@@ -30,7 +30,7 @@ async function securityHooksPlugin(fastify) {
       reply.header("Pragma", "no-cache");
       reply.header("Expires", "0");
     }
-  
+
     // Response size limits (1 KB)
     const maxSize = 1024;
     if (payload && payload.length > maxSize) {
@@ -50,7 +50,7 @@ async function securityHooksPlugin(fastify) {
       reply.code(413);
       return done(null, errorResponse);
     }
-  
+
     done(null, payload);
   });
 }

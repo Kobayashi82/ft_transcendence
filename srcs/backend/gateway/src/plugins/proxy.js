@@ -44,9 +44,10 @@ const getAllowedHttpMethods = (routes) => {
   if (methods.size <= 1) return defaultMethods;
 
   return Array.from(methods);
-};
+}
 
 async function proxyPlugin(fastify) {
+
   const { services, routeMap } = fastify.config;
   const wsProxies = {};
   const activeConnections = new Map();
@@ -180,7 +181,7 @@ async function proxyPlugin(fastify) {
       headers: headers,
       method: 'GET'
     };
-    
+
     const proxyReq = require('http').request(options);
     proxyReq.on('upgrade', (proxyRes, proxySocket) => {
       socket.write(
@@ -199,7 +200,7 @@ async function proxyPlugin(fastify) {
         clientIp: request.socket.remoteAddress,
         connectedAt: new Date(),
       };
-      
+
       activeConnections.set(requestId, connection);
 
       // Connect the client socket with the target socket
@@ -238,6 +239,7 @@ async function proxyPlugin(fastify) {
     }
     reply.send(error);
   });
+
 }
 
 module.exports = fp(proxyPlugin, { name: "proxy" });

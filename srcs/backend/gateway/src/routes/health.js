@@ -4,6 +4,7 @@ const axios = require("axios");
 
 // Health check
 async function healthRoutes(fastify) {
+
   const services = fastify.config.services;
 
   fastify.get("/health", async () => {
@@ -20,6 +21,7 @@ async function healthRoutes(fastify) {
     };
     return gatewayStatus;
   });
+
 }
 
 // Check the status of services

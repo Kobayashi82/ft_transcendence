@@ -12,7 +12,7 @@ import { useLanguage } from "../contexts/LanguageContext";
 
 // List of available microservices
 // Add or modify here to update throughout the application
-const AVAILABLE_MICROSERVICES = ["Stats", "Game", "AI DeepPong"];
+const AVAILABLE_MICROSERVICES = ["Stats", "Game", "DeepPong"];
 
 // Service type definition
 interface Service {

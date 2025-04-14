@@ -1,6 +1,7 @@
 "use strict";
 
 module.exports = {
+
   name: "deeppong",
   url: process.env.DEEPPONG_SERVICE_URL || "http://deeppong:3000",
   prefix: "/deeppong",
@@ -28,4 +29,5 @@ module.exports = {
     },
   },
   timeout: 2000,
-};
+
+}

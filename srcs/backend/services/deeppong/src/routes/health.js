@@ -1,19 +1,20 @@
 "use strict";
 
-async function healthRoutes(fastify, options) {
-  fastify.get("/health", async (request, reply) => {
-      const serviceStatus = {
-        service: {
-          name: 'AI DeepPong',
-          status: "up",
-          uptime: process.uptime(),
-          timestamp: new Date().toISOString(),
-          version: fastify.config.version,
-        },
-      };
-      return serviceStatus;
+async function healthRoutes(fastify) {
+
+  fastify.get("/health", async () => {
+    const serviceStatus = {
+      service: {
+        name: 'DeepPong',
+        status: "up",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        version: fastify.config.version,
+      },
     }
-  );
+    return serviceStatus;
+  });
+
 }
 
 module.exports = healthRoutes;

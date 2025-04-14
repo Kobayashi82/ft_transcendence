@@ -1,6 +1,7 @@
 "use strict";
 
 module.exports = {
+
   name: "game",
   url: process.env.GAME_SERVICE_URL || "http://game:3000",
   prefix: "/game",
@@ -76,4 +77,5 @@ module.exports = {
   timeout: 5000,
   wsEnabled: true,
   wsPath: "/game/ws/pong",
-};
+
+}

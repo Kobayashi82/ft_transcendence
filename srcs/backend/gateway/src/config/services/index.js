@@ -19,6 +19,7 @@ const buildServicesConfig = () => {
   })
   
   return { services, routeMap }
+
 }
 
 const { services, routeMap } = buildServicesConfig()

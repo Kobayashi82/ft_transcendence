@@ -2,7 +2,7 @@
 
 const schemas = {
 
-  // Schema for options
+  // OPTIONS
   gameOptions: {
     response: {
       200: {
@@ -33,7 +33,7 @@ const schemas = {
     }
   },
 
-  // Schema for create game
+  // CREATE GAME
   createGame: {
     body: {
       type: 'object',
@@ -84,7 +84,7 @@ const schemas = {
     }
   },
 
-  // Schema for create a tournament
+  // CREATE TOURNAMENT
   createTournament: {
     body: {
       type: 'object',
@@ -129,7 +129,7 @@ const schemas = {
     }
   },
 
-  // Schema for cancel a tournament
+  // CANCEL TOURNAMENT
   cancelTournament: {
     params: {
       type: 'object',
@@ -163,7 +163,7 @@ const schemas = {
     }
   },
 
-  // Schema for game actions (start, pause, resume, cancel)
+  // GAME ACTIONS (start, pause, resume, cancel)
   gameAction: {
     params: {
       type: 'object',
@@ -197,35 +197,8 @@ const schemas = {
     }
   },
 
-  // Schema for game state
-  getGame: {
-    params: {
-      type: 'object',
-      properties: {
-        gameId: { type: 'string' }
-      },
-      required: ['gameId']
-    },
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          gameState: { type: 'object' }
-        }
-      },
-      404: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' }
-        }
-      }
-    }
-  },
-
-  // Schema for player movement
-  playerMove: {
+  // PADDLE MOVE
+  paddleMove: {
     params: {
       type: 'object',
       properties: {
@@ -259,7 +232,7 @@ const schemas = {
     }
   },
 
-  // Schema for paddle position
+  // PADDLE POSITION
   paddlePosition: {
     params: {
       type: 'object',
@@ -292,7 +265,35 @@ const schemas = {
         }
       }
     }
+  },
+  
+  // GAME STATE
+  getGame: {
+    params: {
+      type: 'object',
+      properties: {
+        gameId: { type: 'string' }
+      },
+      required: ['gameId']
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          gameState: { type: 'object' }
+        }
+      },
+      404: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          message: { type: 'string' }
+        }
+      }
+    }
   }
-};
+
+}
 
 module.exports = schemas;

@@ -3,10 +3,10 @@
 const schemas = require('../schemas');
 const gameManager = require('../plugins/game-manager');
 
-async function routes(fastify, options) {
+async function routes(fastify) {
 
   // OPTIONS
-  fastify.get('/options', { schema: schemas.gameOptions }, async (request, reply) => {
+  fastify.get('/options', { schema: schemas.gameOptions }, async () => {
     return {
       width: fastify.config.game.width,
       height: fastify.config.game.height,
@@ -18,7 +18,7 @@ async function routes(fastify, options) {
       winningScore: { min: 1, max: 20 },
       accelerationEnabled: [true, false],
       default: fastify.config.game.defaults
-    };
+    }
   });
 
   // CREATE
@@ -161,6 +161,7 @@ async function routes(fastify, options) {
       return { success: false, message: 'Game not found' };
     }
   });
+
 }
 
 module.exports = routes;

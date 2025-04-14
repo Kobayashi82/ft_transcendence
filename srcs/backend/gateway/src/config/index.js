@@ -5,6 +5,7 @@ require("dotenv").config();
 const services = require("./services");
 
 const config = {
+
   // Server
   serviceName: (process.env.SERVICE_URL && process.env.SERVICE_URL.split(":")[0]) || "gateway",
   port: (process.env.SERVICE_URL && process.env.SERVICE_URL.split(":")[1]) || 3000,
@@ -64,6 +65,7 @@ const config = {
       allow: false,
     },
   },
-};
+
+}
 
 module.exports = config;
