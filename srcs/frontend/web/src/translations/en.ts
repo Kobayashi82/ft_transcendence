@@ -212,7 +212,7 @@ const translations = {
 
   // About Us
   'about.title': 'The Team Behind Transcendence',
-  'about.subtitle': 'Meet the slightly obsessive, definitely caffeinated developers who brought this game to life',
+  'about.subtitle': 'Meet the developers who, without really knowing how, made this project happen',
 
   'about.projectTitle': 'About Transcendence',
   'about.projectDescription': 'Transcendence is a Pong game with tournaments and rankings, executed in a containerized environment with microservices.',
@@ -223,10 +223,10 @@ const translations = {
   'about.backToTeam': 'Back to Team',
 
   'about.dev1.title': 'vzurera-',
-  'about.dev1.bio': 'bio ...',
-  'about.dev1.detail1': 'detail 1...',
-  'about.dev1.detail2': 'detail 2...',
-  'about.dev1.funFact': 'Fun fact: ...',
+  "about.dev1.bio": "Started programming in Basic with a Commodore 64. Since then, has moved through QBasic, Visual Basic, VB.NET, KerboScript (yes, from Kerbal Space Program), C, and C++. His programming style is chaotic, experimental, and highly shabby. The code he writes rarely works on the first try, not even the second, but it always leaves a mark... usually in the form of a segfault.",
+  "about.dev1.detail1": "He got into programming out of curiosity, and since then, computer science has been trying to get rid of him.",
+  "about.dev1.detail2": "He invented a new development methodology: Caos-Driven Development. Basically, he writes without thinking and fixes it later... if he feels like it.",
+  "about.dev1.funFact": "He once made a 'hello world' that took 4 days to compile... and it still said 'Hell0 W0rld'.",
 
   'about.dev2.title': 'person 1',
   'about.dev2.bio': 'bio ...',
@@ -241,9 +241,9 @@ const translations = {
   'about.dev3.funFact': 'Fun fact: ...',
 
   'about.funFacts': 'Fun Facts',
-  'about.funFact1': 'This project contains approximately 5,767 lines of code, 127 cups of coffee, and 102 commits.',
+  'about.funFact1': 'This project contains approximately 9,511 lines of code, 127 cups of coffee, and 173 commits.',
   'about.funFact2': 'The ELK, metrics, and authentication modules were implemented and then discarded.',
-  'about.funFact3': 'The project started in November 2024 and ended in April 2025, lasting for 5 months.',
+  'about.funFact3': 'The project started in October 2024 and ended in April 2025, lasting 6 months.',
 
   // Status
   'status.title': 'Server Status',

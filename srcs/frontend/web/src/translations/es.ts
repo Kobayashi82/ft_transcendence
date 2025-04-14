@@ -212,10 +212,10 @@ const translations = {
 
   // About Us
   'about.title': 'El Equipo detrás de Transcendence',
-  'about.subtitle': 'Conoce a los desarrolladores ligeramente obsesivos y definitivamente cafeinados que dieron vida a este juego',
+  'about.subtitle': 'Conoce a los desarrolladores que, sin saber muy bien cómo, hicieron este proyecto',
 
   'about.projectTitle': 'Acerca de Transcendence',
-  'about.projectDescription': 'Transcendence es un juego de Pong con torneos y clasificaciones ejeuctado en un entorno containerizado con microservicios.',
+  'about.projectDescription': 'Transcendence es un juego de Pong con torneos y clasificaciones ejecutado en un entorno containerizado con microservicios.',
   'about.projectJoke': '¿Qué sucede cuando hay friccion entre competidores y las bolas rebotan contra las paletas? Pues que empiezas a sudar de la emoción.',
   'about.techStack': 'Construido con:',
 
@@ -223,10 +223,10 @@ const translations = {
   'about.backToTeam': 'Volver al Equipo',
 
   'about.dev1.title': 'vzurera-',
-  'about.dev1.bio': 'bio ...',
-  'about.dev1.detail1': 'detail 1...',
-  'about.dev1.detail2': 'detail 2...',
-  'about.dev1.funFact': 'Dato curioso: ...',
+  'about.dev1.bio': 'Empezó a programar en Basic con un Commodore 64. Desde entonces ha pasado por QBasic, Visual Basic, VB.NET, KerboScript (si, de Kerbal Space Program), C y C++. Su estilo de programación es caótico, experimental y altamente cutre. El código que escribe rara vez funciona a la primera, ni a la segunda, pero siempre deja huella… generalmente en forma de segfault.',
+  'about.dev1.detail1': 'Se metió en el mundo de la programación por curiosidad, y desde entonces la informática intenta echarlo.',
+  'about.dev1.detail2': 'Inventó una nueva metodología de desarrollo: Caos-Driven Development. Básicamente escribe sin pensar y arregla después... si le apetece.',
+  'about.dev1.funFact': 'Una vez hizo un hello world que tardó 4 días en compilar… y aún así decía “Hell0 W0rld”.',
 
   'about.dev2.title': 'person 2',
   'about.dev2.bio': 'bio ...',
@@ -241,9 +241,9 @@ const translations = {
   'about.dev3.funFact': 'Dato curioso: ...',
 
   'about.funFacts': 'Datos Curiosos',
-  'about.funFact1': 'Este proyecto contiene aproximadamente 5,767 líneas de código, 127 tazas de café y 102 commits.',
+  'about.funFact1': 'Este proyecto contiene aproximadamente 9.511 líneas de código, 127 tazas de café y 173 commits.',
   'about.funFact2': 'Se implementaron los módulos ELK, métricas y autenticación, pero luego se descartaron.',
-  'about.funFact3': 'El proyecto se inició en Noviembre de 2024 y terminó en Abril de 2025 con una duración de 5 meses.',
+  'about.funFact3': 'El proyecto se inició en Octubre de 2024 y terminó en Abril de 2025 con una duración de 6 meses.',
 
   // Status
   'status.title': 'Estado del Servidor',

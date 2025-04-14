@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { ArrowLeft, Github, Linkedin, IdCard  } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import vzurera from '../assets/developers/vzurera.jpg';
+import vzurera_profile from '../assets/developers/vzurera_profile.jpg';
 import person2 from '../assets/developers/person2.jpg';
+import person2_profile from '../assets/developers/person2_profile.jpg';
 import person3 from '../assets/developers/person3.jpg';
+import person3_profile from '../assets/developers/person3_profile.jpg';
 
 // Developer information type
 interface Developer {
@@ -11,6 +14,7 @@ interface Developer {
   name: string;
   title: string;
   bio: string;
+  profileImageUrl: string;
   imageUrl: string;
   github?: string;
   linkedin?: string;
@@ -30,6 +34,7 @@ const AboutPage: React.FC = () => {
       title: t('about.dev1.title'),
       bio: t('about.dev1.bio'),
       imageUrl: vzurera,
+	  profileImageUrl: vzurera_profile,
       github: "https://github.com/Kobayashi82",
       linkedin: "https://theuselessweb.com/",
       intraLink: "https://profile.intra.42.fr/users/vzurera-"
@@ -40,6 +45,7 @@ const AboutPage: React.FC = () => {
       title: t('about.dev2.title'),
       bio: t('about.dev2.bio'),
       imageUrl: person2,
+	  profileImageUrl: person2_profile,
       github: "https://github.com/person2",
       linkedin: "https://puginarug.com/",
       intraLink: "https://profile.intra.42.fr/users/person2"
@@ -50,6 +56,7 @@ const AboutPage: React.FC = () => {
       title: t('about.dev3.title'),
       bio: t('about.dev3.bio'),
       imageUrl: person3,
+	  profileImageUrl: person3_profile,
       github: "https://github.com/person3",
       linkedin: "https://linkedin.com/in/person3",
       intraLink: "https://profile.intra.42.fr/users/person3"
@@ -146,7 +153,7 @@ const AboutPage: React.FC = () => {
                 <div className="md:w-1/3 mb-6 md:mb-0 md:mr-8">
                   <div className="rounded-xl overflow-hidden border-2 border-blue-600/30 mb-4">
                     <img 
-                      src={selectedDeveloper.imageUrl} 
+                      src={selectedDeveloper.profileImageUrl} 
                       alt={selectedDeveloper.name} 
                       className="w-full object-cover" 
                     />

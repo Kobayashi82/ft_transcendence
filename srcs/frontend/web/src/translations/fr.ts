@@ -212,7 +212,7 @@ const translations = {
 
   // About Us
   'about.title': 'L\'Équipe Derrière Transcendence',
-  'about.subtitle': 'Rencontrez les développeurs légèrement obsessionnels et définitivement caféinés qui ont donné vie à ce jeu',
+  'about.subtitle': 'Rencontrez les développeurs qui, sans vraiment savoir comment, ont fait exister ce projet',
 
   'about.projectTitle': 'À Propos de Transcendence',
   'about.projectDescription': 'Transcendence est un jeu de Pong avec des tournois et des classements, exécuté dans un environnement conteneurisé avec des microservices.',
@@ -223,10 +223,10 @@ const translations = {
   'about.backToTeam': 'Retour à l\'Équipe',
 
   'about.dev1.title': 'vzurera-',
-  'about.dev1.bio': 'bio ...',
-  'about.dev1.detail1': 'détail 1...',
-  'about.dev1.detail2': 'détail 2...',
-  'about.dev1.funFact': 'Anecdote : ...',
+  "about.dev1.bio": "Il a commencé à programmer en Basic avec un Commodore 64. Depuis, il est passé par QBasic, Visual Basic, VB.NET, KerboScript (oui, celui de Kerbal Space Program), C et C++. Son style de programmation est chaotique, expérimental et très bâclé. Le code qu'il écrit fonctionne rarement du premier coup, pas même du deuxième, mais il laisse toujours une trace… généralement sous forme de segfault.",
+  "about.dev1.detail1": "Il s'est lancé dans la programmation par curiosité, et depuis, l'informatique essaie de l'éliminer.",
+  "about.dev1.detail2": "Il a inventé une nouvelle méthodologie de développement : Caos-Driven Development. En gros, il écrit sans réfléchir et répare ensuite... s'il en a envie.",
+  "about.dev1.funFact": "Il a une fois écrit un 'hello world' qui a pris 4 jours à compiler… et disait toujours 'Hell0 W0rld'.",
 
   'about.dev2.title': 'personne 1',
   'about.dev2.bio': 'bio ...',
@@ -241,9 +241,9 @@ const translations = {
   'about.dev3.funFact': 'Anecdote : ...',
 
   'about.funFacts': 'Anecdotes Amusantes',
-  'about.funFact1': 'Ce projet contient environ 5 767 lignes de code, 127 tasses de café et 102 commits.',
+  'about.funFact1': 'Ce projet contient environ 9 511 lignes de code, 127 tasses de café et 173 commits.',
   'about.funFact2': 'Les modules ELK, métriques et authentification ont été implémentés puis abandonnés.',
-  'about.funFact3': 'Le projet a débuté en novembre 2024 et s\'est terminé en avril 2025, durant 5 mois.',
+  'about.funFact3': 'Le projet a commencé en octobre 2024 et s\'est terminé en avril 2025, d\'une durée de 6 mois.',
 
   // Status
   'status.title': 'État du Serveur',
