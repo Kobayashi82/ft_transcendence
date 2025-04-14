@@ -31,7 +31,6 @@ async function routes(fastify) {
         tournamentName: tournamentName
       }
 
-      // Create the first match
       const firstMatchId = tournament.firstMatchId;
       const matchDetails = tournamentManager.getMatchDetails(firstMatchId);
       const gameId = gameManager.createGame(firstMatchSettings);
