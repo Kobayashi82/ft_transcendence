@@ -1,185 +1,100 @@
 "use strict";
 
-// Evitamos la importación directa al inicio
-// const gameManager = require('./game-manager');
 const { v4: uuidv4 } = require('uuid');
 
 class TournamentManager {
+
   constructor() {
     this.tournaments = new Map();
     this.matches = new Map();
-    // Añadimos una estructura para guardar la configuración por torneo
     this.tournamentSettings = new Map();
-    // Vamos a añadir una referencia a gameManager que se establecerá más tarde
     this.gameManager = null;
   }
   
-  // Nuevo método para establecer la referencia a gameManager
-  setGameManager(gameManager) {
-    this.gameManager = gameManager;
-  }
+  setGameManager(gameManager) { this.gameManager = gameManager; } 
+  setTournamentSettings(tournamentId, settings) { this.tournamentSettings.set(tournamentId, settings); }
+  getTournamentSettings(tournamentId) { return this.tournamentSettings.get(tournamentId) || null; }
   
-  // Shuffle array
+  // SHUFFLE PLAYERS
   shuffleArray(array) {
     const shuffled = [...array];
+
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
+
     return shuffled;
   }
   
-  // Método para guardar la configuración para todas las rondas del torneo
-  setTournamentSettings(tournamentId, settings) {
-    this.tournamentSettings.set(tournamentId, settings);
-  }
-  
-  // Método para obtener la configuración guardada del torneo
-  getTournamentSettings(tournamentId) {
-    return this.tournamentSettings.get(tournamentId) || null;
-  }
-  
-  // CREATE
+  // CREATE TOURNAMENT
   createTournament(players, settings, tournamentName) {
-    if (players.length !== 4) {
-      throw new Error('Tournament requires exactly 4 players');
-    }
-    
+    if (players.length !== 4) throw new Error('Tournament requires exactly 4 players');
+
     const shuffledPlayers = this.shuffleArray(players);   
     const tournamentId = uuidv4();   
     const tournament = {
       id: tournamentId,
-      name: tournamentName || `Tournament ${tournamentId.substring(0, 8)}`, // Usar el nombre proporcionado o uno generado
-      tournamentName: tournamentName, // Almacenar explícitamente el nombre del torneo para referencia
+      name: tournamentName || `Tournament ${tournamentId.substring(0, 8)}`,
+      tournamentName: tournamentName,
       createdAt: new Date(),
       settings: settings,
       players: shuffledPlayers,
       matches: []
     };
-    
-    const semifinal1Id = this.createMatch(tournamentId, 1, shuffledPlayers[0], shuffledPlayers[1], settings);
-    const semifinal2Id = this.createMatch(tournamentId, 1, shuffledPlayers[2], shuffledPlayers[3], settings);
-    
-    // Create final match with placeholder players (will be determined by semifinal winners)
+
+    // Create both semifinal
+    const semifinal1Id = this.createMatch(tournamentId, 1, shuffledPlayers[0], shuffledPlayers[1]);
+    const semifinal2Id = this.createMatch(tournamentId, 1, shuffledPlayers[2], shuffledPlayers[3]);
+
+    // Create final with placeholder players
     const finalId = uuidv4();
-    
+
     // Store match IDs in tournament
     tournament.matches.push(semifinal1Id);
     tournament.matches.push(semifinal2Id);
     tournament.matches.push(finalId);
-    
-    // Store additional info in matches
-    this.matches.set(semifinal1Id, { 
-      tournamentId, 
-      round: 1, 
-      nextMatchId: finalId, 
-      player1Position: 1,
-      player1: shuffledPlayers[0],
-      player2: shuffledPlayers[1]
-    });
-    this.matches.set(semifinal2Id, { 
-      tournamentId, 
-      round: 1, 
-      nextMatchId: finalId, 
-      player1Position: 2,
-      player1: shuffledPlayers[2],
-      player2: shuffledPlayers[3]
-    });
-    
-    // Also store the final match in the matches map with placeholder values
-    this.matches.set(finalId, {
-      tournamentId,
-      round: 2,
-      player1: null, // Will be determined by semifinal winners
-      player2: null, // Will be determined by semifinal winners
-      gameId: null
-    });
-    
+
+    // Store info in matches
+    this.matches.set(semifinal1Id, { tournamentId, round: 1, nextMatchId: finalId, player1Position: 1, player1: shuffledPlayers[0], player2: shuffledPlayers[1] });
+    this.matches.set(semifinal2Id, { tournamentId, round: 1, nextMatchId: finalId, player1Position: 2, player1: shuffledPlayers[2], player2: shuffledPlayers[3] });
+    this.matches.set(finalId, { tournamentId, round: 2, player1: null, player2: null, gameId: null });
+
     // Store tournament
     this.tournaments.set(tournamentId, tournament);
-    
-    // IMPORTANTE: Registrar este torneo en el gameManager para que pueda ser referenciado
-    // solo si tenemos acceso a gameManager
-    if (this.gameManager && typeof this.gameManager.registerTournament === 'function') {
-      this.gameManager.registerTournament(tournamentId, tournament);
-    }
-    
-    return {
-      tournamentId,
-      tournamentName: tournament.name,
-      firstMatchId: semifinal1Id,
-      semifinal2Id: semifinal2Id,
-      finalId: finalId,
-      settings,
-      players: shuffledPlayers
-    };
+    if (this.gameManager && typeof this.gameManager.registerTournament === 'function') this.gameManager.registerTournament(tournamentId, tournament);
+
+    return { tournamentId, tournamentName: tournament.name, firstMatchId: semifinal1Id, semifinal2Id: semifinal2Id, finalId: finalId, settings, players: shuffledPlayers };
   }
   
-  // Create a match for the tournament
-  createMatch(tournamentId, round, player1, player2, settings) {
+  // CREATE MATCH
+  createMatch(tournamentId, round, player1, player2) {
     const matchId = uuidv4();
-    
-    // Store match info
-    this.matches.set(matchId, {
-      tournamentId,
-      round,
-      player1,
-      player2,
-      gameId: null
-    });
+    this.matches.set(matchId, { tournamentId, round, player1, player2, gameId: null });
     
     return matchId;
   }
   
-  // Get match details
+  // GET MATCH
   getMatchDetails(matchId) {
     const match = this.matches.get(matchId);
-    if (!match) {
-      throw new Error('Match not found');
-    }
+    if (!match) throw new Error('Match not found');
     return match;
   }
   
-  // Update match with game ID
+  // UPDATE MATCH
   updateMatchGameId(matchId, gameId) {
     const match = this.matches.get(matchId);
-    if (!match) {
-      throw new Error('Match not found');
-    }
+    if (!match) throw new Error('Match not found');
     match.gameId = gameId;
   }
   
-  // Get tournament data
+  // GET TOURNAMENT
   getTournament(tournamentId) {
     return this.tournaments.get(tournamentId);
   }
   
-  // Find the other semifinal match in the same tournament
-  getOtherSemifinal(matchId) {
-    const match = this.matches.get(matchId);
-    if (!match || match.round !== 1) {
-      return null;
-    }
-    
-    const tournamentData = this.tournaments.get(match.tournamentId);
-    if (!tournamentData) {
-      return null;
-    }
-    
-    // Find the other semifinal (both have round 1)
-    const otherSemifinalId = tournamentData.matches.find(id => {
-      const m = this.matches.get(id);
-      return m && m.round === 1 && id !== matchId;
-    });
-    
-    if (!otherSemifinalId) {
-      return null;
-    }
-    
-    return this.matches.get(otherSemifinalId);
-  }
-  
-  // CANCEL
+  // CANCEL TOURNAMENT
   cancelTournament(tournamentId) {
     const tournament = this.tournaments.get(tournamentId);
     if (!tournament) return false;
@@ -187,137 +102,85 @@ class TournamentManager {
     // Cancel all active games
     for (const matchId of tournament.matches) {
       const match = this.matches.get(matchId);
-      if (match && match.gameId) {
-        this.gameManager.cancelGame(match.gameId);
-      }
+      if (match && match.gameId) this.gameManager.cancelGame(match.gameId);
     }
     
     // Remove tournament
     this.tournaments.delete(tournamentId);
-    // Limpiar la configuración del torneo
     this.tournamentSettings.delete(tournamentId);
     
     return true;
   }
   
-  // Avanzar a la siguiente ronda del torneo tras completar una partida
+  // NEXT MATCH
   advanceToNextRound(matchId, winnerId) {
     try {
-      // Get match details
       const match = this.matches.get(matchId);
-      if (!match) {
-        throw new Error(`Match not found: ${matchId}`);
-      }
-      
-      // Verify this match is part of a tournament and has a next match
-      if (!match.nextMatchId) {
-        return null;
-      }
-      
-      // Get the next match
-      const nextMatch = this.matches.get(match.nextMatchId);
-      if (!nextMatch) {
-        throw new Error(`Next match not found: ${match.nextMatchId}`);
-      }
-      
-      // Update next match with this match's winner
-      if (match.player1Position === 1) {
-        nextMatch.player1 = winnerId;
-      } else {
-        nextMatch.player2 = winnerId;
-      }
-      
-      // Check if both players for next match are ready
-      if (nextMatch.player1 && nextMatch.player2) {
-        return {
-          matchId: match.nextMatchId,
-          player1: nextMatch.player1,
-          player2: nextMatch.player2,
-          round: nextMatch.round
-        };
-      }
+      if (!match) throw new Error(`Match not found: ${matchId}`);
+      if (!match.nextMatchId) return null;
 
+      // Get next match
+      const nextMatch = this.matches.get(match.nextMatchId);
+      if (!nextMatch) throw new Error(`Next match not found: ${match.nextMatchId}`);
+
+      // Update next match with this match's winner
+      if (match.player1Position === 1)  nextMatch.player1 = winnerId;
+      else                              nextMatch.player2 = winnerId;
+
+      // Check if both players for next match are ready
+      if (nextMatch.player1 && nextMatch.player2) return { matchId: match.nextMatchId, player1: nextMatch.player1, player2: nextMatch.player2, round: nextMatch.round };
       return null;
-    } catch (error) {
-      return null;
-    }
+    } catch (error) { return null; }
   }
   
-  // Método para crear un juego para una ronda específica del torneo
-  // IMPORTANTE: Cada juego debe tener sus propios tiempos independientes
+  // CREATE GAME FOR MATCH
   createGameForMatch(matchId, gameSettings) {
     try {
-      // Get match details
       const match = this.matches.get(matchId);
-      if (!match) {
-        throw new Error(`Match not found: ${matchId}`);
-      }
-      
+      if (!match) throw new Error(`Match not found: ${matchId}`);
+
       const tournamentId = match.tournamentId;
       const tournament = this.tournaments.get(tournamentId);
-      
-      // Identificar si es segunda semifinal basado en la posición del match en el array
-      const isSecondSemifinal = match.round === 1 && 
-        tournament && 
-        tournament.matches.indexOf(matchId) === 1;
-      
-      // Obtener la configuración guardada del torneo si existe
+      const isSecondSemifinal = match.round === 1 && tournament && tournament.matches.indexOf(matchId) === 1;
+
+      // Set settings
       let settings = gameSettings;
       const savedSettings = this.getTournamentSettings(tournamentId);
-      
-      if (savedSettings) {
-        // Usar la configuración guardada para todas las rondas
-        settings = {
-          ...savedSettings,
-          tournamentMode: true,
-          tournamentRound: match.round,
-          isSecondSemifinal: isSecondSemifinal
-        };
-      } else {
-        // Merge settings with tournament round info
-        settings = {
-          ...gameSettings,
-          tournamentMode: true,
-          tournamentRound: match.round,
-          isSecondSemifinal: isSecondSemifinal
-        };
-      }
-      
-      // Create a new game with FRESH timers
+
+      if (savedSettings)  settings = { ...savedSettings, tournamentMode: true, tournamentRound: match.round, isSecondSemifinal: isSecondSemifinal };
+      else                settings = { ...gameSettings, tournamentMode: true, tournamentRound: match.round, isSecondSemifinal: isSecondSemifinal };
+
+      // Create a new game
       const gameId = this.gameManager.createGame(settings);
-      
+
       // Update match with game ID
       match.gameId = gameId;
-      
+
       // Add players to the game
       this.gameManager.addPlayer(gameId, match.player1, 1);
       this.gameManager.addPlayer(gameId, match.player2, 2);
-      
-      // CRÍTICO: Garantizar que este juego tenga un tiempo inicial independiente
+
+      // Set times
       const gameEntry = this.gameManager.games.get(gameId);
       if (gameEntry) {
-        // Reiniciar completamente todos los tiempos para esta partida
         const freshStartTime = Date.now();
         gameEntry.startTime = freshStartTime;
         gameEntry.finishTime = null;
         gameEntry.lastActivity = freshStartTime;
-        
-        // Reiniciar también los tiempos en el objeto PongGame
         const game = gameEntry.game;
         if (game) {
           game.lastUpdate = freshStartTime;
           game.gameCreatedAt = freshStartTime;
-          game.gameStartedAt = null; // Se establecerá cuando inicie el juego
+          game.gameStartedAt = null;
           game.totalPausedTime = 0;
           game.pauseIntervals = [];
         }
       }
-      
+
       return gameId;
-    } catch (error) {
-      return null;
-    }
+    } catch (error) { return null; }
   }
+
 }
 
 module.exports = new TournamentManager();
