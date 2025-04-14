@@ -9,7 +9,7 @@ services:
       args:
         - HOST_NAME=${HOST_NAME-localhost}
     ports:
-      - "443:443"
+      - "8443:443"
     networks:
       - frontend-net
       - backend-net
