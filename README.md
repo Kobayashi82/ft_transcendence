@@ -1,9 +1,3 @@
-
----
-<br>
-
-<h1 style="text-align: center; border-bottom: none;">ENGLISH</h1>
-
 # ft_transcendence
 
 ft_transcendence is a real-time Pong game web platform, including an AI mode, tournament system, player statistics, and leaderboard.
@@ -46,7 +40,7 @@ The project is built with a microservices architecture, using:
 ---
 <br>
 
-<h1 style="text-align: center; border-bottom: none;">ESPAÑOL</h1>
+<h1 style="border-bottom: none;"></h1>
 
 <br>
 
