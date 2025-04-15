@@ -241,9 +241,9 @@ const translations = {
   'about.dev3.funFact': 'Fun fact: ...',
 
   'about.funFacts': 'Fun Facts',
-  'about.funFact1': 'This project contains approximately 9,511 lines of code, 127 cups of coffee, and 173 commits.',
+  'about.funFact1': 'This project contains approximately 9,556 lines of code, 127 cups of coffee, and 171 commits.',
   'about.funFact2': 'The ELK, metrics, and authentication modules were implemented and then discarded.',
-  'about.funFact3': 'The project started in October 2024 and ended in April 2025, lasting 6 months.',
+  'about.funFact3': 'The project started on March 19, 2025 and ended on April 15, 2025, lasting 28 days.',
 
   // Status
   'status.title': 'Server Status',
