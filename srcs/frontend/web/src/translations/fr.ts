@@ -241,7 +241,7 @@ const translations = {
   'about.dev3.funFact': 'Anecdote : ...',
 
   'about.funFacts': 'Anecdotes Amusantes',
-  'about.funFact1': 'Ce projet contient environ 9 556 lignes de code, 127 tasses de café et 171 commits.',
+  'about.funFact1': 'Ce projet contient environ 9 556 lignes de code, 127 tasses de café et 135 commits.',
   'about.funFact2': 'Les modules ELK, métriques et authentification ont été implémentés puis abandonnés.',
   'about.funFact3': 'Le projet a commencé le 19 mars 2025 et s\'est terminé le 15 avril 2025, avec une durée de 28 jours.',
 
