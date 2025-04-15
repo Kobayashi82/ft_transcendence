@@ -40,11 +40,6 @@ The project is built with a microservices architecture, using:
 ---
 <br>
 
-<h1 style="border-bottom: none;"></h1>
-
-<br>
-
-
 # ft_transcendence
 
 ft_transcendence es una plataforma web del juego de pong en tiempo real, incluyendo un modo contra IA, sistema de torneos, estadísticas de jugadores y tabla de clasificación.
