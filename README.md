@@ -1,5 +1,7 @@
 # ft_transcendence
 
+> **Note:** This repository is maintained for historical reasons, as it contains all commits since the beginning of transcendence development.
+
 ft_transcendence is a real-time Pong game web platform, including an AI mode, tournament system, player statistics, and leaderboard.
 
 ## Architecture
@@ -41,6 +43,8 @@ The project is built with a microservices architecture, using:
 <br>
 
 # ft_transcendence
+
+> **Nota:** Este repositorio se mantiene por razones históricas, ya que contiene todos los commits desde el inicio del desarrollo de transcendence.
 
 ft_transcendence es una plataforma web del juego de pong en tiempo real, incluyendo un modo contra IA, sistema de torneos, estadísticas de jugadores y tabla de clasificación.
 
