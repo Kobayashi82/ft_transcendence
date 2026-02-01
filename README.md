@@ -1,46 +1,16 @@
-# ft_transcendence
+<div align="center">
 
-> **Note:** This repository is maintained for historical reasons, as it contains all commits since the beginning of transcendence development.
+![Desktop](https://img.shields.io/badge/Desktop-brown?style=for-the-badge)
+![React](https://img.shields.io/badge/React-TypeScript-blue?style=for-the-badge)
+![Fastify](https://img.shields.io/badge/Fastify-Node.js-orange?style=for-the-badge)
 
-ft_transcendence is a real-time Pong game web platform, including an AI mode, tournament system, player statistics, and leaderboard.
+*Plataforma web de Pong en tiempo real con arquitectura de microservicios e IA*
 
-## Architecture
+</div>
 
-The project is built with a microservices architecture, using:
-
-- **Frontend**: Web application developed with React/TypeScript and Tailwind CSS
-- **Backend**: Independent services developed with Node.js and Fastify
-- **Containerization**: Docker to orchestrate all services
-
-### Service Structure
-
-- **Gateway**: API Gateway that centralizes requests to microservices
-- **Game**: Manages game logic and tournaments
-- **Stats**: Stores and manages player and match statistics
-- **DeepPong**: Implements artificial intelligence for the AI mode
-
-## Implemented Modules
-
-### Major Modules
-
-- Use a framework to build the backend (Fastify with Node.js)
-- Designing the backend as microservices
-- Introduce an AI opponent
-- Replace basic Pong with server-side Pong
-
-### Minor Modules
-
-- Use a database for the backend (SQLite)
-- Support on all devices
-- Expanding browser compatibility
-- Game customization options
-- User and Game Stats Dashboards
-- Multiple language support
-
-<br>
-
----
-<br>
+<div align="center">
+  <img src="/ft_transcendence.jpg">
+</div>
 
 # ft_transcendence
 
@@ -80,3 +50,17 @@ El proyecto está construido con una arquitectura de microservicios, utilizando:
 - Opciones de personalización del juego
 - Paneles de estadísticas de usuarios y partidas
 - Soporte para múltiples idiomas
+
+---
+
+## 📄 Licencia
+
+Este proyecto está licenciado bajo la WTFPL – [Do What the Fuck You Want to Public License](http://www.wtfpl.net/about/).
+
+---
+
+<div align="center">
+
+**🎮 Desarrollado como parte del curriculum de 42 School 🎮**
+
+*"It works, it compiles, it passes... what else do you want?"*
