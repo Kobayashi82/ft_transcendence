@@ -18,22 +18,22 @@
 
 > **Note:** This repository is kept for historical reasons, as it contains all commits since the beginning of transcendence development.
 
-ft_transcendence is a real-time Pong web platform, including an AI mode, tournament system, player stats, and leaderboard.
+`ft_transcendence` is a real-time Pong web platform, including an AI mode, tournament system, player stats, and leaderboard.
 
 ## Architecture
 
 The project is built on a microservices architecture, using:
 
-- **Frontend**: Web app built with React/TypeScript and Tailwind CSS
-- **Backend**: Independent services built with Node.js and Fastify
-- **Containerization**: Docker to orchestrate all services
+- `Frontend`: Web app built with React/TypeScript and Tailwind CSS
+- `Backend`: Independent services built with Node.js and Fastify
+- `Containerization`: Docker to orchestrate all services
 
 ### Services structure
 
-- **Gateway**: API Gateway that centralizes requests to microservices
-- **Game**: Handles game logic and tournaments
-- **Stats**: Stores and manages player and match statistics
-- **DeepPong**: Implements AI for the vs-AI mode
+- `Gateway`: API Gateway that centralizes requests to microservices
+- `Game`: Handles game logic and tournaments
+- `Stats`: Stores and manages player and match statistics
+- `DeepPong`: Implements AI for the vs-AI mode
 
 ## Implemented Modules
 
