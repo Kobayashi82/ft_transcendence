@@ -4,7 +4,7 @@
 ![React](https://img.shields.io/badge/React-TypeScript-blue?style=for-the-badge)
 ![Fastify](https://img.shields.io/badge/Fastify-Node.js-orange?style=for-the-badge)
 
-*Plataforma web de Pong en tiempo real con arquitectura de microservicios e IA*
+*Real-time Pong web platform with a microservices architecture and AI*
 
 </div>
 
@@ -14,54 +14,56 @@
 
 # ft_transcendence
 
-> **Nota:** Este repositorio se mantiene por razones históricas, ya que contiene todos los commits desde el inicio del desarrollo de transcendence.
+[README en Español](README_es.md)
 
-ft_transcendence es una plataforma web del juego de pong en tiempo real, incluyendo un modo contra IA, sistema de torneos, estadísticas de jugadores y tabla de clasificación.
+> **Note:** This repository is kept for historical reasons, as it contains all commits since the beginning of transcendence development.
 
-## Arquitectura
+ft_transcendence is a real-time Pong web platform, including an AI mode, tournament system, player stats, and leaderboard.
 
-El proyecto está construido con una arquitectura de microservicios, utilizando:
+## Architecture
 
-- **Frontend**: Aplicación web desarrollada con React/TypeScript y Tailwind CSS
-- **Backend**: Servicios independientes desarrollados con Node.js y Fastify
-- **Contenedorización**: Docker para orquestar todos los servicios
+The project is built on a microservices architecture, using:
 
-### Estructura de servicios
+- **Frontend**: Web app built with React/TypeScript and Tailwind CSS
+- **Backend**: Independent services built with Node.js and Fastify
+- **Containerization**: Docker to orchestrate all services
 
-- **Gateway**: API Gateway que centraliza las peticiones a los microservicios
-- **Game**: Gestiona la lógica del juego y torneos
-- **Stats**: Almacena y gestiona estadísticas de jugadores y partidas
-- **DeepPong**: Implementa la inteligencia artificial para el modo contra IA
+### Services structure
 
-## Módulos Implementados
+- **Gateway**: API Gateway that centralizes requests to microservices
+- **Game**: Handles game logic and tournaments
+- **Stats**: Stores and manages player and match statistics
+- **DeepPong**: Implements AI for the vs-AI mode
 
-### Módulos Principales
+## Implemented Modules
 
-- Uso de un framework para construir el backend (Fastify con Node.js)
-- Diseño del backend como microservicios
-- Introducción de un oponente con IA
-- Reemplazo del Pong básico con Pong del lado del servidor
+### Core Modules
 
-### Módulos Secundarios
+- Use of a framework to build the backend (Fastify with Node.js)
+- Backend design as microservices
+- Introduction of an AI opponent
+- Replacement of basic Pong with server-side Pong
 
-- Uso de una base de datos para el backend (SQLite)
-- Soporte en todos los dispositivos
-- Ampliación de la compatibilidad con navegadores
-- Opciones de personalización del juego
-- Paneles de estadísticas de usuarios y partidas
-- Soporte para múltiples idiomas
+### Secondary Modules
+
+- Use of a database for the backend (SQLite)
+- Support on all devices
+- Expanded browser compatibility
+- Game customization options
+- User and match statistics dashboards
+- Multi-language support
 
 ---
 
-## 📄 Licencia
+## 📄 License
 
-Este proyecto está licenciado bajo la WTFPL – [Do What the Fuck You Want to Public License](http://www.wtfpl.net/about/).
+This project is licensed under the WTFPL – [Do What the Fuck You Want to Public License](http://www.wtfpl.net/about/).
 
 ---
 
 <div align="center">
 
-**🏓 Desarrollado como parte del curriculum de 42 School 🏓**
+**🏓 Developed as part of the 42 School curriculum 🏓**
 
 *"It works, it compiles, it passes... what else do you want?"*
 
