@@ -9,7 +9,7 @@
 </div>
 
 <div align="center">
-  <img src="/ft_transcendence.jpg">
+  <img src="/ft_transcendence.png">
 </div>
 
 # ft_transcendence
@@ -64,3 +64,7 @@ Este proyecto está licenciado bajo la WTFPL – [Do What the Fuck You Want to P
 **🏓 Desarrollado como parte del curriculum de 42 School 🏓**
 
 *"It works, it compiles, it passes... what else do you want?"*
+
+<div align="center">
+  <img src="/ft_transcendence.jpg">
+</div>
