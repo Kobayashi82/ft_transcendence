@@ -9,7 +9,7 @@
 </div>
 
 <div align="center">
-  <img src="/ft_transcendence.png">
+  <img src="/images/ft_transcendence.jpg">
 </div>
 
 # ft_transcendence
@@ -68,5 +68,5 @@ This project is licensed under the WTFPL – [Do What the Fuck You Want to Publi
 *"It works, it compiles, it passes... what else do you want?"*
 
 <div align="center">
-  <img src="/ft_transcendence.jpg">
+  <img src="/images/ft_transcendence_web.jpg">
 </div>
